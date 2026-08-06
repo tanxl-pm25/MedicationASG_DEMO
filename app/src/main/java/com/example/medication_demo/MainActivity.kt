@@ -11,8 +11,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import com.example.medication_demo.history.WeeklyHistoryScreen
+import com.example.medication_demo.medication.AddMedicineScreen
+import com.example.medication_demo.medication.MedicineCalendarScreen
 import com.example.medication_demo.medication.MedicineDetailsScreen
 import com.example.medication_demo.medication.MedicineListScreen
+import com.example.medication_demo.medication.MedicineScheduleScreen
+import com.example.medication_demo.reminder.RefillReminderScreen
 import com.example.medication_demo.ui.theme.Medication_DemoTheme
 
 class MainActivity : ComponentActivity() {
@@ -21,7 +26,15 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             Medication_DemoTheme {
-                MedicineDetailsScreen()
+                //RefillReminderScreen()
+                WeeklyHistoryScreen()
+                //MedicineCalendarScreen()
+                //MedicineScheduleScreen()
+                //MedicineDetailsScreen()
+                //MedicineListScreen()
+                /*AddMedicineScreen(
+                    isEditMode = false
+                )*/
             }
         }
     }

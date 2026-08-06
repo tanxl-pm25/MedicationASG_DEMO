@@ -140,7 +140,7 @@ private fun MedicineDetailsTopBar(
             .padding(
                 start = 8.dp,
                 end = 8.dp,
-                top = 10.dp,
+                top = 28.dp,
                 bottom = 8.dp
             ),
         verticalAlignment = Alignment.CenterVertically

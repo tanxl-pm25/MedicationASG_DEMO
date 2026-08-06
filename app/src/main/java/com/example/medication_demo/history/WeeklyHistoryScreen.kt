@@ -1,0 +1,656 @@
+package com.example.medication_demo.history
+
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DateRangePicker
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDateRangePickerState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.text.style.TextOverflow
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
+import java.util.Locale
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Medication
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import com.example.medication_demo.R
+import com.example.medication_demo.ui.theme.Medication_DemoTheme
+
+private val HistoryGreen = Color(0xFF159447)
+private val HistoryLightGreen = Color(0xFFE8F7ED)
+private val HistoryRed = Color(0xFFE53935)
+private val HistoryGrey = Color(0xFF6B7280)
+private val HistoryCardBackground = Color(0xFFF8F8F8)
+private val HistoryDivider = Color(0xFFE5E7EB)
+
+private data class MedicineHistoryUi(
+    val name: String,
+    val dosage: String,
+    val time: String,
+    val frequency: String,
+    val takenCount: Int,
+    val missingCount: Int = 0,
+    val drawableId: Int
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun WeeklyHistoryScreen(
+    onMoreClick: () -> Unit = {},
+) {
+    val dateFormatter = remember {
+        DateTimeFormatter.ofPattern(
+            "dd MMM yyyy",
+            Locale.ENGLISH
+        )
+    }
+
+    var selectedStartDate by remember {
+        mutableStateOf(
+            LocalDate.of(2025, 5, 10)
+        )
+    }
+
+    var selectedEndDate by remember {
+        mutableStateOf(
+            LocalDate.of(2025, 5, 16)
+        )
+    }
+
+    var showDateRangePicker by remember {
+        mutableStateOf(false)
+    }
+
+    var dateRangeError by remember {
+        mutableStateOf<String?>(null)
+    }
+
+    val medicines = listOf(
+        MedicineHistoryUi(
+            name = "Vitamin D3",
+            dosage = "1 Tablet",
+            time = "08:00 AM",
+            frequency = "Every day",
+            takenCount = 7,
+            drawableId = R.drawable.pill_24dp_1f1f1f_fill0_wght400_grad0_opsz24
+        ),
+        MedicineHistoryUi(
+            name = "Metformin",
+            dosage = "1 Tablet",
+            time = "10:00 AM",
+            frequency = "Every day",
+            takenCount = 7,
+            drawableId = R.drawable.pill_24dp_1f1f1f_fill0_wght400_grad0_opsz24
+        ),
+        MedicineHistoryUi(
+            name = "Amoxicillin",
+            dosage = "1 Tablet",
+            time = "02:00 PM",
+            frequency = "Twice a day",
+            takenCount = 10,
+            missingCount = 4,
+            drawableId = R.drawable.pill_24dp_1f1f1f_fill0_wght400_grad0_opsz24
+        ),
+        MedicineHistoryUi(
+            name = "Omega-3 1000mg",
+            dosage = "1 Capsule",
+            time = "09:00 PM",
+            frequency = "Every day",
+            takenCount = 7,
+            drawableId = R.drawable.pill_24dp_1f1f1f_fill0_wght400_grad0_opsz24
+        ),
+        MedicineHistoryUi(
+            name = "Vitamin B12",
+            dosage = "1 Tablet",
+            time = "08:00 PM",
+            frequency = "Once a week",
+            takenCount = 1,
+            drawableId = R.drawable.pill_24dp_1f1f1f_fill0_wght400_grad0_opsz24
+        )
+    )
+
+    var selectedBottomItem by remember {
+        mutableIntStateOf(2)
+    }
+
+    Scaffold(
+        containerColor = Color.White,
+        topBar = {
+            WeeklyHistoryTopBar(
+                onMoreClick = onMoreClick
+            )
+        },
+        bottomBar = {
+            HistoryBottomBar(
+                selectedIndex = selectedBottomItem,
+                onSelected = {
+                    selectedBottomItem = it
+                }
+            )
+        }
+    ) { innerPadding ->
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp)
+        ) {
+            Spacer(modifier = Modifier.height(4.dp))
+
+            WeeklyDateRangeSelector(
+                startDate = selectedStartDate,
+                endDate = selectedEndDate,
+                formatter = dateFormatter,
+                onClick = {
+                    dateRangeError = null
+                    showDateRangePicker = true
+                }
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            medicines.forEach { medicine ->
+                HistoryMedicineCard(
+                    medicine = medicine
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+            }
+            Spacer(modifier = Modifier.height(20.dp))
+        }
+    }
+
+    if (showDateRangePicker) {
+        WeeklyDateRangeDialog(
+            initialStartDate = selectedStartDate,
+            initialEndDate = selectedEndDate,
+            errorMessage = dateRangeError,
+            onDismiss = {
+                showDateRangePicker = false
+                dateRangeError = null
+            },
+            onConfirm = { startDate, endDate ->
+                val selectedDayCount =
+                    ChronoUnit.DAYS.between(
+                        startDate,
+                        endDate
+                    ) + 1
+
+                if (selectedDayCount == 7L) {
+                    selectedStartDate = startDate
+                    selectedEndDate = endDate
+                    dateRangeError = null
+                    showDateRangePicker = false
+                } else {
+                    dateRangeError =
+                        "Please select exactly 7 days."
+                }
+            }
+        )
+    }
+}
+
+@Composable
+private fun WeeklyDateRangeSelector(
+    startDate: LocalDate,
+    endDate: LocalDate,
+    formatter: DateTimeFormatter,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(
+                horizontal = 8.dp,
+                vertical = 8.dp
+            ),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = "${startDate.format(formatter)} - " +
+                    endDate.format(formatter),
+            style = MaterialTheme.typography.bodySmall,
+            color = HistoryGrey,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+
+        Spacer(modifier = Modifier.width(7.dp))
+
+        Icon(
+            imageVector = Icons.Default.CalendarMonth,
+            contentDescription = "Select date range",
+            tint = HistoryGrey,
+            modifier = Modifier.size(17.dp)
+        )
+
+        Spacer(modifier = Modifier.width(2.dp))
+
+        Icon(
+            imageVector = Icons.Default.KeyboardArrowDown,
+            contentDescription = "Open calendar",
+            tint = HistoryGrey,
+            modifier = Modifier.size(20.dp)
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun WeeklyDateRangeDialog(
+    initialStartDate: LocalDate,
+    initialEndDate: LocalDate,
+    errorMessage: String?,
+    onDismiss: () -> Unit,
+    onConfirm: (LocalDate, LocalDate) -> Unit
+) {
+    val dateRangePickerState = rememberDateRangePickerState(
+        initialSelectedStartDateMillis =
+            initialStartDate.toUtcMillis(),
+
+        initialSelectedEndDateMillis =
+            initialEndDate.toUtcMillis()
+    )
+
+    DatePickerDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val startMillis =
+                        dateRangePickerState
+                            .selectedStartDateMillis
+
+                    val endMillis =
+                        dateRangePickerState
+                            .selectedEndDateMillis
+
+                    if (
+                        startMillis != null &&
+                        endMillis != null
+                    ) {
+                        onConfirm(
+                            startMillis.toLocalDateUtc(),
+                            endMillis.toLocalDateUtc()
+                        )
+                    }
+                },
+                enabled =
+                    dateRangePickerState
+                        .selectedStartDateMillis != null &&
+                            dateRangePickerState
+                                .selectedEndDateMillis != null
+            ) {
+                Text(
+                    text = "Done",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = HistoryGreen
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss
+            ) {
+                Text(
+                    text = "Cancel",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = HistoryGrey
+                )
+            }
+        }
+    ) {
+        DateRangePicker(
+            state = dateRangePickerState,
+            title = {
+                Text(
+                    text = "Select 7-Day Range",
+                    modifier = Modifier.padding(
+                        start = 24.dp,
+                        top = 18.dp
+                    ),
+                    style =
+                        MaterialTheme.typography.titleMedium
+                )
+            },
+            headline = {
+                val startDate =
+                    dateRangePickerState
+                        .selectedStartDateMillis
+                        ?.toLocalDateUtc()
+
+                val endDate =
+                    dateRangePickerState
+                        .selectedEndDateMillis
+                        ?.toLocalDateUtc()
+
+                Column(
+                    modifier = Modifier.padding(
+                        horizontal = 24.dp,
+                        vertical = 10.dp
+                    )
+                ) {
+                    Text(
+                        text = when {
+                            startDate != null && endDate != null -> {
+                                "${
+                                    startDate.format(
+                                        DateTimeFormatter.ofPattern(
+                                            "dd MMM",
+                                            Locale.ENGLISH
+                                        )
+                                    )
+                                } - ${
+                                    endDate.format(
+                                        DateTimeFormatter.ofPattern(
+                                            "dd MMM yyyy",
+                                            Locale.ENGLISH
+                                        )
+                                    )
+                                }"
+                            }
+
+                            startDate != null -> {
+                                "${
+                                    startDate.format(
+                                        DateTimeFormatter.ofPattern(
+                                            "dd MMM yyyy",
+                                            Locale.ENGLISH
+                                        )
+                                    )
+                                } - Select end date"
+                            }
+
+                            else -> {
+                                "Select start and end date"
+                            }
+                        },
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+
+                    if (errorMessage != null) {
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        Text(
+                            text = errorMessage,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = HistoryRed
+                        )
+                    }
+                }
+            },
+            showModeToggle = false,
+            modifier = Modifier.height(500.dp)
+        )
+    }
+}
+
+@Composable
+private fun WeeklyHistoryTopBar(
+    onMoreClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.White)
+            .padding(
+                start = 6.dp,
+                end = 6.dp,
+                top = 28.dp,
+                bottom = 8.dp
+            )
+    ) {
+        Text(
+            text = "Weekly History",
+            modifier = Modifier.align(Alignment.Center),
+            style = MaterialTheme.typography.titleLarge
+        )
+
+        IconButton(
+            onClick = onMoreClick,
+            modifier = Modifier.align(Alignment.CenterEnd)
+        ) {
+            Icon(
+                imageVector = Icons.Default.MoreVert,
+                contentDescription = "More options"
+            )
+        }
+    }
+}
+
+@Composable
+private fun HistoryMedicineCard(
+    medicine: MedicineHistoryUi
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = HistoryCardBackground
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 1.dp
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(54.dp)
+                    .background(
+                        color = Color.White,
+                        shape = RoundedCornerShape(12.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    painter = painterResource(
+                        id = medicine.drawableId
+                    ),
+                    contentDescription = medicine.name,
+                    tint = Color.Unspecified,
+                    modifier = Modifier.size(34.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.size(12.dp))
+
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = medicine.name,
+                    style = MaterialTheme.typography.titleSmall
+                )
+
+                Spacer(modifier = Modifier.height(3.dp))
+
+                Text(
+                    text = medicine.dosage,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = HistoryGrey
+                )
+
+                Spacer(modifier = Modifier.height(3.dp))
+
+                Text(
+                    text = "${medicine.time} • ${medicine.frequency}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = HistoryGrey
+                )
+            }
+
+            Spacer(modifier = Modifier.size(2.dp))
+
+            Column(
+                horizontalAlignment = Alignment.End
+            ) {
+                Text(
+                    text = "Taken x${medicine.takenCount}",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = HistoryGreen
+                )
+
+                if (medicine.missingCount > 0) {
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Text(
+                        text = "Missing x${medicine.missingCount}",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = HistoryRed
+                    )
+                }
+            }
+        }
+    }
+}
+
+private data class HistoryBottomItem(
+    val label: String,
+    val icon: ImageVector
+)
+
+@Composable
+private fun HistoryBottomBar(
+    selectedIndex: Int,
+    onSelected: (Int) -> Unit
+) {
+    val items = listOf(
+        HistoryBottomItem(
+            label = "Home",
+            icon = Icons.Default.Home
+        ),
+        HistoryBottomItem(
+            label = "Medicine",
+            icon = Icons.Default.Medication
+        ),
+        HistoryBottomItem(
+            label = "History",
+            icon = Icons.Default.History
+        ),
+        HistoryBottomItem(
+            label = "Profile",
+            icon = Icons.Default.Person
+        )
+    )
+
+    Column {
+        HorizontalDivider(
+            color = HistoryDivider
+        )
+
+        NavigationBar(
+            containerColor = Color.White
+        ) {
+            items.forEachIndexed { index, item ->
+                NavigationBarItem(
+                    selected = selectedIndex == index,
+                    onClick = {
+                        onSelected(index)
+                    },
+                    icon = {
+                        Icon(
+                            imageVector = item.icon,
+                            contentDescription = item.label
+                        )
+                    },
+                    label = {
+                        Text(
+                            text = item.label,
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                    },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = HistoryGreen,
+                        selectedTextColor = HistoryGreen,
+                        indicatorColor = HistoryLightGreen,
+                        unselectedIconColor = HistoryGrey,
+                        unselectedTextColor = HistoryGrey
+                    )
+                )
+            }
+        }
+    }
+}
+
+private fun LocalDate.toUtcMillis(): Long {
+    return atStartOfDay(
+        ZoneOffset.UTC
+    ).toInstant().toEpochMilli()
+}
+
+private fun Long.toLocalDateUtc(): LocalDate {
+    return Instant
+        .ofEpochMilli(this)
+        .atZone(ZoneOffset.UTC)
+        .toLocalDate()
+}
+
+@Preview(
+    showBackground = true,
+    showSystemUi = true
+)
+@Composable
+private fun WeeklyHistoryScreenPreview() {
+    Medication_DemoTheme {
+        WeeklyHistoryScreen()
+    }
+}
