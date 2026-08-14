@@ -59,6 +59,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.medication_demo.R
 import com.example.medication_demo.ui.theme.Medication_DemoTheme
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.medication_demo.model.Medicine
+import com.example.medication_demo.viewmodel.MedicineViewModel
+import androidx.compose.material.icons.filled.Schedule
 
 private val AppGreen = Color(0xFF17852B)
 private val LightGreen = Color(0xFFE8F5E9)
@@ -76,45 +81,24 @@ data class MedicineUi(
 
 @Composable
 fun MedicineListScreen(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    vm: MedicineViewModel = viewModel(),
+    onAddMedicineClick: () -> Unit = {}
 ) {
-    val medicines = remember {
-        listOf(
-            MedicineUi(
-                name = "Paracetamol 500mg",
-                time = "08:00 AM",
-                frequency = "Every day",
-                dosage = "1 Tablet",
-                emoji = "💊"
-            ),
-            MedicineUi(
-                name = "Metformin 500mg",
-                time = "12:00 PM",
-                frequency = "Every day",
-                dosage = "1 Tablet",
-                emoji = "⚪"
-            ),
-            MedicineUi(
-                name = "Vitamin D3 1000IU",
-                time = "06:00 PM",
-                frequency = "Every day",
-                dosage = "1 Tablet",
-                emoji = "🔵"
-            ),
-            MedicineUi(
-                name = "Omega-3 1000mg",
-                time = "08:00 PM",
-                frequency = "Every day",
-                dosage = "1 Capsule",
-                emoji = "🟡"
-            )
-        )
+    val medicines by
+    vm.medicines.collectAsStateWithLifecycle()
+
+    var searchText by remember {
+        mutableStateOf("")
     }
 
-    var searchText by remember { mutableStateOf("") }
-    var selectedFilter by remember { mutableStateOf("All") }
-    var selectedBottomItem by remember { mutableIntStateOf(1) }
+    var selectedFilter by remember {
+        mutableStateOf("All")
+    }
 
+    var selectedBottomItem by remember {
+        mutableIntStateOf(1)
+    }
     val filteredMedicines = medicines.filter {
         it.name.contains(searchText, ignoreCase = true)
     }
@@ -163,9 +147,7 @@ fun MedicineListScreen(
             }
 
             Button(
-                onClick = {
-                    // UI version only: function will be connected later
-                },
+                onClick = onAddMedicineClick,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 12.dp)
@@ -298,8 +280,14 @@ private fun MedicineFilterRow(
 
 @Composable
 private fun MedicineCard(
-    medicine: MedicineUi
+    medicine: Medicine
 ) {
+    val dosageText =
+        if (medicine.dosageAmount == "1") {
+            "${medicine.dosageAmount} ${medicine.dosageType}"
+        } else {
+            "${medicine.dosageAmount} ${medicine.dosageType}s"
+        }
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(14.dp),
@@ -328,9 +316,13 @@ private fun MedicineCard(
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = medicine.emoji,
-                    fontSize = 27.sp
+                Icon(
+                    painter = painterResource(
+                        R.drawable.pill_24dp_1f1f1f_fill0_wght400_grad0_opsz24
+                    ),
+                    contentDescription = medicine.name,
+                    tint = Color.Unspecified,
+                    modifier = Modifier.size(30.dp)
                 )
             }
 
@@ -344,27 +336,63 @@ private fun MedicineCard(
                     style = MaterialTheme.typography.titleMedium
                 )
 
-                Spacer(modifier = Modifier.height(5.dp))
-
-                Text(
-                    text = "${medicine.time}  •  ${medicine.frequency}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = TextGrey
-                )
-
-                Spacer(modifier = Modifier.height(5.dp))
-
-                Box(
-                    modifier = Modifier
-                        .background(
-                            color = SoftGrey,
-                            shape = RoundedCornerShape(4.dp)
-                        )
-                        .padding(horizontal = 7.dp, vertical = 3.dp)
-                ) {
+                Spacer(modifier = Modifier.height(4.dp))
+                if (medicine.reminderTimes.isNotEmpty()) {
+                    medicine.reminderTimes.forEach { reminder ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Schedule,
+                                contentDescription = "Reminder time",
+                                tint = TextGrey,
+                                modifier = Modifier.size(17.dp)
+                            )
+                            Spacer(modifier = Modifier.size(6.dp))
+                            Text(
+                                text = reminder.time,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = TextGrey
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(3.dp))
+                    }
+                } else {
+                    // For "As needed"
                     Text(
-                        text = medicine.dosage,
-                        style = MaterialTheme.typography.labelSmall
+                        text = "No fixed reminder time",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextGrey
+                    )
+                    Spacer(modifier = Modifier.height(3.dp))
+                }
+                Spacer(modifier = Modifier.height(5.dp))
+
+                // Dosage + Frequency
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .background(
+                                color = SoftGrey,
+                                shape = RoundedCornerShape(4.dp)
+                            )
+                            .padding(
+                                horizontal = 7.dp,
+                                vertical = 3.dp
+                            )
+                    ) {
+                        Text(
+                            text = dosageText,
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                    }
+                    Spacer(modifier = Modifier.size(8.dp))
+                    Text(
+                        text = medicine.frequency,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextGrey
                     )
                 }
             }
