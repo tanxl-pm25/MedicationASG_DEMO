@@ -1221,9 +1221,9 @@ private fun StartDatePickerDialog(
         .toEpochMilli()
 
     val todayMillis = LocalDate.now()
-            .atStartOfDay(ZoneOffset.UTC)
-            .toInstant()
-            .toEpochMilli()
+        .atStartOfDay(ZoneOffset.UTC)
+        .toInstant()
+        .toEpochMilli()
 
     val datePickerState = rememberDatePickerState(
         initialSelectedDateMillis = initialMillis,

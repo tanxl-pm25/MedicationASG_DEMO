@@ -201,15 +201,15 @@ class MedicineViewModel : ViewModel() {
             _customFrequencyError.value = false
 
             val unit = if (number == "1") {
-                    when (_customFrequencyUnit.value) {
-                        "Hours" -> "hour"
-                        "Days" -> "day"
-                        "Weeks" -> "week"
-                        "Months" -> "month"
-                        else -> "day"
-                    }
-                } else
-                    _customFrequencyUnit.value.lowercase()
+                when (_customFrequencyUnit.value) {
+                    "Hours" -> "hour"
+                    "Days" -> "day"
+                    "Weeks" -> "week"
+                    "Months" -> "month"
+                    else -> "day"
+                }
+            } else
+                _customFrequencyUnit.value.lowercase()
 
             _frequency.value = "Every $numberValue $unit"
         } else{
@@ -276,10 +276,10 @@ class MedicineViewModel : ViewModel() {
 
         // Medicine
         _medicineNameError.value = if (_medicineName.value.isBlank()) {
-                "Please enter the medicine name."
-            } else {
-                null
-            }
+            "Please enter the medicine name."
+        } else {
+            null
+        }
         if (_medicineNameError.value != null) {
             hasError = true
         }
@@ -287,12 +287,12 @@ class MedicineViewModel : ViewModel() {
         // Quantity
         val quantityValue = _quantity.value.toIntOrNull()
         _quantityError.value = when {
-                _quantity.value.isBlank() ->
-                    "Please enter the quantity."
-                quantityValue == null || quantityValue <= 0 ->
-                    "Quantity must be greater than 0."
-                else -> null
-            }
+            _quantity.value.isBlank() ->
+                "Please enter the quantity."
+            quantityValue == null || quantityValue <= 0 ->
+                "Quantity must be greater than 0."
+            else -> null
+        }
         if (_quantityError.value != null) {
             hasError = true
         }
@@ -300,12 +300,12 @@ class MedicineViewModel : ViewModel() {
         // Dosage Amount
         val dosageValue = _dosageAmount.value.toDoubleOrNull()
         _dosageAmountError.value = when {
-                _dosageAmount.value.isBlank() ->
-                    "Please enter the dosage amount."
-                dosageValue == null || dosageValue <= 0.0 ->
-                    "Dosage amount must be greater than 0."
-                else -> null
-            }
+            _dosageAmount.value.isBlank() ->
+                "Please enter the dosage amount."
+            dosageValue == null || dosageValue <= 0.0 ->
+                "Dosage amount must be greater than 0."
+            else -> null
+        }
         if (_dosageAmountError.value != null) {
             hasError = true
         }
@@ -314,14 +314,14 @@ class MedicineViewModel : ViewModel() {
         if (_refillReminderEnabled.value) {
             val refillValue = _refillQuantity.value.toIntOrNull()
             _refillQuantityError.value = when {
-                    _refillQuantity.value.isBlank() ->
-                        "Please enter the refill reminder quantity."
-                    refillValue == null || refillValue <= 0 ->
-                        "Refill reminder quantity must be greater than 0."
-                    quantityValue != null && quantityValue > 0 && refillValue >= quantityValue ->
-                        "Refill reminder quantity must be less than the medicine quantity."
-                    else -> null
-                }
+                _refillQuantity.value.isBlank() ->
+                    "Please enter the refill reminder quantity."
+                refillValue == null || refillValue <= 0 ->
+                    "Refill reminder quantity must be greater than 0."
+                quantityValue != null && quantityValue > 0 && refillValue >= quantityValue ->
+                    "Refill reminder quantity must be less than the medicine quantity."
+                else -> null
+            }
         } else { _refillQuantityError.value = null }
 
         if (_refillQuantityError.value != null) {
@@ -375,9 +375,9 @@ class MedicineViewModel : ViewModel() {
             return
         }
         _reminderTimes.value += ReminderTimeUi(
-                                time = "12:00 AM",
-                                minutes = ""
-                            )
+            time = "12:00 AM",
+            minutes = ""
+        )
         _reminderTimeError.value = null
     }
 
@@ -417,16 +417,16 @@ class MedicineViewModel : ViewModel() {
         val actual = _reminderTimes.value.size
         if (actual != required) {
             _reminderTimeError.value = when (_frequency.value) {
-                    "Once a day" ->
-                        "Once a day requires exactly 1 reminder time."
-                    "Twice a day" ->
-                        "Twice a day requires exactly 2 reminder times."
-                    "3 times a day" ->
-                        "3 times a day requires exactly 3 reminder times."
-                    "Once a week" ->
-                        "Once a week requires exactly 1 reminder time."
-                    else -> "${_frequency.value} requires exactly 1 reminder time."
-                }
+                "Once a day" ->
+                    "Once a day requires exactly 1 reminder time."
+                "Twice a day" ->
+                    "Twice a day requires exactly 2 reminder times."
+                "3 times a day" ->
+                    "3 times a day requires exactly 3 reminder times."
+                "Once a week" ->
+                    "Once a week requires exactly 1 reminder time."
+                else -> "${_frequency.value} requires exactly 1 reminder time."
+            }
             isValid = false
         }
 
@@ -443,8 +443,8 @@ class MedicineViewModel : ViewModel() {
             return
         }
         _reminderTimes.value = _reminderTimes.value.filterIndexed { currentIndex, _ ->
-                currentIndex != index
-            }
+            currentIndex != index
+        }
         _reminderTimeError.value = null
     }
 
@@ -454,8 +454,8 @@ class MedicineViewModel : ViewModel() {
     ) {
         val current = _reminderTimes.value.toMutableList()
         current[index] = current[index].copy(
-                time = newTime
-            )
+            time = newTime
+        )
         _reminderTimes.value = current
         _reminderTimeError.value = null
     }
@@ -501,12 +501,12 @@ class MedicineViewModel : ViewModel() {
 
     fun toggleReminderOptions(index: Int) {
         _reminderTimes.value = _reminderTimes.value.mapIndexed { currentIndex, reminder ->
-                if (currentIndex == index) {
-                    reminder.copy(
-                        reminderOptionsEnabled = !reminder.reminderOptionsEnabled,
-                        minutesError = null
-                    )
-                } else reminder
+            if (currentIndex == index) {
+                reminder.copy(
+                    reminderOptionsEnabled = !reminder.reminderOptionsEnabled,
+                    minutesError = null
+                )
+            } else reminder
         }
     }
     fun resetAddMedicineForm() {
