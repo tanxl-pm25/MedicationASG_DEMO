@@ -24,6 +24,7 @@ import com.example.medication_demo.medication.MedicineListScreen
 import com.example.medication_demo.medication.MedicineScheduleScreen
 import com.example.medication_demo.reminder.RefillReminderScreen
 import com.example.medication_demo.ui.theme.Medication_DemoTheme
+import com.example.medication_demo.viewmodel.MedicineListViewModel
 import com.example.medication_demo.viewmodel.MedicineViewModel
 
 class MainActivity : ComponentActivity() {
@@ -33,13 +34,15 @@ class MainActivity : ComponentActivity() {
         setContent {
             Medication_DemoTheme {
                 val medicineViewModel: MedicineViewModel = viewModel()
+                val medicineListViewModel: MedicineListViewModel = viewModel()
                 var currentScreen by remember {
                     mutableStateOf("list")
                 }
                 when (currentScreen) {
                     "list" -> {
                         MedicineListScreen(
-                            vm = medicineViewModel,
+                            medicineVm = medicineViewModel,
+                            listVm = medicineListViewModel,
                             onAddMedicineClick = {
                                 currentScreen = "add"
                             }
@@ -48,6 +51,7 @@ class MainActivity : ComponentActivity() {
                     "add" -> {
                         AddMedicineScreen(
                             isEditMode = false,
+                            vm = medicineViewModel,
                             onBackClick = {
                                 medicineViewModel.resetAddMedicineForm()
                                 currentScreen = "list"
@@ -55,8 +59,7 @@ class MainActivity : ComponentActivity() {
                             onSaveClick = {
                                 medicineViewModel.resetAddMedicineForm()
                                 currentScreen = "list"
-                            },
-                            vm = medicineViewModel
+                            }
                         )
                     }
                 }

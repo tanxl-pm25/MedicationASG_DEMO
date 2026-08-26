@@ -64,6 +64,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.medication_demo.model.Medicine
 import com.example.medication_demo.viewmodel.MedicineViewModel
 import androidx.compose.material.icons.filled.Schedule
+import com.example.medication_demo.viewmodel.MedicineListViewModel
 
 private val AppGreen = Color(0xFF17852B)
 private val LightGreen = Color(0xFFE8F5E9)
@@ -82,26 +83,22 @@ data class MedicineUi(
 @Composable
 fun MedicineListScreen(
     modifier: Modifier = Modifier,
-    vm: MedicineViewModel = viewModel(),
+    medicineVm: MedicineViewModel = viewModel(),
+    listVm: MedicineListViewModel = viewModel(),
     onAddMedicineClick: () -> Unit = {}
 ) {
-    val medicines by
-    vm.medicines.collectAsStateWithLifecycle()
-
-    var searchText by remember {
-        mutableStateOf("")
-    }
-
-    var selectedFilter by remember {
-        mutableStateOf("All")
-    }
+    val medicines by medicineVm.medicines.collectAsStateWithLifecycle()
+    val searchText by listVm.searchText.collectAsStateWithLifecycle()
+    val selectedFilter by listVm.selectedFilter.collectAsStateWithLifecycle()
 
     var selectedBottomItem by remember {
         mutableIntStateOf(1)
     }
-    val filteredMedicines = medicines.filter {
-        it.name.contains(searchText, ignoreCase = true)
-    }
+    val filteredMedicines = listVm.filterMedicines(
+        medicines = medicines,
+        searchText = searchText,
+        selectedFilter = selectedFilter
+    )
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -125,14 +122,14 @@ fun MedicineListScreen(
 
             MedicineSearchBar(
                 value = searchText,
-                onValueChange = { searchText = it }
+                onValueChange = listVm::onSearchTextChange
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
             MedicineFilterRow(
                 selectedFilter = selectedFilter,
-                onFilterSelected = { selectedFilter = it }
+                onFilterSelected = listVm::onFilterSelected
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -141,8 +138,10 @@ fun MedicineListScreen(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                items(filteredMedicines) { medicine ->
-                    MedicineCard(medicine = medicine)
+                items(
+                    items = filteredMedicines,
+                    key = { it.id }
+                ) { medicine -> MedicineCard(medicine = medicine)
                 }
             }
 
@@ -224,15 +223,6 @@ private fun MedicineSearchBar(
                 contentDescription = null,
                 tint = TextGrey
             )
-        },
-        trailingIcon = {
-            IconButton(onClick = {}) {
-                Icon(
-                    imageVector = Icons.Default.Tune,
-                    contentDescription = "Filter",
-                    tint = TextGrey
-                )
-            }
         },
         shape = RoundedCornerShape(12.dp),
         colors = TextFieldDefaults.colors(
