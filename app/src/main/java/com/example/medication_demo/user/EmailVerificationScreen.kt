@@ -163,7 +163,10 @@ fun EmailVerificationScreen(
                             annotation = "resend"
                         )
                         withStyle(
-                            style = SpanStyle(color = VerifyGreen, fontWeight = FontWeight.Bold)
+                            style = SpanStyle(
+                                color = VerifyGreen,
+                                fontWeight = FontWeight.Bold
+                            )
                         ) {
                             append("Resend code")
                         }
