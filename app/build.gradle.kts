@@ -38,9 +38,6 @@ android {
 }
 
 dependencies {
-    implementation("io.github.jan-tennert.supabase:postgrest-kt:VERSION")
-    implementation("io.github.jan-tennert.supabase:auth-kt:VERSION")
-    implementation("io.ktor:ktor-client-android:VERSION")
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
