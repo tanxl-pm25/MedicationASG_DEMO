@@ -43,7 +43,7 @@ import com.example.medication_demo.ui.theme.Medication_DemoTheme
 private val AgeGreen = Color(0xFF159447)
 
 @Composable
-fun OnboardingAgeScreen(
+fun AgeScreen(
     onBackClick: () -> Unit = {},
     onNextClick: (age: Int) -> Unit = {}
 ) {
@@ -158,8 +158,8 @@ fun OnboardingAgeScreen(
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
-private fun OnboardingAgeScreenPreview() {
+private fun AgeScreenPreview() {
     Medication_DemoTheme {
-        OnboardingAgeScreen()
+        AgeScreen()
     }
 }

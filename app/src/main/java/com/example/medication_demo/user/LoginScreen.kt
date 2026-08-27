@@ -9,6 +9,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
@@ -16,6 +19,7 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -53,6 +57,7 @@ fun LoginScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
+    var showValidation by remember { mutableStateOf(false) }
 
     Scaffold(
         containerColor = Color.White
@@ -68,7 +73,7 @@ fun LoginScreen(
             Image(
                 painter = painterResource(id = R.drawable.heart_logo),
                 contentDescription = "App logo",
-                modifier = Modifier.height(56.dp)
+                modifier = Modifier.height(80.dp)
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -95,8 +100,12 @@ fun LoginScreen(
                 onValueChange = { email = it },
                 label = { Text("Email Address") },
                 leadingIcon = {
-                    Icon(imageVector = Icons.Filled.Email, contentDescription = null)
+                    Icon(
+                        imageVector = Icons.Filled.Email,
+                        contentDescription = null
+                    )
                 },
+                isError = showValidation && email.isBlank(),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -109,10 +118,17 @@ fun LoginScreen(
                 onValueChange = { password = it },
                 label = { Text("Password") },
                 leadingIcon = {
-                    Icon(imageVector = Icons.Filled.Lock, contentDescription = null)
+                    Icon(
+                        imageVector = Icons.Filled.Lock,
+                        contentDescription = null
+                    )
                 },
                 trailingIcon = {
-                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                    IconButton(
+                        onClick = {
+                            passwordVisible = !passwordVisible
+                        }
+                    ) {
                         Icon(
                             imageVector = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
                             contentDescription = if (passwordVisible) "Hide password" else "Show password"
@@ -120,6 +136,7 @@ fun LoginScreen(
                     }
                 },
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                isError = showValidation && password.isBlank(),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -130,7 +147,9 @@ fun LoginScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End
             ) {
-                TextButton(onClick = onForgotPasswordClick) {
+                TextButton(
+                    onClick = onForgotPasswordClick
+                ) {
                     Text("Forgot password?", color = LoginGreen)
                 }
             }
@@ -139,11 +158,16 @@ fun LoginScreen(
 
             // Login button
             Button(
-                onClick = { onLoginClick(email, password) },
-                enabled = email.isNotBlank() && password.isNotBlank(),
+                onClick = {
+                    showValidation = true
+                    if (email.isNotBlank() && password.isNotBlank()) {
+                        onLoginClick(email, password)
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
+                shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = LoginGreen)
             ) {
                 Text("Login", style = MaterialTheme.typography.labelLarge)
@@ -151,11 +175,28 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Text(
-                text = "or continue with",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                HorizontalDivider(
+                    modifier = Modifier.weight(1f),
+                    color = Color(0xFFE0E0E0)
+                )
+                Spacer(modifier = Modifier.width(18.dp))
+
+                Text(
+                    text = "or continue with",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.width(18.dp))
+
+                HorizontalDivider(
+                    modifier = Modifier.weight(1f),
+                    color = Color(0xFFE0E0E0)
+                )
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -164,9 +205,21 @@ fun LoginScreen(
                 onClick = onGoogleLoginClick,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(52.dp)
+                    .height(52.dp),
+                shape = RoundedCornerShape(12.dp),
             ) {
-                Text("Continue with Google")
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ){
+                    Image(
+                        painter = painterResource(id = R.drawable.google_icon),
+                        contentDescription = null,
+                        modifier = Modifier.height(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Text("Continue with Google")
+                }
             }
 
             Spacer(modifier = Modifier.height(24.dp))

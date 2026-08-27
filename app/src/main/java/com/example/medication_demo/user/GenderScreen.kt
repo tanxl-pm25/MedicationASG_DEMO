@@ -26,21 +26,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageShader
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.medication_demo.R
 import com.example.medication_demo.ui.theme.Medication_DemoTheme
 
 private val OnboardingGreen = Color(0xFF159447)
 
 @Composable
-fun OnboardingGenderScreen(
+fun GenderScreen(
     onNextClick: (gender: String) -> Unit = {}
 ) {
     var selectedGender by remember { mutableStateOf("Male") }
@@ -142,8 +139,8 @@ private fun GenderOption(
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
-private fun OnboardingGenderScreenPreview() {
+private fun GenderScreenPreview() {
     Medication_DemoTheme {
-        OnboardingGenderScreen()
+        GenderScreen()
     }
 }
