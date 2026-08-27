@@ -80,7 +80,10 @@ fun CreateAccountScreen(
                 .padding(horizontal = 24.dp, vertical = 12.dp)
         ) {
             IconButton(onClick = onBackClick) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back"
+                )
             }
 
             Column(
@@ -119,7 +122,11 @@ fun CreateAccountScreen(
                 onValueChange = { fullName = it },
                 label = { Text("Full Name") },
                 placeholder = { Text("Enter your full name") },
-                leadingIcon = { Icon(Icons.Filled.Person, contentDescription = null) },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Filled.Person,
+                        contentDescription = null
+                    ) },
                 singleLine = true,
                 isError = submitAttempted && fullName.isBlank(),
                 modifier = Modifier.fillMaxWidth()
@@ -133,7 +140,11 @@ fun CreateAccountScreen(
                 onValueChange = { email = it },
                 label = { Text("Email Address") },
                 placeholder = { Text("Enter your email") },
-                leadingIcon = { Icon(Icons.Filled.Email, contentDescription = null) },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Filled.Email,
+                        contentDescription = null
+                    ) },
                 singleLine = true,
                 isError = submitAttempted && email.isBlank(),
                 modifier = Modifier.fillMaxWidth()
@@ -147,7 +158,11 @@ fun CreateAccountScreen(
                 onValueChange = { password = it },
                 label = { Text("Password") },
                 placeholder = { Text("Create a password") },
-                leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = null) },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Filled.Lock,
+                        contentDescription = null
+                    ) },
                 trailingIcon = {
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
                         Icon(
@@ -170,7 +185,11 @@ fun CreateAccountScreen(
                 onValueChange = { confirmPassword = it },
                 label = { Text("Confirm Password") },
                 placeholder = { Text("Confirm your password") },
-                leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = null) },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Filled.Lock,
+                        contentDescription = null
+                    ) },
                 trailingIcon = {
                     IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
                         Icon(
@@ -200,15 +219,18 @@ fun CreateAccountScreen(
                     text = buildAnnotatedString {
                         append("I agree to the ")
                         withStyle(
-                            style = SpanStyle(color = SignUpGreen,
-                            fontWeight = FontWeight.Bold,
-                            textDecoration = TextDecoration.Underline)
+                            style = SpanStyle(
+                                color = SignUpGreen,
+                                fontWeight = FontWeight.Bold,
+                                textDecoration = TextDecoration.Underline
+                            )
                         ) {
                             append("Terms of Service")
                         }
                         append(" and ")
                         withStyle(
-                            style = SpanStyle(color = SignUpGreen,
+                            style = SpanStyle(
+                                color = SignUpGreen,
                                 fontWeight = FontWeight.Bold,
                                 textDecoration = TextDecoration.Underline)
                         ) {
