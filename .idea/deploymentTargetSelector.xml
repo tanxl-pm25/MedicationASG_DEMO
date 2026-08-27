@@ -46,7 +46,7 @@
         </DropdownSelection>
         <DialogSelection />
       </SelectionState>
-      <SelectionState runConfigName="SplashScreenPreview">
+      <SelectionState runConfigName="ForgotPasswordScreenPreview">
         <option name="selectionMode" value="DROPDOWN" />
         <DropdownSelection timestamp="2026-08-24T16:05:09.336045400Z">
           <Target type="DEFAULT_BOOT">
@@ -57,7 +57,7 @@
         </DropdownSelection>
         <DialogSelection />
       </SelectionState>
-      <SelectionState runConfigName="ForgotPasswordScreenPreview">
+      <SelectionState runConfigName="EmailVerificationScreenPreview">
         <option name="selectionMode" value="DROPDOWN" />
         <DropdownSelection timestamp="2026-08-24T16:05:09.336045400Z">
           <Target type="DEFAULT_BOOT">

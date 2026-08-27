@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
@@ -31,7 +32,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -42,6 +42,11 @@ import androidx.compose.ui.unit.sp
 import com.example.medication_demo.R
 import com.example.medication_demo.ui.theme.Medication_DemoTheme
 import kotlinx.coroutines.delay
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 
 private val VerifyGreen = Color(0xFF159447)
 
@@ -53,6 +58,7 @@ fun EmailVerificationScreen(
     onBackClick: () -> Unit = {}
 ) {
     var digits by remember { mutableStateOf(List(6) { "" }) }
+    val focusRequesters = remember { List(6){ FocusRequester() } }
 
     // time countdown
     var secondsLeft by remember { mutableIntStateOf(60) }
@@ -73,10 +79,13 @@ fun EmailVerificationScreen(
                 .padding(24.dp)
         ) {
             IconButton(onClick = onBackClick) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back"
+                )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(50.dp))
 
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -85,18 +94,19 @@ fun EmailVerificationScreen(
                 Text(
                     text = "Verify Your Email",
                     style = MaterialTheme.typography.titleLarge,
-                    fontSize = 26.sp,
+                    fontSize = 30.sp,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(15.dp))
 
                 Text(
                     text = "We have sent a 6-digit code to",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                Spacer(modifier = Modifier.height(10.dp))
                 Text(
                     text = email,
                     style = MaterialTheme.typography.bodyMedium,
@@ -104,9 +114,9 @@ fun EmailVerificationScreen(
                     color = VerifyGreen
                 )
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(40.dp))
 
-                // 6 个数字输入框
+                // 6 Box
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
@@ -116,35 +126,73 @@ fun EmailVerificationScreen(
                             onValueChange = { newValue ->
                                 if (newValue.length <= 1) {
                                     digits = digits.toMutableList().also { it[index] = newValue }
+
+                                    if (newValue.isNotEmpty() && index < 5){
+                                        focusRequesters[index + 1].requestFocus()
+                                    }
                                 }
                             },
                             modifier = Modifier
                                 .width(48.dp)
-                                .height(56.dp),
+                                .height(56.dp)
+                                .focusRequester(focusRequesters[index]),
                             singleLine = true,
                             textStyle = MaterialTheme.typography.titleLarge.copy(textAlign = TextAlign.Center)
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(35.dp))
 
-                Text(
-                    text = if (secondsLeft > 0) {
-                        "Resend code in 00:${secondsLeft.toString().padStart(2, '0')}"
-                    } else {
-                        "Didn't get it? Resend code"
-                    },
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = if (secondsLeft > 0) MaterialTheme.colorScheme.onSurfaceVariant else VerifyGreen
-                )
+                if (secondsLeft > 0) {
+                    Text(
+                        text = buildAnnotatedString {
+                            append("Resend code in ")
+                            withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+                                append("00:${secondsLeft.toString().padStart(2, '0')}")
+                            }
+                        },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    val annotatedText = buildAnnotatedString {
+                        append("Didn't get it? ")
+                        pushStringAnnotation(
+                            tag = "RESEND",
+                            annotation = "resend"
+                        )
+                        withStyle(
+                            style = SpanStyle(color = VerifyGreen, fontWeight = FontWeight.Bold)
+                        ) {
+                            append("Resend code")
+                        }
+                        pop()
+                    }
+
+                    ClickableText(
+                        text = annotatedText,
+                        style = MaterialTheme.typography.bodyMedium,
+                        onClick = { offset ->
+                            annotatedText.getStringAnnotations(
+                                tag = "RESEND",
+                                start = offset,
+                                end = offset
+                            )
+                                .firstOrNull()?.let {
+                                    onResendClick()
+                                    secondsLeft = 60
+                                }
+                        }
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Image(
-                    painter = painterResource(id = R.drawable.email_verification),
+                    painter = painterResource(id = R.drawable.verification),
                     contentDescription = null,
-                    modifier = Modifier.size(40.dp)
+                    modifier = Modifier.size(250.dp)
                 )
             }
 
@@ -154,11 +202,16 @@ fun EmailVerificationScreen(
                 onClick = { onVerifyClick(digits.joinToString("")) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(52.dp),
+                    .height(64.dp)
+                    .padding(bottom = 10.dp),
                 shape = RoundedCornerShape(10.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = VerifyGreen)
             ) {
-                Text("Verify", style = MaterialTheme.typography.labelLarge)
+                Text(
+                    text = "Verify",
+                    fontSize = 18.sp,
+                    style = MaterialTheme.typography.labelLarge
+                )
             }
         }
     }
