@@ -43,6 +43,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.medication_demo.R
 import com.example.medication_demo.ui.theme.Medication_DemoTheme
 
@@ -177,6 +178,7 @@ fun LoginScreen(
             ) {
                 Text(
                     text = "Login",
+                    fontSize = 18.sp,
                     style = MaterialTheme.typography.labelLarge)
             }
 
