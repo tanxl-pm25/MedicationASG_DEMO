@@ -36,9 +36,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.medication_demo.R
@@ -149,7 +151,11 @@ fun LoginScreen(
                 TextButton(
                     onClick = onForgotPasswordClick
                 ) {
-                    Text("Forgot password?", color = LoginGreen)
+                    Text(
+                        text = "Forgot password?",
+                        fontWeight = FontWeight.Bold,
+                        color = LoginGreen
+                    )
                 }
             }
 
@@ -169,7 +175,9 @@ fun LoginScreen(
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = LoginGreen)
             ) {
-                Text("Login", style = MaterialTheme.typography.labelLarge)
+                Text(
+                    text = "Login",
+                    style = MaterialTheme.typography.labelLarge)
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -186,7 +194,7 @@ fun LoginScreen(
 
                 Text(
                     text = "or continue with",
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.width(18.dp))
@@ -217,7 +225,10 @@ fun LoginScreen(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
 
-                    Text("Continue with Google")
+                    Text(
+                        text = "Continue with Google",
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
 
@@ -230,8 +241,10 @@ fun LoginScreen(
                 )
                 Text(
                     text = "Sign Up",
+                    fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.bodyMedium,
                     color = LoginGreen,
+                    textDecoration = TextDecoration.Underline,
                     modifier = Modifier.padding(0.dp)
                 )
             }

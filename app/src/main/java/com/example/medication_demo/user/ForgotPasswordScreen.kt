@@ -1,6 +1,6 @@
 package com.example.medication_demo.user
 
-import android.graphics.drawable.Icon
+
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -114,13 +114,20 @@ fun ForgotPasswordScreen(
                 shape = RoundedCornerShape(10.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = ForgotGreen)
             ) {
-                Text("Send Reset Link", style = MaterialTheme.typography.labelLarge)
+                Text(
+                    text = "Send Reset Link",
+                    style = MaterialTheme.typography.labelLarge
+                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
             TextButton(onClick = onBackToLoginClick) {
-                Text("Back to Login", color = ForgotGreen)
+                Text(
+                    text = "Back to Login",
+                    fontWeight = FontWeight.Bold,
+                    color = ForgotGreen
+                    )
             }
         }
     }
