@@ -370,6 +370,16 @@ class MedicineViewModel : ViewModel() {
         _medicines.value = _medicines.value.filter { it.id != id }
     }
 
+    fun markMedicineCompleted(id: Int, completed: Boolean) {
+        _medicines.value = _medicines.value.map { medicine ->
+            if (medicine.id == id) {
+                medicine.copy(isCompleted = completed)
+            } else {
+                medicine
+            }
+        }
+    }
+
     fun addReminderTime() {
         if (_requiredReminderTimeCount.value == 0) {
             return

@@ -65,6 +65,7 @@ import com.example.medication_demo.model.Medicine
 import com.example.medication_demo.viewmodel.MedicineViewModel
 import androidx.compose.material.icons.filled.Schedule
 import com.example.medication_demo.viewmodel.MedicineListViewModel
+import com.example.medication_demo.viewmodel.MedicineStatus
 
 private val AppGreen = Color(0xFF17852B)
 private val LightGreen = Color(0xFFE8F5E9)
@@ -141,7 +142,9 @@ fun MedicineListScreen(
                 items(
                     items = filteredMedicines,
                     key = { it.id }
-                ) { medicine -> MedicineCard(medicine = medicine)
+                ) { medicine -> MedicineCard(
+                    medicine = medicine,
+                    status = listVm.getMedicineStatus(medicine))
                 }
             }
 
@@ -270,7 +273,8 @@ private fun MedicineFilterRow(
 
 @Composable
 private fun MedicineCard(
-    medicine: Medicine
+    medicine: Medicine,
+    status: MedicineStatus
 ) {
     val dosageText =
         if (medicine.dosageAmount == "1") {
@@ -387,21 +391,57 @@ private fun MedicineCard(
                 }
             }
 
-            Box(
-                modifier = Modifier
-                    .size(28.dp)
-                    .background(
-                        color = AppGreen,
-                        shape = CircleShape
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Check,
-                    contentDescription = "Active",
-                    tint = Color.White,
-                    modifier = Modifier.size(17.dp)
-                )
+            when (status) {
+
+                MedicineStatus.ACTIVE -> {
+
+                    Box(
+                        modifier = Modifier
+                            .size(28.dp)
+                            .background(
+                                color = AppGreen,
+                                shape = CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = "Active",
+                            tint = Color.White,
+                            modifier = Modifier.size(17.dp)
+                        )
+                    }
+                }
+
+                MedicineStatus.UPCOMING -> {
+
+                    Icon(
+                        imageVector = Icons.Default.Schedule,
+                        contentDescription = "Upcoming",
+                        tint = TextGrey,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+
+                MedicineStatus.COMPLETED -> {
+
+                    Box(
+                        modifier = Modifier
+                            .size(28.dp)
+                            .background(
+                                color = SoftGrey,
+                                shape = CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = "Completed",
+                            tint = TextGrey,
+                            modifier = Modifier.size(17.dp)
+                        )
+                    }
+                }
             }
 
             Icon(
