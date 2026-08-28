@@ -63,7 +63,7 @@ fun CreateAccountScreen(
     onGoogleClick: () -> Unit = {},
     onLoginClick: () -> Unit = {}
 ) {
-    var fullName by remember { mutableStateOf("") }
+    var userName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
@@ -118,17 +118,17 @@ fun CreateAccountScreen(
 
             // Full Name
             OutlinedTextField(
-                value = fullName,
-                onValueChange = { fullName = it },
-                label = { Text("Full Name") },
-                placeholder = { Text("Enter your full name") },
+                value = userName,
+                onValueChange = { userName = it },
+                label = { Text("Username") },
+                placeholder = { Text("Enter your username") },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Filled.Person,
                         contentDescription = null
                     ) },
                 singleLine = true,
-                isError = submitAttempted && fullName.isBlank(),
+                isError = submitAttempted && userName.isBlank(),
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -247,11 +247,11 @@ fun CreateAccountScreen(
             Button(
                 onClick = {
                     submitAttempted = true
-                    if (fullName.isNotBlank() && email.isNotBlank() &&
+                    if (userName.isNotBlank() && email.isNotBlank() &&
                         password.isNotBlank() && confirmPassword.isNotBlank() &&
                         agreedToTerms
                     ) {
-                        onSignUpClick(fullName, email, password, confirmPassword)
+                        onSignUpClick(userName, email, password, confirmPassword)
                     }
                 },
                 modifier = Modifier
