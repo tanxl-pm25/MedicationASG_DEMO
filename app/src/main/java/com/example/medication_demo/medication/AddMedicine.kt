@@ -1220,21 +1220,8 @@ private fun StartDatePickerDialog(
         .toInstant()
         .toEpochMilli()
 
-    val todayMillis = LocalDate.now()
-        .atStartOfDay(ZoneOffset.UTC)
-        .toInstant()
-        .toEpochMilli()
-
     val datePickerState = rememberDatePickerState(
         initialSelectedDateMillis = initialMillis,
-        selectableDates = object : SelectableDates {
-
-            override fun isSelectableDate(
-                utcTimeMillis: Long
-            ): Boolean {
-                return utcTimeMillis >= todayMillis
-            }
-        }
     )
 
     DatePickerDialog(

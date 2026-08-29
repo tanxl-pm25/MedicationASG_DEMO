@@ -9,13 +9,11 @@ import androidx.compose.material3.DateRangePicker
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDateRangePickerState
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.text.style.TextOverflow
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
-import java.time.temporal.ChronoUnit
 import java.util.Locale
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -32,46 +30,34 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.medication_demo.R
 import com.example.medication_demo.ui.theme.Medication_DemoTheme
+import com.example.medication_demo.navigation.AppBottomNavigationBar
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.medication_demo.viewmodel.WeeklyHistoryViewModel
 
 private val HistoryGreen = Color(0xFF159447)
-private val HistoryLightGreen = Color(0xFFE8F7ED)
 private val HistoryRed = Color(0xFFE53935)
 private val HistoryGrey = Color(0xFF6B7280)
 private val HistoryCardBackground = Color(0xFFF8F8F8)
-private val HistoryDivider = Color(0xFFE5E7EB)
 
 private data class MedicineHistoryUi(
     val name: String,
@@ -87,6 +73,7 @@ private data class MedicineHistoryUi(
 @Composable
 fun WeeklyHistoryScreen(
     onMoreClick: () -> Unit = {},
+    historyVm: WeeklyHistoryViewModel = viewModel()
 ) {
     val dateFormatter = remember {
         DateTimeFormatter.ofPattern(
@@ -95,25 +82,17 @@ fun WeeklyHistoryScreen(
         )
     }
 
-    var selectedStartDate by remember {
-        mutableStateOf(
-            LocalDate.of(2025, 5, 10)
-        )
-    }
+    val selectedStartDate by
+    historyVm.selectedStartDate.collectAsStateWithLifecycle()
 
-    var selectedEndDate by remember {
-        mutableStateOf(
-            LocalDate.of(2025, 5, 16)
-        )
-    }
+    val selectedEndDate by
+    historyVm.selectedEndDate.collectAsStateWithLifecycle()
 
-    var showDateRangePicker by remember {
-        mutableStateOf(false)
-    }
+    val showDateRangePicker by
+    historyVm.showDateRangePicker.collectAsStateWithLifecycle()
 
-    var dateRangeError by remember {
-        mutableStateOf<String?>(null)
-    }
+    val dateRangeError by
+    historyVm.dateRangeError.collectAsStateWithLifecycle()
 
     val medicines = listOf(
         MedicineHistoryUi(
@@ -159,10 +138,6 @@ fun WeeklyHistoryScreen(
         )
     )
 
-    var selectedBottomItem by remember {
-        mutableIntStateOf(2)
-    }
-
     Scaffold(
         containerColor = Color.White,
         topBar = {
@@ -171,10 +146,10 @@ fun WeeklyHistoryScreen(
             )
         },
         bottomBar = {
-            HistoryBottomBar(
-                selectedIndex = selectedBottomItem,
-                onSelected = {
-                    selectedBottomItem = it
+            AppBottomNavigationBar(
+                selectedIndex = 2,
+                onSelected = { index ->
+                    // Navigation later
                 }
             )
         }
@@ -193,10 +168,7 @@ fun WeeklyHistoryScreen(
                 startDate = selectedStartDate,
                 endDate = selectedEndDate,
                 formatter = dateFormatter,
-                onClick = {
-                    dateRangeError = null
-                    showDateRangePicker = true
-                }
+                onClick = historyVm::openDateRangePicker
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -217,27 +189,8 @@ fun WeeklyHistoryScreen(
             initialStartDate = selectedStartDate,
             initialEndDate = selectedEndDate,
             errorMessage = dateRangeError,
-            onDismiss = {
-                showDateRangePicker = false
-                dateRangeError = null
-            },
-            onConfirm = { startDate, endDate ->
-                val selectedDayCount =
-                    ChronoUnit.DAYS.between(
-                        startDate,
-                        endDate
-                    ) + 1
-
-                if (selectedDayCount == 7L) {
-                    selectedStartDate = startDate
-                    selectedEndDate = endDate
-                    dateRangeError = null
-                    showDateRangePicker = false
-                } else {
-                    dateRangeError =
-                        "Please select exactly 7 days."
-                }
-            }
+            onDismiss = historyVm::closeDateRangePicker,
+            onConfirm = historyVm::confirmDateRange
         )
     }
 }
@@ -558,74 +511,6 @@ private fun HistoryMedicineCard(
                         color = HistoryRed
                     )
                 }
-            }
-        }
-    }
-}
-
-private data class HistoryBottomItem(
-    val label: String,
-    val icon: ImageVector
-)
-
-@Composable
-private fun HistoryBottomBar(
-    selectedIndex: Int,
-    onSelected: (Int) -> Unit
-) {
-    val items = listOf(
-        HistoryBottomItem(
-            label = "Home",
-            icon = Icons.Default.Home
-        ),
-        HistoryBottomItem(
-            label = "Medicine",
-            icon = Icons.Default.Medication
-        ),
-        HistoryBottomItem(
-            label = "History",
-            icon = Icons.Default.History
-        ),
-        HistoryBottomItem(
-            label = "Profile",
-            icon = Icons.Default.Person
-        )
-    )
-
-    Column {
-        HorizontalDivider(
-            color = HistoryDivider
-        )
-
-        NavigationBar(
-            containerColor = Color.White
-        ) {
-            items.forEachIndexed { index, item ->
-                NavigationBarItem(
-                    selected = selectedIndex == index,
-                    onClick = {
-                        onSelected(index)
-                    },
-                    icon = {
-                        Icon(
-                            imageVector = item.icon,
-                            contentDescription = item.label
-                        )
-                    },
-                    label = {
-                        Text(
-                            text = item.label,
-                            style = MaterialTheme.typography.labelSmall
-                        )
-                    },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = HistoryGreen,
-                        selectedTextColor = HistoryGreen,
-                        indicatorColor = HistoryLightGreen,
-                        unselectedIconColor = HistoryGrey,
-                        unselectedTextColor = HistoryGrey
-                    )
-                )
             }
         }
     }

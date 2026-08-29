@@ -19,44 +19,30 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Medication
+import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.NotificationsNone
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.medication_demo.R
 import com.example.medication_demo.ui.theme.Medication_DemoTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -66,20 +52,11 @@ import com.example.medication_demo.viewmodel.MedicineViewModel
 import androidx.compose.material.icons.filled.Schedule
 import com.example.medication_demo.viewmodel.MedicineListViewModel
 import com.example.medication_demo.viewmodel.MedicineStatus
-
+import com.example.medication_demo.navigation.AppBottomNavigationBar
 private val AppGreen = Color(0xFF17852B)
-private val LightGreen = Color(0xFFE8F5E9)
 private val ScreenBackground = Color(0xFFFAFAFA)
 private val SoftGrey = Color(0xFFF3F4F6)
 private val TextGrey = Color(0xFF6B7280)
-
-data class MedicineUi(
-    val name: String,
-    val time: String,
-    val frequency: String,
-    val dosage: String,
-    val emoji: String
-)
 
 @Composable
 fun MedicineListScreen(
@@ -92,9 +69,6 @@ fun MedicineListScreen(
     val searchText by listVm.searchText.collectAsStateWithLifecycle()
     val selectedFilter by listVm.selectedFilter.collectAsStateWithLifecycle()
 
-    var selectedBottomItem by remember {
-        mutableIntStateOf(1)
-    }
     val filteredMedicines = listVm.filterMedicines(
         medicines = medicines,
         searchText = searchText,
@@ -105,9 +79,11 @@ fun MedicineListScreen(
         modifier = modifier.fillMaxSize(),
         containerColor = ScreenBackground,
         bottomBar = {
-            MedicationBottomBar(
-                selectedIndex = selectedBottomItem,
-                onSelected = { selectedBottomItem = it }
+            AppBottomNavigationBar(
+                selectedIndex = 1,
+                onSelected = { index ->
+                    // Navigation later
+                }
             )
         }
     ) { innerPadding ->
@@ -392,42 +368,10 @@ private fun MedicineCard(
             }
 
             when (status) {
-
                 MedicineStatus.ACTIVE -> {
-
                     Box(
                         modifier = Modifier
-                            .size(28.dp)
-                            .background(
-                                color = AppGreen,
-                                shape = CircleShape
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Check,
-                            contentDescription = "Active",
-                            tint = Color.White,
-                            modifier = Modifier.size(17.dp)
-                        )
-                    }
-                }
-
-                MedicineStatus.UPCOMING -> {
-
-                    Icon(
-                        imageVector = Icons.Default.Schedule,
-                        contentDescription = "Upcoming",
-                        tint = TextGrey,
-                        modifier = Modifier.size(28.dp)
-                    )
-                }
-
-                MedicineStatus.COMPLETED -> {
-
-                    Box(
-                        modifier = Modifier
-                            .size(28.dp)
+                            .size(32.dp)
                             .background(
                                 color = SoftGrey,
                                 shape = CircleShape
@@ -436,9 +380,47 @@ private fun MedicineCard(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Check,
-                            contentDescription = "Completed",
+                            contentDescription = "Active",
                             tint = TextGrey,
-                            modifier = Modifier.size(17.dp)
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+
+                MedicineStatus.UPCOMING -> {
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .background(
+                                color = SoftGrey,
+                                shape = CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Schedule,
+                            contentDescription = "Upcoming",
+                            tint = TextGrey,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+
+                MedicineStatus.COMPLETED -> {
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .background(
+                                color = AppGreen,
+                                shape = CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = "Completed",
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp)
                         )
                     }
                 }
@@ -450,69 +432,6 @@ private fun MedicineCard(
                 tint = TextGrey,
                 modifier = Modifier.padding(start = 6.dp)
             )
-        }
-    }
-}
-
-private data class BottomItem(
-    val label: String,
-    val icon: ImageVector
-)
-
-@Composable
-private fun MedicationBottomBar(
-    selectedIndex: Int,
-    onSelected: (Int) -> Unit
-) {
-    val items = listOf(
-        BottomItem("Home", Icons.Default.Home),
-        BottomItem("Medicine", Icons.Default.Medication),
-        BottomItem("History", Icons.Default.History),
-        BottomItem("Profile", Icons.Default.Person)
-    )
-
-    Column {
-        HorizontalDivider(
-            color = Color(0xFFE5E7EB)
-        )
-
-        NavigationBar(
-            containerColor = Color.White
-        ) {
-            items.forEachIndexed { index, item ->
-                NavigationBarItem(
-                    selected = selectedIndex == index,
-                    onClick = {
-                        onSelected(index)
-                    },
-                    icon = {
-                        if (item.label == "Medicine") {
-                            Icon(
-                                painter = painterResource(R.drawable.pill_24dp_1f1f1f_fill0_wght400_grad0_opsz24),
-                                contentDescription = item.label
-                            )
-                        } else {
-                            Icon(
-                                imageVector = item.icon,
-                                contentDescription = item.label
-                            )
-                        }
-                    },
-                    label = {
-                        Text(
-                            text = item.label,
-                            fontSize = 11.sp
-                        )
-                    },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = AppGreen,
-                        selectedTextColor = AppGreen,
-                        indicatorColor = LightGreen,
-                        unselectedIconColor = TextGrey,
-                        unselectedTextColor = TextGrey
-                    )
-                )
-            }
         }
     }
 }

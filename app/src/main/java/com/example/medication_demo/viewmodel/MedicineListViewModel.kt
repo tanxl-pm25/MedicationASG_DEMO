@@ -113,43 +113,59 @@ class MedicineListViewModel : ViewModel() {
         startDate: LocalDate,
         totalDoses: Long
     ): LocalDate? {
-        val parts =
-            medicine.frequency
-                .lowercase()
-                .split(" ")
-        if (
-            parts.size < 3 ||
-            parts[0] != "every"
-        ) {
-            return null
-        }
-        val amount = parts[1].toLongOrNull() ?: return null
+
+        val frequency = medicine.frequency
+            .trim()
+            .lowercase()
+
+        val regex = Regex(
+            """every\s+(\d+)\s+(hour|hours|day|days|week|weeks|month|months)"""
+        )
+
+        val match = regex.find(frequency)
+            ?: return null
+
+        val amount = match.groupValues[1].toLongOrNull()
+            ?: return null
+
+        val unit = match.groupValues[2]
+
         if (amount <= 0) {
             return null
         }
-        val unit = parts[2]
+
         return when (unit) {
+
             "hour", "hours" -> {
-                val totalHours = (totalDoses - 1) * amount
-                startDate.plusDays(
-                    totalHours / 24
-                )
+                val totalHours =
+                    (totalDoses - 1) * amount
+
+                // Round upward because part of a day
+                // still means the medicine ends on that date
+                val totalDays =
+                    (totalHours + 23) / 24
+
+                startDate.plusDays(totalDays)
             }
+
             "day", "days" -> {
                 startDate.plusDays(
                     (totalDoses - 1) * amount
                 )
             }
+
             "week", "weeks" -> {
                 startDate.plusWeeks(
                     (totalDoses - 1) * amount
                 )
             }
+
             "month", "months" -> {
                 startDate.plusMonths(
                     (totalDoses - 1) * amount
                 )
             }
+
             else -> null
         }
     }

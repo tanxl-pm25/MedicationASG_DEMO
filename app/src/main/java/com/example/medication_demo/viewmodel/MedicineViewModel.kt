@@ -253,15 +253,12 @@ class MedicineViewModel : ViewModel() {
     fun closeFrequencyDialog() { _showFrequencyDialog.value = false }
 
     fun onStartDateChange(value: String) {
-        val selectedDate = try {
+        try {
             LocalDate.parse(
                 value,
                 dateFormatter
             )
         } catch (_: Exception) {
-            return
-        }
-        if (selectedDate.isBefore(LocalDate.now())) {
             return
         }
         _startDate.value = value
