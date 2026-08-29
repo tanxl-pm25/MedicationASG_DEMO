@@ -86,9 +86,9 @@ private val EditBackground = Color(0xFFFFFFFF)
 @Composable
 fun AddMedicineScreen(
     isEditMode: Boolean = true,
+    medicineId: Int? = null,
     onBackClick: () -> Unit = {},
     onSaveClick: () -> Unit = {},
-    onDeleteClick: () -> Unit = {},
     vm: MedicineViewModel = viewModel()
 ) {
     val medicineName by vm.medicineName.collectAsStateWithLifecycle()
@@ -362,33 +362,16 @@ fun AddMedicineScreen(
 
             Spacer(modifier = Modifier.height(18.dp))
 
-            if (isEditMode) {
-                OutlinedButton(
-                    onClick = onDeleteClick,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp),
-                    shape = RoundedCornerShape(8.dp),
-                    border = androidx.compose.foundation.BorderStroke(
-                        width = 1.dp,
-                        color = EditRed
-                    ),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = EditRed
-                    )
-                ) {
-                    Text(
-                        text = "Delete Medicine",
-                        style = MaterialTheme.typography.labelLarge
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-            }
-
             Button(
                 onClick = {
-                    val success = vm.addMedicine()
+                    val success =
+                        if (isEditMode && medicineId != null) {
+                            vm.updateMedicine(
+                                id = medicineId
+                            )
+                        } else {
+                            vm.addMedicine()
+                        }
                     if (success) {
                         onSaveClick()
                     }

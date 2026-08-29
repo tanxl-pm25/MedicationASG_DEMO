@@ -57,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.medication_demo.R
 import com.example.medication_demo.ui.theme.Medication_DemoTheme
+import com.example.medication_demo.viewmodel.AppBottomNavigationBar
 
 private val HomeGreen = Color(0xFF159447)
 private  fun getCurrentDate(): String{
@@ -78,72 +79,16 @@ fun HomeScreen(
     monthlyStatText: String? = null,
     hasUnreadNotofication: Boolean = false,
     onMarkAsTakenClick: () -> Unit = {},
-    onNotificationClick: () -> Unit = {}
+    onNotificationClick: () -> Unit = {},
+    onBottomNavSelected: (Int) -> Unit = {}
 ) {
-    var selectedTab by remember { mutableIntStateOf(0) }
-
     Scaffold(
         containerColor = Color.White,
         bottomBar = {
-            NavigationBar {
-                NavigationBarItem(
-                    selected = selectedTab == 0,
-                    onClick = { selectedTab = 0 },
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Filled.Home,
-                            contentDescription = "Home"
-                        )
-                    },
-                    label = { Text("Home") },
-                    colors = androidx.compose.material3.NavigationBarItemDefaults.colors(
-                        selectedIconColor = HomeGreen,
-                        selectedTextColor = HomeGreen
-                    )
-                )
-                NavigationBarItem(
-                    selected = selectedTab == 1,
-                    onClick = { selectedTab = 1 },
-                    icon = {
-                        Image(
-                            painter = painterResource(id = R.drawable.pill_24dp_1f1f1f_fill0_wght400_grad0_opsz24),
-                            contentDescription = "Medicine"
-                        ) },
-                    label = { Text("Medicine") },
-                    colors = androidx.compose.material3.NavigationBarItemDefaults.colors(
-                        selectedIconColor = HomeGreen,
-                        selectedTextColor = HomeGreen
-                    )
-                )
-                NavigationBarItem(
-                    selected = selectedTab == 2,
-                    onClick = { selectedTab = 2 },
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Filled.History,
-                            contentDescription = "History"
-                    ) },
-                    label = { Text("History") },
-                    colors = androidx.compose.material3.NavigationBarItemDefaults.colors(
-                        selectedIconColor = HomeGreen,
-                        selectedTextColor = HomeGreen
-                    )
-                )
-                NavigationBarItem(
-                    selected = selectedTab == 3,
-                    onClick = { selectedTab = 3 },
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Filled.Person,
-                            contentDescription = "Profile"
-                    ) },
-                    label = { Text("Profile") },
-                    colors = androidx.compose.material3.NavigationBarItemDefaults.colors(
-                        selectedIconColor = HomeGreen,
-                        selectedTextColor = HomeGreen
-                    )
-                )
-            }
+            AppBottomNavigationBar(
+                selectedIndex = 0,
+                onSelected = onBottomNavSelected
+            )
         }
     ) { innerPadding ->
         Column(

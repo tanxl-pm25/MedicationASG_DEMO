@@ -268,66 +268,81 @@ class MedicineViewModel : ViewModel() {
         _notes.value = value
     }
 
-    fun addMedicine(): Boolean {
+    private fun validateMedicineForm(): Boolean {
         var hasError = false
 
-        // Medicine
-        _medicineNameError.value = if (_medicineName.value.isBlank()) {
-            "Please enter the medicine name."
-        } else {
-            null
-        }
+        _medicineNameError.value =
+            if (_medicineName.value.isBlank()) {
+                "Please enter the medicine name."
+            } else {
+                null
+            }
+
         if (_medicineNameError.value != null) {
             hasError = true
         }
 
-        // Quantity
         val quantityValue = _quantity.value.toIntOrNull()
+
         _quantityError.value = when {
             _quantity.value.isBlank() ->
                 "Please enter the quantity."
+
             quantityValue == null || quantityValue <= 0 ->
                 "Quantity must be greater than 0."
+
             else -> null
         }
+
         if (_quantityError.value != null) {
             hasError = true
         }
 
-        // Dosage Amount
         val dosageValue = _dosageAmount.value.toDoubleOrNull()
+
         _dosageAmountError.value = when {
             _dosageAmount.value.isBlank() ->
                 "Please enter the dosage amount."
+
             dosageValue == null || dosageValue <= 0.0 ->
                 "Dosage amount must be greater than 0."
+
             else -> null
         }
+
         if (_dosageAmountError.value != null) {
             hasError = true
         }
 
-        // Refill Reminder
         if (_refillReminderEnabled.value) {
             val refillValue = _refillQuantity.value.toIntOrNull()
+
             _refillQuantityError.value = when {
                 _refillQuantity.value.isBlank() ->
                     "Please enter the refill reminder quantity."
+
                 refillValue == null || refillValue <= 0 ->
                     "Refill reminder quantity must be greater than 0."
-                quantityValue != null && quantityValue > 0 && refillValue >= quantityValue ->
+
+                quantityValue != null &&
+                        quantityValue > 0 &&
+                        refillValue >= quantityValue ->
                     "Refill reminder quantity must be less than the medicine quantity."
+
                 else -> null
             }
-        } else { _refillQuantityError.value = null }
+        } else {
+            _refillQuantityError.value = null
+        }
 
         if (_refillQuantityError.value != null) {
             hasError = true
         }
 
-        // Custom Frequency
         if (_isCustomFrequency.value) {
-            val customFrequencyValue = _customFrequencyNumber.value.toIntOrNull()
+            val customFrequencyValue =
+                _customFrequencyNumber.value.toIntOrNull()
+
             if (
                 _customFrequencyNumber.value.isBlank() ||
                 customFrequencyValue == null ||
@@ -335,14 +350,55 @@ class MedicineViewModel : ViewModel() {
             ) {
                 _customFrequencyError.value = true
                 hasError = true
-            } else { _customFrequencyError.value = false }
-        } else { _customFrequencyError.value = false }
+            } else {
+                _customFrequencyError.value = false
+            }
+        } else {
+            _customFrequencyError.value = false
+        }
 
         if (!validateReminderTimes()) {
             hasError = true
         }
 
-        if (hasError) {
+        return !hasError
+    }
+
+    fun updateMedicine(id: Int): Boolean {
+
+        if (!validateMedicineForm()) {
+            return false
+        }
+
+        _medicines.value =
+            _medicines.value.map { medicine ->
+
+                if (medicine.id == id) {
+                    medicine.copy(
+                        name = _medicineName.value,
+                        quantity = _quantity.value,
+                        dosageAmount = _dosageAmount.value,
+                        dosageType = _dosageType.value,
+                        refillReminderEnabled =
+                            _refillReminderEnabled.value,
+                        refillQuantity =
+                            _refillQuantity.value,
+                        frequency = _frequency.value,
+                        reminderTimes =
+                            _reminderTimes.value,
+                        startDate = _startDate.value,
+                        notes = _notes.value
+                    )
+                } else {
+                    medicine
+                }
+            }
+
+        return true
+    }
+    fun addMedicine(): Boolean {
+
+        if (!validateMedicineForm()) {
             return false
         }
 
@@ -359,7 +415,9 @@ class MedicineViewModel : ViewModel() {
             startDate = _startDate.value,
             notes = _notes.value
         )
+
         _medicines.value += newMedicine
+
         return true
     }
 
@@ -467,6 +525,21 @@ class MedicineViewModel : ViewModel() {
         _reminderTimeError.value = null
     }
 
+    fun updateReminderEnabled(
+        id: Int,
+        enabled: Boolean
+    ) {
+        _medicines.value = _medicines.value.map { medicine ->
+            if (medicine.id == id) {
+                medicine.copy(
+                    reminderEnabled = enabled
+                )
+            } else {
+                medicine
+            }
+        }
+    }
+
     private fun getRequiredTimeCount(
         frequency: String
     ): Int {
@@ -516,6 +589,58 @@ class MedicineViewModel : ViewModel() {
             } else reminder
         }
     }
+
+    fun loadMedicineForEdit(medicine: Medicine) {
+        _medicineName.value = medicine.name
+        _quantity.value = medicine.quantity
+        _dosageAmount.value = medicine.dosageAmount
+        _dosageType.value = medicine.dosageType
+
+        _refillReminderEnabled.value = medicine.refillReminderEnabled
+        _refillQuantity.value = medicine.refillQuantity
+
+        _frequency.value = medicine.frequency
+        _frequencyDraft.value = medicine.frequency
+
+        _reminderTimes.value = medicine.reminderTimes
+        _startDate.value = medicine.startDate
+        _notes.value = medicine.notes
+
+        _requiredReminderTimeCount.value =
+            getRequiredTimeCount(medicine.frequency)
+
+        if (medicine.frequency.startsWith("Every ")) {
+            _isCustomFrequency.value = true
+
+            val parts = medicine.frequency.split(" ")
+
+            if (parts.size >= 3) {
+                _customFrequencyNumber.value = parts[1]
+
+                _customFrequencyUnit.value =
+                    when (parts[2].lowercase()) {
+                        "hour", "hours" -> "Hours"
+                        "day", "days" -> "Days"
+                        "week", "weeks" -> "Weeks"
+                        "month", "months" -> "Months"
+                        else -> "Days"
+                    }
+            }
+        } else {
+            _isCustomFrequency.value = false
+            _customFrequencyNumber.value = ""
+            _customFrequencyUnit.value = "Days"
+        }
+
+        // Clear old errors
+        _medicineNameError.value = null
+        _quantityError.value = null
+        _dosageAmountError.value = null
+        _refillQuantityError.value = null
+        _customFrequencyError.value = false
+        _reminderTimeError.value = null
+    }
+
     fun resetAddMedicineForm() {
         _medicineName.value = ""
         _quantity.value = ""
@@ -549,6 +674,8 @@ class MedicineViewModel : ViewModel() {
         _refillQuantityError.value = null
         _reminderTimeError.value = null
     }
+
+
 
 
 }

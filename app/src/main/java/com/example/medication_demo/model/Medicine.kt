@@ -12,5 +12,6 @@ data class Medicine(
     val reminderTimes: List<ReminderTimeUi>,
     val startDate: String,
     val notes: String,
-    val isCompleted: Boolean = false
+    val isCompleted: Boolean = false,
+    val reminderEnabled: Boolean = true
 )

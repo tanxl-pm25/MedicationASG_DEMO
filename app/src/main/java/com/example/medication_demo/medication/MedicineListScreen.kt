@@ -19,7 +19,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.NotificationsNone
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
@@ -50,9 +49,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.medication_demo.model.Medicine
 import com.example.medication_demo.viewmodel.MedicineViewModel
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import com.example.medication_demo.viewmodel.AppBottomNavigationBar
 import com.example.medication_demo.viewmodel.MedicineListViewModel
 import com.example.medication_demo.viewmodel.MedicineStatus
-import com.example.medication_demo.navigation.AppBottomNavigationBar
 private val AppGreen = Color(0xFF17852B)
 private val ScreenBackground = Color(0xFFFAFAFA)
 private val SoftGrey = Color(0xFFF3F4F6)
@@ -63,17 +67,33 @@ fun MedicineListScreen(
     modifier: Modifier = Modifier,
     medicineVm: MedicineViewModel = viewModel(),
     listVm: MedicineListViewModel = viewModel(),
-    onAddMedicineClick: () -> Unit = {}
+    snackbarMessage: String? = null,
+    onSnackbarShown: () -> Unit = {},
+    onAddMedicineClick: () -> Unit = {},
+    onMedicineClick: (Int) -> Unit = {},
+    onBottomNavSelected: (Int) -> Unit = {}
 ) {
     val medicines by medicineVm.medicines.collectAsStateWithLifecycle()
     val searchText by listVm.searchText.collectAsStateWithLifecycle()
     val selectedFilter by listVm.selectedFilter.collectAsStateWithLifecycle()
-
+    val snackbarHostState = remember { SnackbarHostState() }
     val filteredMedicines = listVm.filterMedicines(
         medicines = medicines,
         searchText = searchText,
         selectedFilter = selectedFilter
     )
+
+    LaunchedEffect(snackbarMessage) {
+        if (snackbarMessage != null) {
+
+            snackbarHostState.showSnackbar(
+                message = snackbarMessage,
+                duration = SnackbarDuration.Short
+            )
+
+            onSnackbarShown()
+        }
+    }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -81,9 +101,12 @@ fun MedicineListScreen(
         bottomBar = {
             AppBottomNavigationBar(
                 selectedIndex = 1,
-                onSelected = { index ->
-                    // Navigation later
-                }
+                onSelected = onBottomNavSelected
+            )
+        },
+        snackbarHost = {
+            SnackbarHost(
+                hostState = snackbarHostState
             )
         }
     ) { innerPadding ->
@@ -111,16 +134,45 @@ fun MedicineListScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                items(
-                    items = filteredMedicines,
-                    key = { it.id }
-                ) { medicine -> MedicineCard(
-                    medicine = medicine,
-                    status = listVm.getMedicineStatus(medicine))
+            if (filteredMedicines.isEmpty()) {
+                val emptyMessage =
+                    if (searchText.isNotBlank()) {
+                        "No medicine found"
+                    } else {
+                        "No medicines added yet"
+                    }
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = emptyMessage,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = TextGrey
+                    )
+                }
+
+            } else {
+
+                LazyColumn(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    items(
+                        items = filteredMedicines,
+                        key = { it.id }
+                    ) { medicine ->
+                        MedicineCard(
+                            medicine = medicine,
+                            status = listVm.getMedicineStatus(medicine),
+                            onClick = {
+                                onMedicineClick(medicine.id)
+                            }
+                        )
+                    }
                 }
             }
 
@@ -250,7 +302,8 @@ private fun MedicineFilterRow(
 @Composable
 private fun MedicineCard(
     medicine: Medicine,
-    status: MedicineStatus
+    status: MedicineStatus,
+    onClick: () -> Unit
 ) {
     val dosageText =
         if (medicine.dosageAmount == "1") {
@@ -267,9 +320,7 @@ private fun MedicineCard(
         elevation = CardDefaults.cardElevation(
             defaultElevation = 2.dp
         ),
-        onClick = {
-            // Medicine details page later
-        }
+        onClick = onClick
     ) {
         Row(
             modifier = Modifier

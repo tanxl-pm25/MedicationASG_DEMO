@@ -49,9 +49,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.medication_demo.R
 import com.example.medication_demo.ui.theme.Medication_DemoTheme
-import com.example.medication_demo.navigation.AppBottomNavigationBar
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.medication_demo.viewmodel.AppBottomNavigationBar
 import com.example.medication_demo.viewmodel.WeeklyHistoryViewModel
 
 private val HistoryGreen = Color(0xFF159447)
@@ -73,6 +73,7 @@ private data class MedicineHistoryUi(
 @Composable
 fun WeeklyHistoryScreen(
     onMoreClick: () -> Unit = {},
+    onBottomNavSelected: (Int) -> Unit = {},
     historyVm: WeeklyHistoryViewModel = viewModel()
 ) {
     val dateFormatter = remember {
@@ -148,9 +149,7 @@ fun WeeklyHistoryScreen(
         bottomBar = {
             AppBottomNavigationBar(
                 selectedIndex = 2,
-                onSelected = { index ->
-                    // Navigation later
-                }
+                onSelected = onBottomNavSelected
             )
         }
     ) { innerPadding ->

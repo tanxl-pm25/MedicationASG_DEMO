@@ -7,6 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -26,6 +27,10 @@ import com.example.medication_demo.reminder.RefillReminderScreen
 import com.example.medication_demo.ui.theme.Medication_DemoTheme
 import com.example.medication_demo.viewmodel.MedicineListViewModel
 import com.example.medication_demo.viewmodel.MedicineViewModel
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.example.medication_demo.navigation.MedicationApp
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -33,45 +38,9 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             Medication_DemoTheme {
-                val medicineViewModel: MedicineViewModel = viewModel()
-                val medicineListViewModel: MedicineListViewModel = viewModel()
-                var currentScreen by remember {
-                    mutableStateOf("list")
+                Surface (modifier = Modifier.fillMaxSize()) {
+                    MedicationApp()
                 }
-                when (currentScreen) {
-                    "list" -> {
-                        MedicineListScreen(
-                            medicineVm = medicineViewModel,
-                            listVm = medicineListViewModel,
-                            onAddMedicineClick = {
-                                currentScreen = "add"
-                            }
-                        )
-                    }
-                    "add" -> {
-                        AddMedicineScreen(
-                            isEditMode = false,
-                            vm = medicineViewModel,
-                            onBackClick = {
-                                medicineViewModel.resetAddMedicineForm()
-                                currentScreen = "list"
-                            },
-                            onSaveClick = {
-                                medicineViewModel.resetAddMedicineForm()
-                                currentScreen = "list"
-                            }
-                        )
-                    }
-                }
-                //RefillReminderScreen()
-                //WeeklyHistoryScreen()
-                //MedicineCalendarScreen()
-                //MedicineScheduleScreen()
-                //MedicineDetailsScreen()
-                //MedicineListScreen()
-                /*AddMedicineScreen(
-                    isEditMode = false
-                )*/
             }
         }
     }

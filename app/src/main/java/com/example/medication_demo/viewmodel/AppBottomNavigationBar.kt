@@ -1,4 +1,4 @@
-package com.example.medication_demo.navigation
+package com.example.medication_demo.viewmodel
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material.icons.Icons
