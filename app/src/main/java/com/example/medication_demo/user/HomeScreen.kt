@@ -1,6 +1,6 @@
 package com.example.medication_demo.user
 
-import android.R
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Medication
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.material.icons.filled.NotificationsNone
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Schedule
@@ -47,13 +48,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.medication_demo.R
 import com.example.medication_demo.ui.theme.Medication_DemoTheme
 
 private val HomeGreen = Color(0xFF159447)
@@ -69,6 +71,11 @@ fun HomeScreen(
     nextMedicineName: String? = null,
     nextMedicineDose: String ?= null,
     nextMedicineTime: String? = null,
+    medicinesTaken: String? = null,
+    medicinesTotal: Int = 0,
+    upcomingAppointments: String? = null,
+    waterGlasses: String? = null,
+    monthlyStatText: String? = null,
     hasUnreadNotofication: Boolean = false,
     onMarkAsTakenClick: () -> Unit = {},
     onNotificationClick: () -> Unit = {}
@@ -97,10 +104,11 @@ fun HomeScreen(
                 NavigationBarItem(
                     selected = selectedTab == 1,
                     onClick = { selectedTab = 1 },
-                    icon = { Icon(
-                        imageVector = Icons.Filled.Medication,
-                        contentDescription = "Medicine"
-                    ) },
+                    icon = {
+                        Image(
+                            painter = painterResource(id = R.drawable.pill_24dp_1f1f1f_fill0_wght400_grad0_opsz24),
+                            contentDescription = "Medicine"
+                        ) },
                     label = { Text("Medicine") },
                     colors = androidx.compose.material3.NavigationBarItemDefaults.colors(
                         selectedIconColor = HomeGreen,
@@ -110,9 +118,10 @@ fun HomeScreen(
                 NavigationBarItem(
                     selected = selectedTab == 2,
                     onClick = { selectedTab = 2 },
-                    icon = { Icon(
-                        imageVector = Icons.Filled.History,
-                        contentDescription = "History"
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Filled.History,
+                            contentDescription = "History"
                     ) },
                     label = { Text("History") },
                     colors = androidx.compose.material3.NavigationBarItemDefaults.colors(
@@ -123,8 +132,10 @@ fun HomeScreen(
                 NavigationBarItem(
                     selected = selectedTab == 3,
                     onClick = { selectedTab = 3 },
-                    icon = { Icon(Icons.Filled.Person,
-                        contentDescription = "Profile"
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Filled.Person,
+                            contentDescription = "Profile"
                     ) },
                     label = { Text("Profile") },
                     colors = androidx.compose.material3.NavigationBarItemDefaults.colors(
@@ -141,7 +152,7 @@ fun HomeScreen(
                 .padding(innerPadding)
                 .padding(20.dp)
         ) {
-            // Top: greeting + bell
+            // Top
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -173,22 +184,26 @@ fun HomeScreen(
                     )
                 }
                 Box{
-                    IconButton(onClick = onNotificationClick) {
+                    IconButton(
+                        onClick = onNotificationClick,
+                        modifier = Modifier.size(40.dp)
+                    ) {
                         Icon(
                             imageVector = Icons.Filled.NotificationsNone,
-                            contentDescription = "Notifications"
+                            contentDescription = "Notifications",
+                            modifier = Modifier.size(22.dp)
                         )
                     }
                     if (hasUnreadNotofication){
                         Box(
                             modifier = Modifier
-                                .size(10.dp)
+                                .size(9.dp)
                                 .background(
                                     color = Color.Red,
                                     shape = CircleShape
                                 )
                                 .align(Alignment.TopEnd)
-                                .offset(x = (-8).dp, y = 8.dp)
+                                .offset(x = (-20).dp, y = 20.dp)
                         )
                     }
                 }
@@ -223,7 +238,7 @@ fun HomeScreen(
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(260.dp),
+                        horizontalArrangement = Arrangement.spacedBy(170.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
@@ -287,14 +302,14 @@ fun HomeScreen(
                     modifier = Modifier.weight(1f),
                     icon = Icons.Filled.Medication,
                     title = "Medicines",
-                    valueBold = "3",
-                    valueRest = " / 3 Taken"
+                    valueBold = medicinesTaken,
+                    valueRest = " / $medicinesTotal Taken"
                 )
                 OverviewCard(
                     modifier = Modifier.weight(1f),
                     icon = Icons.Filled.CalendarMonth,
                     title = "Appointments",
-                    valueBold = "1",
+                    valueBold = upcomingAppointments,
                     valueRest = " Upcoming"
                 )
             }
@@ -302,23 +317,22 @@ fun HomeScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.weight(1f),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 OverviewCard(
                     modifier = Modifier.weight(1f),
                     icon = Icons.Filled.WaterDrop,
                     title = "Water Intake",
-                    valueBold = "4",
+                    valueBold = waterGlasses,
                     valueRest = " / 8 Glasses"
                 )
                 OverviewCard(
                     modifier = Modifier.weight(1f),
                     icon = Icons.Filled.BarChart,
                     title = "Monthly Statistics",
-                    valueBold = "Good job! \uD83C\uDF89",
+                    valueBold = monthlyStatText ?: "No record found",
                     valueRest = "",
-                    footer = "Keep it up this month."
                 )
             }
 
@@ -334,7 +348,7 @@ fun HomeScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    Icons.Filled.FavoriteBorder,
+                    imageVector = Icons.Filled.FavoriteBorder,
                     contentDescription = null,
                     tint = HomeGreen,
                     modifier = Modifier.size(18.dp)
@@ -356,8 +370,8 @@ private fun OverviewCard(
     modifier: Modifier = Modifier,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     title: String,
-    valueBold: String,
-    valueRest: String,
+    valueBold: String?,
+    valueRest: String = "",
     footer: String? = null,
     onArrowClick: () -> Unit = {}
 ) {
@@ -386,8 +400,7 @@ private fun OverviewCard(
                         imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                         contentDescription = "View details",
                         tint = Color.DarkGray,
-                        modifier = Modifier
-                            .size(20.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             }
@@ -399,21 +412,33 @@ private fun OverviewCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = buildAnnotatedString {
-                    withStyle(
-                        style = SpanStyle(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 18.sp
-                        )
-                    ) {
-                        append(valueBold)
-                    }
-                    append(valueRest)
-                },
-                style = MaterialTheme.typography.bodyMedium
-            )
-            if (footer != null) {
+
+            if (valueBold == null){
+                Text(
+                    text = "-",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp
+                )
+            } else{
+                Text(
+                    text = buildAnnotatedString {
+                        withStyle(
+                            style = SpanStyle(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp
+                            )
+                        ){
+                            append(valueBold)
+                        }
+                        append(valueRest)
+                    },
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        }
+
+            if (footer != null){
                 Text(
                     text = footer,
                     style = MaterialTheme.typography.bodySmall,
@@ -422,12 +447,31 @@ private fun OverviewCard(
             }
         }
     }
-}
+
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 private fun HomeScreenPreview() {
     Medication_DemoTheme {
         HomeScreen(username = "Sarah")
+    }
+}
+
+@Preview(showBackground = true, showSystemUi = true, name = "With data")
+@Composable
+private fun HomeScreenFilledPreview() {
+    Medication_DemoTheme {
+        HomeScreen(
+            username = "Sarah",
+            nextMedicineName = "Vitamin D3",
+            nextMedicineDose = "1 Tablet",
+            nextMedicineTime = "08:00 AM",
+            medicinesTaken = "3",
+            medicinesTotal = 3,
+            upcomingAppointments = "1",
+            waterGlasses = "4",
+            monthlyStatText = "Good job! \uD83C\uDF89",
+            hasUnreadNotofication = true
+        )
     }
 }
