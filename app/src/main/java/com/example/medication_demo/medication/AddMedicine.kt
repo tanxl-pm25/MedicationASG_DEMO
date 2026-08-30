@@ -1,12 +1,12 @@
 package com.example.medication_demo.medication
 
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -81,6 +81,11 @@ import com.example.medication_demo.R
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
+import com.example.medication_demo.utils.getMalaysiaDate
+
 private val EditGreen = Color(0xFF148A32)
 private val EditRed = Color(0xFFFF3B30)
 private val EditBorder = Color(0xFFE1E5E9)
@@ -118,6 +123,17 @@ fun AddMedicineScreen(
     val customFrequencyError by vm.customFrequencyError.collectAsStateWithLifecycle()
     val reminderTimeError by vm.reminderTimeError.collectAsStateWithLifecycle()
     val presetImageRes by vm.presetImageRes.collectAsStateWithLifecycle()
+    val galleryImageUri by vm.galleryImageUri.collectAsStateWithLifecycle()
+    val galleryLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.GetContent()
+        ) { uri ->
+            if (uri != null) {
+                vm.onGalleryImageSelected(
+                    uri.toString()
+                )
+            }
+        }
     var showImageOptions by remember { mutableStateOf(false) }
     var showPresetImages by remember { mutableStateOf(false) }
     Scaffold(
@@ -151,13 +167,11 @@ fun AddMedicineScreen(
                 ) {
 
                     MedicineImageSelector(
-                        imageRes = presetImageRes,
+                        presetImageRes = presetImageRes,
+                        galleryImageUri = galleryImageUri,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(125.dp),
-                        onClick = {
-                            showImageOptions = true
-                        }
+                            .height(125.dp)
                     )
 
                     TextButton(
@@ -169,7 +183,14 @@ fun AddMedicineScreen(
                         )
                     ) {
                         Text(
-                            text = "+ Add Image",
+                            text = if (
+                                presetImageRes != null ||
+                                galleryImageUri != null
+                            ) {
+                                "Change Image"
+                            } else {
+                                "+ Add Image"
+                            },
                             color = EditGreen,
                             style = MaterialTheme.typography.bodySmall
                         )
@@ -440,8 +461,7 @@ fun AddMedicineScreen(
                 )
             }
 
-            // Extra bottom space so the last button is not too close
-            // to the phone navigation bar.
+            // Extra bottom space so the last button is not too close to the phone navigation bar.
             Spacer(modifier = Modifier.height(32.dp))
         }
     }
@@ -475,17 +495,18 @@ fun AddMedicineScreen(
             },
 
             title = {
-                Text("Select Medicine Image")
+                Text(
+                    text = "Select Image",
+                    style = MaterialTheme.typography.titleMedium
+                )
             },
 
             text = {
                 Column {
-
                     TextButton(
                         onClick = {
                             showImageOptions = false
-
-                            // Gallery 下一步做
+                            galleryLauncher.launch("image/*")
                         }
                     ) {
                         Text("Choose from Gallery")
@@ -501,8 +522,19 @@ fun AddMedicineScreen(
                     }
                 }
             },
-
-            confirmButton = {}
+            confirmButton = {},
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showImageOptions = false
+                    }
+                ) {
+                    Text(
+                        text = "Cancel",
+                        color = EditGrey
+                    )
+                }
+            }
         )
     }
 
@@ -521,7 +553,10 @@ fun AddMedicineScreen(
             },
 
             title = {
-                Text("Choose Medicine Image")
+                Text(
+                    text = "Choose Medicine Image",
+                    style = MaterialTheme.typography.titleMedium
+                )
             },
 
             text = {
@@ -559,17 +594,28 @@ fun AddMedicineScreen(
                     }
                 }
             },
-
-            confirmButton = {}
+            confirmButton = {},
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showPresetImages = false
+                    }
+                ) {
+                    Text(
+                        text = "Cancel",
+                        color = EditGrey
+                    )
+                }
+            }
         )
     }
 }
 
 @Composable
 private fun MedicineImageSelector(
-    imageRes: Int?,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit = {}
+    presetImageRes: Int?,
+    galleryImageUri: String?,
+    modifier: Modifier = Modifier
 ) {
     Box(
         modifier = modifier
@@ -581,27 +627,36 @@ private fun MedicineImageSelector(
                 width = 1.dp,
                 color = EditBorder,
                 shape = RoundedCornerShape(12.dp)
-            )
-            .clickable {
-                onClick()
-            },
+            ),
         contentAlignment = Alignment.Center
     ) {
-        if (imageRes != null) {
-            Image(
-                painter = painterResource(imageRes),
-                contentDescription = "Medicine image",
-                modifier = Modifier.size(56.dp)
-            )
-        } else {
-            Icon(
-                painter = painterResource(
-                    R.drawable.pill_24dp_1f1f1f_fill0_wght400_grad0_opsz24
-                ),
-                contentDescription = "Medicine image",
-                tint = EditGrey,
-                modifier = Modifier.size(42.dp)
-            )
+        when {
+
+            galleryImageUri != null -> {
+                AsyncImage(
+                    model = galleryImageUri,
+                    contentDescription = "Medicine image",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            }
+            presetImageRes != null -> {
+                Image(
+                    painter = painterResource(presetImageRes),
+                    contentDescription = "Medicine image",
+                    modifier = Modifier.size(56.dp)
+                )
+            }
+            else -> {
+                Icon(
+                    painter = painterResource(
+                        R.drawable.pill_24dp_1f1f1f_fill0_wght400_grad0_opsz24
+                    ),
+                    contentDescription = "Medicine image",
+                    tint = EditGrey,
+                    modifier = Modifier.size(42.dp)
+                )
+            }
         }
     }
 }
@@ -1380,7 +1435,7 @@ private fun StartDatePickerDialog(
             currentDate,
             formatter
         )
-    } catch (_: Exception) { LocalDate.now() }
+    } catch (_: Exception) { getMalaysiaDate() }
     val initialMillis = parsedDate
         .atStartOfDay(ZoneOffset.UTC)
         .toInstant()

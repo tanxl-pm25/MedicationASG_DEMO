@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -49,12 +50,20 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.medication_demo.ui.theme.Medication_DemoTheme
+import com.example.medication_demo.viewmodel.MedicineListViewModel
+import com.example.medication_demo.viewmodel.MedicineViewModel
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import com.example.medication_demo.model.MedicineDoseUi
+import com.example.medication_demo.model.CalendarDayUi
+import com.example.medication_demo.model.DoseStatus
+import com.example.medication_demo.utils.getMalaysiaDate
 
 private val CalendarGreen = Color(0xFF159447)
 private val CalendarLightGreen = Color(0xFFE8F7ED)
@@ -64,61 +73,40 @@ private val CalendarGrey = Color(0xFF6B7280)
 private val CalendarLightGrey = Color(0xFFF4F5F6)
 private val CalendarDivider = Color(0xFFE5E7EB)
 
-private enum class CalendarMedicineStatus {
-    TAKEN,
-    MISSING,
-    UPCOMING
-}
-
-private data class CalendarDayUi(
-    val date: LocalDate?,
-    val status: CalendarMedicineStatus? = null
-)
-
-private data class CalendarMedicineUi(
-    val time: String,
-    val medicineName: String,
-    val dosage: String,
-    val status: CalendarMedicineStatus,
-    val statusText: String
-)
-
 @Composable
 fun MedicineCalendarScreen(
     onBackClick: () -> Unit = {},
-    onMoreClick: () -> Unit = {}
+    onMoreClick: () -> Unit = {},
+    medicineVm: MedicineViewModel = viewModel(),
+    medicineListVm: MedicineListViewModel = viewModel()
 ) {
-    var displayedMonth by remember {
-        mutableStateOf(YearMonth.of(2025, 5))
-    }
-
-    var selectedDate by remember {
-        mutableStateOf(LocalDate.of(2025, 5, 12))
-    }
-
-    val medicines = listOf(
-        CalendarMedicineUi(
-            time = "08:00 AM",
-            medicineName = "Vitamin D3",
-            dosage = "1 Tablet",
-            status = CalendarMedicineStatus.TAKEN,
-            statusText = "Taken"
-        ),
-        CalendarMedicineUi(
-            time = "10:00 AM",
-            medicineName = "Metformin",
-            dosage = "1 Tablet",
-            status = CalendarMedicineStatus.TAKEN,
-            statusText = "Taken"
-        ),
-        CalendarMedicineUi(
-            time = "08:00 PM",
-            medicineName = "Amlodipine",
-            dosage = "1 Tablet",
-            status = CalendarMedicineStatus.UPCOMING,
-            statusText = "Upcoming"
-        )
-    )
+    val today = getMalaysiaDate()
+    var displayedMonth by remember { mutableStateOf(YearMonth.from(today)) }
+    var selectedDate by remember { mutableStateOf(today) }
+    val medicines by medicineVm.medicines.collectAsStateWithLifecycle()
+    val takenRecords by medicineVm.takenRecords.collectAsStateWithLifecycle()
+    val rescheduledDoses by medicineVm.rescheduledDoses.collectAsStateWithLifecycle()
+    val selectedDateMedicines =
+        medicines
+            .filter { medicine ->
+                medicineListVm.isMedicineActiveOnDate(
+                    medicine = medicine,
+                    date = selectedDate
+                )
+            }
+            .flatMap { medicine ->
+                medicineListVm.createMedicineDoseUiList(
+                    medicine = medicine,
+                    date = selectedDate,
+                    takenRecords = takenRecords,
+                    rescheduledDoses = rescheduledDoses
+                )
+            }
+    val takenCount =
+        selectedDateMedicines.count {
+            it.status == DoseStatus.TAKEN
+        }
+    val totalCount = selectedDateMedicines.size
 
     Scaffold(
         containerColor = Color.White,
@@ -162,12 +150,20 @@ fun MedicineCalendarScreen(
             CalendarGrid(
                 displayedMonth = displayedMonth,
                 selectedDate = selectedDate,
+                getStatusForDate = { date ->
+                    medicineListVm.getDateDoseStatus(
+                        medicines = medicines,
+                        date = date,
+                        takenRecords = takenRecords,
+                        rescheduledDoses = rescheduledDoses
+                    )
+                },
                 onDateSelected = {
                     selectedDate = it
                 }
             )
 
-            Spacer(modifier = Modifier.height(18.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             HorizontalDivider(color = CalendarDivider)
 
@@ -180,8 +176,8 @@ fun MedicineCalendarScreen(
             Spacer(modifier = Modifier.height(14.dp))
 
             ProgressCard(
-                taken = 2,
-                total = 3
+                taken = takenCount,
+                total = totalCount
             )
 
             Spacer(modifier = Modifier.height(18.dp))
@@ -193,12 +189,28 @@ fun MedicineCalendarScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            medicines.forEach { medicine ->
-                CalendarMedicineCard(
-                    medicine = medicine
+            if (selectedDateMedicines.isEmpty()) {
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Text(
+                    text = "No medication scheduled",
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = CalendarGrey
                 )
 
-                Spacer(modifier = Modifier.height(10.dp))
+            } else {
+
+                selectedDateMedicines.forEach { medicine ->
+                    CalendarMedicineCard(
+                        medicine = medicine
+                    )
+
+                    Spacer(
+                        modifier = Modifier.height(10.dp)
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(30.dp))
@@ -322,22 +334,29 @@ private fun WeekdayHeader() {
 private fun CalendarGrid(
     displayedMonth: YearMonth,
     selectedDate: LocalDate,
+    getStatusForDate: (LocalDate) -> DoseStatus?,
     onDateSelected: (LocalDate) -> Unit
 ) {
     val calendarDays = buildCalendarDays(
-        displayedMonth = displayedMonth
+        displayedMonth = displayedMonth,
+        getStatusForDate = getStatusForDate
     )
 
     val rowCount = (calendarDays.size + 6) / 7
     val rowHeight = 38.dp
     val rowSpacing = 6.dp
 
+    val bottomPadding = 8.dp
     val gridHeight =
         rowHeight * rowCount +
-                rowSpacing * (rowCount - 1)
+                rowSpacing * (rowCount - 1) +
+                bottomPadding
 
     LazyVerticalGrid(
         columns = GridCells.Fixed(7),
+        contentPadding = PaddingValues(
+            bottom = bottomPadding
+        ),
         modifier = Modifier
             .fillMaxWidth()
             .height(gridHeight),
@@ -400,13 +419,13 @@ private fun CalendarDayCell(
                         .size(5.dp)
                         .background(
                             color = when (calendarDay.status) {
-                                CalendarMedicineStatus.TAKEN ->
+                                DoseStatus.TAKEN ->
                                     CalendarGreen
 
-                                CalendarMedicineStatus.MISSING ->
+                                DoseStatus.MISSING ->
                                     CalendarRed
 
-                                CalendarMedicineStatus.UPCOMING ->
+                                DoseStatus.UPCOMING ->
                                     CalendarOrange
                             },
                             shape = CircleShape
@@ -507,7 +526,7 @@ private fun ProgressCard(
 
 @Composable
 private fun CalendarMedicineCard(
-    medicine: CalendarMedicineUi
+    medicine: MedicineDoseUi
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -533,7 +552,7 @@ private fun CalendarMedicineCard(
 
             when (medicine.status) {
 
-                CalendarMedicineStatus.TAKEN -> {
+                DoseStatus.TAKEN -> {
                     Icon(
                         imageVector = Icons.Default.CheckCircle,
                         contentDescription = "Taken",
@@ -542,7 +561,7 @@ private fun CalendarMedicineCard(
                     )
                 }
 
-                CalendarMedicineStatus.MISSING -> {
+                DoseStatus.MISSING -> {
                     Icon(
                         imageVector = Icons.Default.Warning,
                         contentDescription = "Missing",
@@ -551,7 +570,7 @@ private fun CalendarMedicineCard(
                     )
                 }
 
-                CalendarMedicineStatus.UPCOMING -> {
+                DoseStatus.UPCOMING -> {
                     Icon(
                         imageVector = Icons.Default.Schedule,
                         contentDescription = "Upcoming",
@@ -582,17 +601,12 @@ private fun CalendarMedicineCard(
             }
 
             Text(
-                text = medicine.statusText,
+                text = medicine.status.displayText,
                 style = MaterialTheme.typography.labelMedium,
                 color = when (medicine.status) {
-                    CalendarMedicineStatus.TAKEN ->
-                        CalendarGreen
-
-                    CalendarMedicineStatus.MISSING ->
-                        CalendarRed
-
-                    CalendarMedicineStatus.UPCOMING ->
-                        CalendarOrange
+                    DoseStatus.TAKEN -> CalendarGreen
+                    DoseStatus.MISSING -> CalendarRed
+                    DoseStatus.UPCOMING -> CalendarOrange
                 }
             )
         }
@@ -600,10 +614,10 @@ private fun CalendarMedicineCard(
 }
 
 private fun buildCalendarDays(
-    displayedMonth: YearMonth
+    displayedMonth: YearMonth,
+    getStatusForDate: (LocalDate) -> DoseStatus?
 ): List<CalendarDayUi> {
     val firstDay = displayedMonth.atDay(1)
-
     val leadingEmptyDays = when (firstDay.dayOfWeek) {
         DayOfWeek.SUNDAY -> 0
         DayOfWeek.MONDAY -> 1
@@ -613,35 +627,18 @@ private fun buildCalendarDays(
         DayOfWeek.FRIDAY -> 5
         DayOfWeek.SATURDAY -> 6
     }
-
     val days = mutableListOf<CalendarDayUi>()
-
     repeat(leadingEmptyDays) {
         days.add(
             CalendarDayUi(date = null)
         )
     }
-
     for (day in 1..displayedMonth.lengthOfMonth()) {
         val date = displayedMonth.atDay(day)
-
-        val status = when (day) {
-            5, 6, 7, 8, 9, 10, 11, 12 ->
-                CalendarMedicineStatus.TAKEN
-
-            14, 21 ->
-                CalendarMedicineStatus.MISSING
-
-            13, 15, 16 ->
-                CalendarMedicineStatus.UPCOMING
-
-            else -> null
-        }
-
         days.add(
             CalendarDayUi(
                 date = date,
-                status = status
+                status = getStatusForDate(date)
             )
         )
     }

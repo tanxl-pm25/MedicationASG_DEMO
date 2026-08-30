@@ -12,8 +12,7 @@ data class Medicine(
     val reminderTimes: List<ReminderTimeUi>,
     val startDate: String,
     val notes: String,
-    val isCompleted: Boolean = false,
     val reminderEnabled: Boolean = true,
-    val imageUri: String? = null,
-    val presetImageRes: Int? = null
+    val presetImageRes: Int? = null,
+    val galleryImageUri: String? = null
 )

@@ -1,6 +1,7 @@
 package com.example.medication_demo.viewmodel
 
 import androidx.lifecycle.ViewModel
+import com.example.medication_demo.model.MedicationTakenRecord
 import com.example.medication_demo.model.Medicine
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -9,6 +10,8 @@ import com.example.medication_demo.model.ReminderTimeUi
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import com.example.medication_demo.model.RescheduledDose
+import com.example.medication_demo.utils.getMalaysiaDate
 
 class MedicineViewModel : ViewModel() {
     private val _medicines = MutableStateFlow<List<Medicine>>(emptyList())
@@ -54,7 +57,7 @@ class MedicineViewModel : ViewModel() {
             "dd MMM yyyy",
             Locale.ENGLISH
         )
-    private val _startDate = MutableStateFlow(LocalDate.now().format(dateFormatter))
+    private val _startDate = MutableStateFlow(getMalaysiaDate().format(dateFormatter))
     val startDate: StateFlow<String> = _startDate.asStateFlow()
 
     private val _notes = MutableStateFlow("")
@@ -97,8 +100,59 @@ class MedicineViewModel : ViewModel() {
     val reminderTimeError: StateFlow<String?> = _reminderTimeError.asStateFlow()
 
     private val _presetImageRes = MutableStateFlow<Int?>(null)
-
     val presetImageRes: StateFlow<Int?> = _presetImageRes.asStateFlow()
+
+    private val _galleryImageUri = MutableStateFlow<String?>(null)
+    val galleryImageUri: StateFlow<String?> = _galleryImageUri.asStateFlow()
+
+    private val _takenRecords = MutableStateFlow<List<MedicationTakenRecord>>(emptyList())
+    val takenRecords: StateFlow<List<MedicationTakenRecord>> = _takenRecords.asStateFlow()
+
+    private val _rescheduledDoses = MutableStateFlow<List<RescheduledDose>>(emptyList())
+    val rescheduledDoses: StateFlow<List<RescheduledDose>> = _rescheduledDoses.asStateFlow()
+
+    fun rescheduleDose(
+        medicineId: Int,
+        originalTime: String,
+        newTime: String
+    ) {
+        val today = getMalaysiaDate()
+        _rescheduledDoses.value =
+            _rescheduledDoses.value
+                .filterNot { dose ->
+                    dose.medicineId == medicineId &&
+                            dose.date == today &&
+                            dose.originalTime == originalTime
+                } +
+                    RescheduledDose(
+                        medicineId = medicineId,
+                        date = today,
+                        originalTime = originalTime,
+                        newTime = newTime
+                    )
+    }
+
+    fun markDoseAsTaken(
+        medicineId: Int,
+        reminderTime: String
+    ) {
+        val record = MedicationTakenRecord(
+            medicineId = medicineId,
+            date = getMalaysiaDate(),
+            reminderTime = reminderTime
+        )
+
+        val alreadyTaken =
+            _takenRecords.value.any {
+                it.medicineId == medicineId &&
+                        it.date == record.date &&
+                        it.reminderTime == reminderTime
+            }
+
+        if (!alreadyTaken) {
+            _takenRecords.value += record
+        }
+    }
 
     fun onRefillReminderEnabledChange(enabled: Boolean) {
         _refillReminderEnabled.value = enabled
@@ -383,16 +437,14 @@ class MedicineViewModel : ViewModel() {
                         quantity = _quantity.value,
                         dosageAmount = _dosageAmount.value,
                         dosageType = _dosageType.value,
-                        refillReminderEnabled =
-                            _refillReminderEnabled.value,
-                        refillQuantity =
-                            _refillQuantity.value,
+                        refillReminderEnabled = _refillReminderEnabled.value,
+                        refillQuantity = _refillQuantity.value,
                         frequency = _frequency.value,
-                        reminderTimes =
-                            _reminderTimes.value,
+                        reminderTimes = _reminderTimes.value,
                         startDate = _startDate.value,
-                        notes = _notes.value
-                    )
+                        notes = _notes.value,
+                        presetImageRes = _presetImageRes.value,
+                        galleryImageUri = _galleryImageUri.value                    )
                 } else {
                     medicine
                 }
@@ -417,7 +469,9 @@ class MedicineViewModel : ViewModel() {
             frequency = _frequency.value,
             reminderTimes = _reminderTimes.value,
             startDate = _startDate.value,
-            notes = _notes.value
+            notes = _notes.value,
+            presetImageRes = _presetImageRes.value,
+            galleryImageUri = _galleryImageUri.value
         )
 
         _medicines.value += newMedicine
@@ -427,16 +481,6 @@ class MedicineViewModel : ViewModel() {
 
     fun deleteMedicine(id: Int) {
         _medicines.value = _medicines.value.filter { it.id != id }
-    }
-
-    fun markMedicineCompleted(id: Int, completed: Boolean) {
-        _medicines.value = _medicines.value.map { medicine ->
-            if (medicine.id == id) {
-                medicine.copy(isCompleted = completed)
-            } else {
-                medicine
-            }
-        }
     }
 
     fun addReminderTime() {
@@ -599,16 +643,15 @@ class MedicineViewModel : ViewModel() {
         _quantity.value = medicine.quantity
         _dosageAmount.value = medicine.dosageAmount
         _dosageType.value = medicine.dosageType
-
         _refillReminderEnabled.value = medicine.refillReminderEnabled
         _refillQuantity.value = medicine.refillQuantity
-
         _frequency.value = medicine.frequency
         _frequencyDraft.value = medicine.frequency
-
         _reminderTimes.value = medicine.reminderTimes
         _startDate.value = medicine.startDate
         _notes.value = medicine.notes
+        _presetImageRes.value = medicine.presetImageRes
+        _galleryImageUri.value = medicine.galleryImageUri
 
         _requiredReminderTimeCount.value =
             getRequiredTimeCount(medicine.frequency)
@@ -650,18 +693,14 @@ class MedicineViewModel : ViewModel() {
         _quantity.value = ""
         _dosageAmount.value = ""
         _dosageType.value = "Tablet"
-
         _refillReminderEnabled.value = false
         _refillQuantity.value = ""
-
         _frequency.value = "Once a day"
         _frequencyDraft.value = "Once a day"
-
         _isCustomFrequency.value = false
         _customFrequencyNumber.value = ""
         _customFrequencyUnit.value = "Days"
         _customFrequencyError.value = false
-
         _requiredReminderTimeCount.value = 1
         _reminderTimes.value = listOf(
             ReminderTimeUi(
@@ -669,8 +708,11 @@ class MedicineViewModel : ViewModel() {
                 minutes = ""
             )
         )
-        _startDate.value = LocalDate.now().format(dateFormatter)
+        _startDate.value = getMalaysiaDate().format(dateFormatter)
         _notes.value = ""
+        _presetImageRes.value = null
+        _galleryImageUri.value = null
+
         // Clear field errors
         _medicineNameError.value = null
         _quantityError.value = null
@@ -679,10 +721,17 @@ class MedicineViewModel : ViewModel() {
         _reminderTimeError.value = null
     }
 
-    fun onPresetImageSelected(
-        imageRes: Int
-    ) {
+    fun onPresetImageSelected(imageRes: Int) {
         _presetImageRes.value = imageRes
+        // Choose Preset then cancel gallery image
+        _galleryImageUri.value = null
+    }
+
+    fun onGalleryImageSelected(uri: String) {
+        _galleryImageUri.value = uri
+
+        // Choose Gallery then cancel preset
+        _presetImageRes.value = null
     }
 
 

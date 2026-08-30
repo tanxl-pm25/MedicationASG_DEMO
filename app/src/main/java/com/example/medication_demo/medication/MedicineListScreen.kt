@@ -39,10 +39,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.medication_demo.R
 import com.example.medication_demo.ui.theme.Medication_DemoTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -56,7 +54,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import com.example.medication_demo.viewmodel.AppBottomNavigationBar
 import com.example.medication_demo.viewmodel.MedicineListViewModel
-import com.example.medication_demo.viewmodel.MedicineStatus
+import com.example.medication_demo.model.MedicineStatus
+
 private val AppGreen = Color(0xFF17852B)
 private val ScreenBackground = Color(0xFFFAFAFA)
 private val SoftGrey = Color(0xFFF3F4F6)
@@ -337,13 +336,11 @@ private fun MedicineCard(
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    painter = painterResource(
-                        R.drawable.pill_24dp_1f1f1f_fill0_wght400_grad0_opsz24
-                    ),
+                MedicineImage(
+                    presetImageRes = medicine.presetImageRes,
+                    galleryImageUri = medicine.galleryImageUri,
                     contentDescription = medicine.name,
-                    tint = Color.Unspecified,
-                    modifier = Modifier.size(30.dp)
+                    imageSize = 46.dp
                 )
             }
 

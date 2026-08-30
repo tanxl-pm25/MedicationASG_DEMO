@@ -17,6 +17,11 @@ import com.example.medication_demo.medication.MedicineListScreen
 import com.example.medication_demo.user.HomeScreen
 import com.example.medication_demo.viewmodel.MedicineListViewModel
 import com.example.medication_demo.viewmodel.MedicineViewModel
+import com.example.medication_demo.medication.MedicineScheduleScreen
+import com.example.medication_demo.medication.MedicineCalendarScreen
+import com.example.medication_demo.utils.getMalaysiaDate
+import java.time.LocalDate
+
 
 @Composable
 fun MedicationApp() {
@@ -25,7 +30,34 @@ fun MedicationApp() {
     val navController = rememberNavController()
     val medicineVm: MedicineViewModel = viewModel()
     val medicineListVm: MedicineListViewModel = viewModel()
-
+    val medicines by medicineVm.medicines.collectAsStateWithLifecycle()
+    val takenRecords by medicineVm.takenRecords.collectAsStateWithLifecycle()
+    val rescheduledDoses by medicineVm.rescheduledDoses.collectAsStateWithLifecycle()
+    val nextDose =
+        medicineListVm.getNextMedicineDose(
+            medicines = medicines,
+            takenRecords = takenRecords,
+            rescheduledDoses = rescheduledDoses
+        )
+    val today = getMalaysiaDate()
+    val todayMedicines =
+        medicines.filter { medicine ->
+            medicineListVm.isMedicineActiveOnDate(
+                medicine = medicine,
+                date = today
+            )
+        }
+    val medicinesTotal =
+        todayMedicines.sumOf { medicine ->
+            medicine.reminderTimes.size
+        }
+    val medicinesTaken =
+        takenRecords.count { record ->
+            record.date == today &&
+                    todayMedicines.any {
+                        it.id == record.medicineId
+                    }
+        }
     NavHost(
         navController = navController,
         startDestination = "home"
@@ -34,20 +66,48 @@ fun MedicationApp() {
         composable("home") {
             HomeScreen(
                 username = "Sarah",
+                nextMedicineName = nextDose?.medicineName,
+                nextMedicineDose = nextDose?.dosage,
+                nextMedicineTime = nextDose?.reminderTime,
+                nextMedicineStatus = nextDose?.status,
+                medicinesTaken =
+                    if (medicinesTotal == 0) {
+                        null
+                    } else {
+                        medicinesTaken.toString()
+                    },
+
+                medicinesTotal = medicinesTotal,
+                onMedicinesClick = {
+                    navController.navigate("medicineSchedule")
+                },
+                onMarkAsTakenClick = {
+                    if (nextDose != null) {
+                        medicineVm.markDoseAsTaken(
+                            medicineId = nextDose.medicineId,
+                            reminderTime = nextDose.originalTime
+                        )
+                    }
+                },
+                onRescheduleClick = {
+                    // 下一步做 Reschedule
+                },
+                onRescheduleConfirm = { newTime ->
+                    if (nextDose != null) {
+                        medicineVm.rescheduleDose(
+                            medicineId = nextDose.medicineId,
+                            originalTime = nextDose.originalTime,
+                            newTime = newTime
+                        )
+                    }
+                },
                 onBottomNavSelected = { index ->
                     when (index) {
                         0 -> {
-                            // Already on Home
+                            // Already on home
                         }
-
-                        1 -> {
-                            navController.navigate("medicine")
-                        }
-
-                        2 -> {
-                            navController.navigate("history")
-                        }
-
+                        1 -> navController.navigate("medicine")
+                        2 -> navController.navigate("history")
                         3 -> {
                             // Profile later
                         }
@@ -112,6 +172,31 @@ fun MedicationApp() {
                             // Profile later
                         }
                     }
+                }
+            )
+        }
+
+        // Medicine Schedule
+        composable("medicineSchedule") {
+            MedicineScheduleScreen(
+                medicineVm = medicineVm,
+                medicineListVm = medicineListVm,
+                onBackClick = {
+                    navController.popBackStack()
+                },
+
+                onViewCalendarClick = {
+                    navController.navigate("medicineCalendar")                }
+            )
+        }
+
+        // Calendar
+        composable("medicineCalendar") {
+            MedicineCalendarScreen(
+                medicineVm = medicineVm,
+                medicineListVm = medicineListVm,
+                onBackClick = {
+                    navController.popBackStack()
                 }
             )
         }

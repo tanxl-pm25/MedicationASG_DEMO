@@ -1,6 +1,5 @@
 package com.example.medication_demo.user
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,12 +20,9 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Medication
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.material.icons.filled.NotificationsNone
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material3.Button
@@ -36,28 +32,31 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.medication_demo.R
 import com.example.medication_demo.ui.theme.Medication_DemoTheme
 import com.example.medication_demo.viewmodel.AppBottomNavigationBar
+import androidx.compose.foundation.clickable
+import androidx.compose.material3.OutlinedButton
+import com.example.medication_demo.model.DoseStatus
+import android.app.TimePickerDialog
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.remember
+import com.example.medication_demo.utils.getMalaysiaTime
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 private val HomeGreen = Color(0xFF159447)
 private  fun getCurrentDate(): String{
@@ -80,8 +79,19 @@ fun HomeScreen(
     hasUnreadNotofication: Boolean = false,
     onMarkAsTakenClick: () -> Unit = {},
     onNotificationClick: () -> Unit = {},
-    onBottomNavSelected: (Int) -> Unit = {}
+    onBottomNavSelected: (Int) -> Unit = {},
+    onMedicinesClick: () -> Unit = {},
+    nextMedicineStatus: DoseStatus? = null,
+    onRescheduleClick: () -> Unit = {},
+    onRescheduleConfirm: (String) -> Unit = {}
 ) {
+    val context = LocalContext.current
+    val timeFormatter = remember {
+        DateTimeFormatter.ofPattern(
+            "hh:mm a",
+            Locale.ENGLISH
+        )
+    }
     Scaffold(
         containerColor = Color.White,
         bottomBar = {
@@ -209,22 +219,84 @@ fun HomeScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    Button(
-                        onClick = onMarkAsTakenClick,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp),
-                        shape = RoundedCornerShape(10.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.White,
-                            contentColor = HomeGreen
-                        )
-                    ) {
-                        Text(
-                            text = "Mark as Taken",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                    when (nextMedicineStatus) {
+                        DoseStatus.MISSING -> {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Button(
+                                    onClick = onMarkAsTakenClick,
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color.White,
+                                        contentColor = HomeGreen
+                                    )
+                                ) {
+                                    Text(
+                                        text = "Mark as Taken",
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                                OutlinedButton(
+                                    onClick = {
+                                        val now = getMalaysiaTime()
+                                        TimePickerDialog(
+                                            context,
+                                            { _, hour, minute ->
+
+                                                val selectedTime =
+                                                    LocalTime.of(hour, minute)
+
+                                                onRescheduleConfirm(
+                                                    selectedTime.format(timeFormatter)
+                                                )
+                                            },
+                                            now.hour,
+                                            now.minute,
+                                            false
+                                        ).show()
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(10.dp),
+                                    border = BorderStroke(
+                                        width = 1.dp,
+                                        color = Color.White
+                                    ),
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        containerColor = HomeGreen,
+                                        contentColor = Color.White
+                                    )
+                                ) {
+                                    Text(
+                                        text = "Reschedule",
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+                        DoseStatus.UPCOMING -> {
+                            OutlinedButton(
+                                onClick = onMarkAsTakenClick,
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(10.dp),
+                                border = BorderStroke(
+                                    width = 1.dp,
+                                    color = HomeGreen
+                                ),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    containerColor = Color.White,
+                                    contentColor = HomeGreen
+                                )
+                            ) {
+                                Text(
+                                    text = "Mark as Taken",
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                        else -> Unit
                     }
                 }
             }
@@ -248,7 +320,8 @@ fun HomeScreen(
                     icon = Icons.Filled.Medication,
                     title = "Medicines",
                     valueBold = medicinesTaken,
-                    valueRest = " / $medicinesTotal Taken"
+                    valueRest = " / $medicinesTotal Taken",
+                    onClick = onMedicinesClick
                 )
                 OverviewCard(
                     modifier = Modifier.weight(1f),
@@ -318,10 +391,13 @@ private fun OverviewCard(
     valueBold: String?,
     valueRest: String = "",
     footer: String? = null,
-    onArrowClick: () -> Unit = {}
+    onClick: () -> Unit = {}
 ) {
     Card(
-        modifier = modifier,
+        modifier = modifier
+            .clickable {
+                onClick()
+            },
         colors = CardDefaults.cardColors(containerColor = Color(0xFFF7F7F7)),
         shape = RoundedCornerShape(12.dp)
     ) {
@@ -337,17 +413,12 @@ private fun OverviewCard(
                     tint = HomeGreen,
                     modifier = Modifier.size(22.dp)
                 )
-                IconButton(
-                    onClick = onArrowClick,
-                    modifier = Modifier.size(28.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                        contentDescription = "View details",
-                        tint = Color.DarkGray,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                    contentDescription = "View details",
+                    tint = Color.DarkGray,
+                    modifier = Modifier.size(20.dp)
+                )
             }
 
             Spacer(modifier = Modifier.height(8.dp))

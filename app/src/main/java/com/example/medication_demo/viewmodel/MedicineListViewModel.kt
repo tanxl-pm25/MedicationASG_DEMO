@@ -1,20 +1,25 @@
 package com.example.medication_demo.viewmodel
 
 import androidx.lifecycle.ViewModel
+import com.example.medication_demo.model.MedicationTakenRecord
 import com.example.medication_demo.model.Medicine
+import com.example.medication_demo.model.MedicineDoseUi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import com.example.medication_demo.model.DoseStatus
+import com.example.medication_demo.model.MedicineStatus
+import com.example.medication_demo.model.NextMedicineDose
+import com.example.medication_demo.model.RescheduledDose
+import com.example.medication_demo.utils.getMalaysiaDate
+import com.example.medication_demo.utils.getMalaysiaTime
 
-enum class MedicineStatus {
-    ACTIVE,
-    UPCOMING,
-    COMPLETED
-}
 class MedicineListViewModel : ViewModel() {
+    private val malaysiaZone = java.time.ZoneId.of("Asia/Kuala_Lumpur")
+
     private val _searchText = MutableStateFlow("")
     val searchText: StateFlow<String> = _searchText.asStateFlow()
 
@@ -106,6 +111,24 @@ class MedicineListViewModel : ViewModel() {
                 )
             }
         }
+    }
+
+    fun isMedicineActiveOnDate(
+        medicine: Medicine,
+        date: LocalDate
+    ): Boolean {
+        val startDate = try {
+            LocalDate.parse(
+                medicine.startDate,
+                dateFormatter
+            )
+        } catch (_: Exception) {
+            return false
+        }
+        val endDate = calculateEndDate(medicine)
+        val hasStarted = !date.isBefore(startDate)
+        val hasNotEnded = endDate == null || !date.isAfter(endDate)
+        return hasStarted && hasNotEnded
     }
 
     private fun calculateCustomEndDate(
@@ -205,7 +228,7 @@ class MedicineListViewModel : ViewModel() {
             return MedicineStatus.ACTIVE
         }
 
-        val today = LocalDate.now()
+        val today = getMalaysiaDate()
 
         // Not started yet
         if (today.isBefore(startDate)) {
@@ -223,6 +246,292 @@ class MedicineListViewModel : ViewModel() {
         return MedicineStatus.ACTIVE
     }
 
+    fun getNextMedicineDose(
+        medicines: List<Medicine>,
+        takenRecords: List<MedicationTakenRecord>,
+        rescheduledDoses: List<RescheduledDose>
+    ): NextMedicineDose? {
+        val today = getMalaysiaDate()
+        val timeFormatter =
+            DateTimeFormatter.ofPattern(
+                "hh:mm a",
+                Locale.ENGLISH
+            )
+        val doses =
+            medicines
+                .filter { medicine ->
+                    isMedicineActiveOnDate(
+                        medicine = medicine,
+                        date = today
+                    )
+                }
+                .flatMap { medicine ->
+                    medicine.reminderTimes.mapNotNull { reminder ->
+                        val doseStatus =
+                            getDoseStatus(
+                                medicineId = medicine.id,
+                                reminderTimeText = reminder.time,
+                                date = today,
+                                takenRecords = takenRecords,
+                                rescheduledDoses = rescheduledDoses
+                            )
+                        if (doseStatus == DoseStatus.TAKEN) {
+                            null
+                        } else {
+
+                            val effectiveTime =
+                                getEffectiveReminderTime(
+                                    medicineId = medicine.id,
+                                    originalTime = reminder.time,
+                                    date = today,
+                                    rescheduledDoses = rescheduledDoses
+                                )
+
+                            val parsedTime = try {
+                                java.time.LocalTime.parse(
+                                    effectiveTime,
+                                    timeFormatter
+                                )
+                            } catch (_: Exception) {
+                                null
+                            }
+
+                            if (parsedTime == null) {
+                                null
+                            } else {
+                                Pair(
+                                    parsedTime,
+                                    NextMedicineDose(
+                                        medicineId = medicine.id,
+                                        medicineName = medicine.name,
+                                        dosage = getDosageText(medicine),
+                                        reminderTime = effectiveTime,
+                                        originalTime = reminder.time,
+                                        status = doseStatus
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+        val missingDose =
+            doses
+                .filter {
+                    it.second.status == DoseStatus.MISSING
+                }
+                .minByOrNull {
+                    it.first
+                }
+        val upcomingDose =
+            doses
+                .filter {
+                    it.second.status == DoseStatus.UPCOMING
+                }
+                .minByOrNull {
+                    it.first
+                }
+        return missingDose?.second
+            ?: upcomingDose?.second
+    }
+
+    fun getEffectiveReminderTime(
+        medicineId: Int,
+        originalTime: String,
+        date: LocalDate,
+        rescheduledDoses: List<RescheduledDose>
+    ): String {
+
+        return rescheduledDoses
+            .find { dose ->
+                dose.medicineId == medicineId &&
+                        dose.date == date &&
+                        dose.originalTime == originalTime
+            }
+            ?.newTime
+            ?: originalTime
+    }
+
+    fun getDoseStatus(
+        medicineId: Int,
+        reminderTimeText: String,
+        date: LocalDate,
+        takenRecords: List<MedicationTakenRecord>,
+        rescheduledDoses: List<RescheduledDose>
+    ): DoseStatus {
+
+        val isTaken =
+            takenRecords.any { record ->
+                record.medicineId == medicineId &&
+                        record.date == date &&
+                        record.reminderTime == reminderTimeText
+            }
+
+        if (isTaken) {
+            return DoseStatus.TAKEN
+        }
+
+        val today = getMalaysiaDate()
+        if (date.isBefore(today)) {
+            return DoseStatus.MISSING
+        }
+
+        if (date.isAfter(today)) {
+            return DoseStatus.UPCOMING
+        }
+
+        val effectiveTimeText =
+            getEffectiveReminderTime(
+                medicineId = medicineId,
+                originalTime = reminderTimeText,
+                date = date,
+                rescheduledDoses = rescheduledDoses
+            )
+
+        val reminderTime = try {
+            java.time.LocalTime.parse(
+                effectiveTimeText,
+                DateTimeFormatter.ofPattern(
+                    "hh:mm a",
+                    Locale.ENGLISH
+                )
+            )
+        } catch (_: Exception) {
+            return DoseStatus.UPCOMING
+        }
+
+        return if (
+            getMalaysiaTime().isAfter(reminderTime)
+        ) {
+            DoseStatus.MISSING
+        } else {
+            DoseStatus.UPCOMING
+        }
+    }
+
+    fun getDateDoseStatus(
+        medicines: List<Medicine>,
+        date: LocalDate,
+        takenRecords: List<MedicationTakenRecord>,
+        rescheduledDoses: List<RescheduledDose>
+    ): DoseStatus? {
+
+        val dosesForDate =
+            medicines
+                .filter { medicine ->
+                    isMedicineActiveOnDate(
+                        medicine = medicine,
+                        date = date
+                    )
+                }
+                .flatMap { medicine ->
+                    createMedicineDoseUiList(
+                        medicine = medicine,
+                        date = date,
+                        takenRecords = takenRecords,
+                        rescheduledDoses = rescheduledDoses
+                    )
+                }
+
+        return when {
+            dosesForDate.isEmpty() ->
+                null
+
+            dosesForDate.all {
+                it.status == DoseStatus.TAKEN
+            } ->
+                DoseStatus.TAKEN
+
+            dosesForDate.any {
+                it.status == DoseStatus.MISSING
+            } ->
+                DoseStatus.MISSING
+
+            else ->
+                DoseStatus.UPCOMING
+        }
+    }
+
+    fun getMedicineDosesForDate(
+        medicine: Medicine,
+        date: LocalDate,
+        takenRecords: List<MedicationTakenRecord>,
+        rescheduledDoses: List<RescheduledDose>
+    ): List<MedicineDoseUi> {
+
+        if (
+            !isMedicineActiveOnDate(
+                medicine = medicine,
+                date = date
+            )
+        ) {
+            return emptyList()
+        }
+
+        return createMedicineDoseUiList(
+            medicine = medicine,
+            date = date,
+            takenRecords = takenRecords,
+            rescheduledDoses = rescheduledDoses
+        )
+    }
+
+    fun createMedicineDoseUiList(
+        medicine: Medicine,
+        date: LocalDate,
+        takenRecords: List<MedicationTakenRecord>,
+        rescheduledDoses: List<RescheduledDose>
+    ): List<MedicineDoseUi> {
+
+        val dosageText =
+            getDosageText(medicine)
+
+        return medicine.reminderTimes.map { reminder ->
+
+            val effectiveTime =
+                getEffectiveReminderTime(
+                    medicineId = medicine.id,
+                    originalTime = reminder.time,
+                    date = date,
+                    rescheduledDoses = rescheduledDoses
+                )
+
+            val doseStatus =
+                getDoseStatus(
+                    medicineId = medicine.id,
+                    reminderTimeText = reminder.time,
+                    date = date,
+                    takenRecords = takenRecords,
+                    rescheduledDoses = rescheduledDoses
+                )
+
+            val wasRescheduled =
+                effectiveTime != reminder.time
+
+            MedicineDoseUi(
+                time = effectiveTime,
+                medicineName = medicine.name,
+                dosage = dosageText,
+                status = doseStatus,
+
+                extraText =
+                    if (wasRescheduled) {
+                        "Rescheduled from ${reminder.time}"
+                    } else {
+                        null
+                    }
+            )
+        }
+    }
+
+    fun getDosageText(
+        medicine: Medicine
+    ): String {
+        return if (medicine.dosageAmount == "1") {
+            "${medicine.dosageAmount} ${medicine.dosageType}"
+        } else {
+            "${medicine.dosageAmount} ${medicine.dosageType}s"
+        }
+    }
 
 }
 
