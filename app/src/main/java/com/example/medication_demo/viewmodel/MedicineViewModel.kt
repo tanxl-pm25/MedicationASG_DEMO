@@ -96,6 +96,10 @@ class MedicineViewModel : ViewModel() {
     private val _reminderTimeError = MutableStateFlow<String?>(null)
     val reminderTimeError: StateFlow<String?> = _reminderTimeError.asStateFlow()
 
+    private val _presetImageRes = MutableStateFlow<Int?>(null)
+
+    val presetImageRes: StateFlow<Int?> = _presetImageRes.asStateFlow()
+
     fun onRefillReminderEnabledChange(enabled: Boolean) {
         _refillReminderEnabled.value = enabled
         if (!enabled) {
@@ -673,6 +677,12 @@ class MedicineViewModel : ViewModel() {
         _dosageAmountError.value = null
         _refillQuantityError.value = null
         _reminderTimeError.value = null
+    }
+
+    fun onPresetImageSelected(
+        imageRes: Int
+    ) {
+        _presetImageRes.value = imageRes
     }
 
 

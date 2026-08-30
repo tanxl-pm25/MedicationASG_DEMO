@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -32,7 +33,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
@@ -76,7 +76,11 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 import androidx.compose.material3.RadioButton
-import androidx.compose.material3.SelectableDates
+import androidx.compose.ui.res.painterResource
+import com.example.medication_demo.R
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 private val EditGreen = Color(0xFF148A32)
 private val EditRed = Color(0xFFFF3B30)
 private val EditBorder = Color(0xFFE1E5E9)
@@ -113,6 +117,9 @@ fun AddMedicineScreen(
     val refillQuantityError by vm.refillQuantityError.collectAsStateWithLifecycle()
     val customFrequencyError by vm.customFrequencyError.collectAsStateWithLifecycle()
     val reminderTimeError by vm.reminderTimeError.collectAsStateWithLifecycle()
+    val presetImageRes by vm.presetImageRes.collectAsStateWithLifecycle()
+    var showImageOptions by remember { mutableStateOf(false) }
+    var showPresetImages by remember { mutableStateOf(false) }
     Scaffold(
         containerColor = EditBackground,
         topBar = {
@@ -134,28 +141,67 @@ fun AddMedicineScreen(
             // Medicine name and quantity
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(25.dp),
                 verticalAlignment = Alignment.Top
             ) {
-                FormTextField(
-                    value = medicineName,
-                    onValueChange = vm::onMedicineNameChange,
-                    label = "Medicine Name",
-                    placeholder = "E.g. Metformin",
-                    isError = medicineNameError != null,
-                    errorMessage = medicineNameError,
-                    modifier = Modifier.weight(1.3f)
-                )
+                // Left ：Medicine Image
+                Column(
+                    modifier = Modifier.width(120.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
 
-                NumberInputField(
-                    label = "Quantity",
-                    value = quantity,
-                    onValueChange = vm::onQuantityChange,
-                    placeholder = "E.g. 10",
-                    isError = quantityError != null,
-                    errorMessage = quantityError,
-                    modifier = Modifier.weight(1.2f)
-                )
+                    MedicineImageSelector(
+                        imageRes = presetImageRes,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(125.dp),
+                        onClick = {
+                            showImageOptions = true
+                        }
+                    )
+
+                    TextButton(
+                        onClick = {
+                            showImageOptions = true
+                        },
+                        contentPadding = PaddingValues(
+                            horizontal = 4.dp
+                        )
+                    ) {
+                        Text(
+                            text = "+ Add Image",
+                            color = EditGreen,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
+
+                // Right：Name + Quantity
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+
+                    FormTextField(
+                        value = medicineName,
+                        onValueChange = vm::onMedicineNameChange,
+                        label = "Medicine Name",
+                        placeholder = "E.g. Metformin",
+                        isError = medicineNameError != null,
+                        errorMessage = medicineNameError,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    NumberInputField(
+                        label = "Quantity",
+                        value = quantity,
+                        onValueChange = vm::onQuantityChange,
+                        placeholder = "E.g. 10",
+                        isError = quantityError != null,
+                        errorMessage = quantityError,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             }
             Spacer(modifier = Modifier.height(18.dp))
             SectionLabel(text = "Dosage")
@@ -420,6 +466,143 @@ fun AddMedicineScreen(
                 }
             }
         )
+    }
+
+    if (showImageOptions) {
+        AlertDialog(
+            onDismissRequest = {
+                showImageOptions = false
+            },
+
+            title = {
+                Text("Select Medicine Image")
+            },
+
+            text = {
+                Column {
+
+                    TextButton(
+                        onClick = {
+                            showImageOptions = false
+
+                            // Gallery 下一步做
+                        }
+                    ) {
+                        Text("Choose from Gallery")
+                    }
+
+                    TextButton(
+                        onClick = {
+                            showImageOptions = false
+                            showPresetImages = true
+                        }
+                    ) {
+                        Text("Choose Preset")
+                    }
+                }
+            },
+
+            confirmButton = {}
+        )
+    }
+
+    if (showPresetImages) {
+
+        val presetImages = listOf(
+            R.drawable.pill_24dp_1f1f1f_fill0_wght400_grad0_opsz24,
+            R.drawable.medication_liquid_24dp_1f1f1f_fill0_wght400_grad0_opsz24,
+            R.drawable.fluid_24dp_1f1f1f_fill0_wght400_grad0_opsz24,
+            R.drawable.surgical_24dp_1f1f1f_fill0_wght400_grad0_opsz24
+        )
+
+        AlertDialog(
+            onDismissRequest = {
+                showPresetImages = false
+            },
+
+            title = {
+                Text("Choose Medicine Image")
+            },
+
+            text = {
+                LazyRow(
+                    horizontalArrangement =
+                        Arrangement.spacedBy(12.dp)
+                ) {
+                    items(presetImages) { imageRes ->
+
+                        Box(
+                            modifier = Modifier
+                                .size(72.dp)
+                                .background(
+                                    color = Color(0xFFF5F6F7),
+                                    shape = RoundedCornerShape(10.dp)
+                                )
+                                .clickable {
+                                    vm.onPresetImageSelected(
+                                        imageRes
+                                    )
+
+                                    showPresetImages = false
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+
+                            Image(
+                                painter = painterResource(
+                                    imageRes
+                                ),
+                                contentDescription = null,
+                                modifier = Modifier.size(48.dp)
+                            )
+                        }
+                    }
+                }
+            },
+
+            confirmButton = {}
+        )
+    }
+}
+
+@Composable
+private fun MedicineImageSelector(
+    imageRes: Int?,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit = {}
+) {
+    Box(
+        modifier = modifier
+            .background(
+                color = Color(0xFFF5F6F7),
+                shape = RoundedCornerShape(12.dp)
+            )
+            .border(
+                width = 1.dp,
+                color = EditBorder,
+                shape = RoundedCornerShape(12.dp)
+            )
+            .clickable {
+                onClick()
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        if (imageRes != null) {
+            Image(
+                painter = painterResource(imageRes),
+                contentDescription = "Medicine image",
+                modifier = Modifier.size(56.dp)
+            )
+        } else {
+            Icon(
+                painter = painterResource(
+                    R.drawable.pill_24dp_1f1f1f_fill0_wght400_grad0_opsz24
+                ),
+                contentDescription = "Medicine image",
+                tint = EditGrey,
+                modifier = Modifier.size(42.dp)
+            )
+        }
     }
 }
 

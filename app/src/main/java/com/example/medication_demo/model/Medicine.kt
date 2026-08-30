@@ -13,5 +13,7 @@ data class Medicine(
     val startDate: String,
     val notes: String,
     val isCompleted: Boolean = false,
-    val reminderEnabled: Boolean = true
+    val reminderEnabled: Boolean = true,
+    val imageUri: String? = null,
+    val presetImageRes: Int? = null
 )
