@@ -63,8 +63,6 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.TimePicker
-import androidx.compose.material3.rememberTimePickerState
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -85,6 +83,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.layout.ContentScale
 import coil.compose.AsyncImage
 import com.example.medication_demo.utils.getMalaysiaDate
+import com.example.medication_demo.components.MedicationTimePickerDialog
 
 private val EditGreen = Color(0xFF148A32)
 private val EditRed = Color(0xFFFF3B30)
@@ -1257,98 +1256,33 @@ private fun ReminderTimeRow(
         // ==============================
 
         if (showTimePicker) {
-            MedicineTimePickerDialog(
-                currentTime = time,
+            val formatter =
+                DateTimeFormatter.ofPattern(
+                    "hh:mm a",
+                    Locale.ENGLISH
+                )
+            val parsedTime =
+                try {
+                    LocalTime.parse(
+                        time.uppercase(Locale.ENGLISH),
+                        formatter
+                    )
+                } catch (_: Exception) {
+                    LocalTime.of(9, 0)
+                }
+            MedicationTimePickerDialog(
+                initialTime = parsedTime,
                 onDismiss = {
                     showTimePicker = false
                 },
-                onConfirm = { newTime ->
-                    onTimeChange(newTime)
+                onConfirm = { selectedTime ->
+                    val formattedTime = selectedTime.format(formatter)
+                    onTimeChange(formattedTime)
                     showTimePicker = false
                 }
             )
         }
     }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun MedicineTimePickerDialog(
-    currentTime: String,
-    onDismiss: () -> Unit,
-    onConfirm: (String) -> Unit
-) {
-    val formatter = DateTimeFormatter.ofPattern(
-        "hh:mm a",
-        Locale.ENGLISH
-    )
-
-    val parsedTime = try {
-        LocalTime.parse(
-            currentTime.uppercase(Locale.ENGLISH),
-            formatter
-        )
-    } catch (_: Exception) {
-        LocalTime.of(9, 0)
-    }
-
-    val timePickerState = rememberTimePickerState(
-        initialHour = parsedTime.hour,
-        initialMinute = parsedTime.minute,
-        is24Hour = false
-    )
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-
-        title = {
-            Text(
-                text = "Select Time",
-                style = MaterialTheme.typography.titleMedium
-            )
-        },
-
-        text = {
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center
-            ) {
-                TimePicker(
-                    state = timePickerState
-                )
-            }
-        },
-
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    val selectedTime = LocalTime.of(
-                        timePickerState.hour,
-                        timePickerState.minute
-                    )
-                    val formattedTime = selectedTime.format(formatter)
-                    onConfirm(formattedTime)
-                }
-            ) {
-                Text(
-                    text = "Done",
-                    color = EditGreen,
-                    style = MaterialTheme.typography.labelLarge
-                )
-            }
-        },
-        dismissButton = {
-            TextButton(
-                onClick = onDismiss
-            ) {
-                Text(
-                    text = "Cancel",
-                    color = EditGrey,
-                    style = MaterialTheme.typography.labelLarge
-                )
-            }
-        }
-    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

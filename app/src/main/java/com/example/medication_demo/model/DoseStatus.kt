@@ -5,5 +5,6 @@ enum class DoseStatus(
 ) {
     TAKEN("Taken"),
     MISSING("Missing"),
-    UPCOMING("Upcoming")
+    UPCOMING("Upcoming"),
+    IN_PROGRESS("In Progress")
 }

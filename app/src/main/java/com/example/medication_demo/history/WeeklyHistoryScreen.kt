@@ -128,7 +128,41 @@ fun WeeklyHistoryScreen(
                 MedicineHistoryUi(
                     name = medicine.name,
                     dosage = dosageText,
-                    time = medicine.reminderTimes.firstOrNull()?.time ?: "--",
+                    time =
+                        when {
+                            medicine.frequency.equals(
+                                "As needed",
+                                ignoreCase = true
+                            ) -> {
+                                val takenTimes =
+                                    dosesInRange
+                                        .filter {
+                                            it.status == DoseStatus.TAKEN
+                                        }
+                                        .map {
+                                            it.takenTime ?: it.time
+                                        }
+                                when {
+                                    takenTimes.isEmpty() -> "-"
+                                    takenTimes.size == 1 -> takenTimes.first()
+                                    else -> takenTimes.joinToString(", ")
+                                }
+                            }
+                            medicineListVm.isHourlyFrequency(medicine) -> {
+                                "From ${
+                                    medicine.reminderTimes
+                                        .firstOrNull()
+                                        ?.time
+                                        ?: "-"
+                                }"
+                            }
+                            else -> {
+                                medicine.reminderTimes
+                                    .joinToString(", ") {
+                                        it.time
+                                    }
+                            }
+                        },
                     frequency = medicine.frequency,
                     takenCount = takenCount,
                     missingCount = missingCount,
@@ -489,11 +523,39 @@ private fun HistoryMedicineCard(
 
                 Spacer(modifier = Modifier.height(3.dp))
 
-                Text(
-                    text = "${medicine.time} • ${medicine.frequency}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = HistoryGrey
-                )
+                if (
+                    medicine.frequency.equals(
+                        "3 times a day",
+                        ignoreCase = true
+                    )
+                ) {
+                    Text(
+                        text = medicine.time,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = HistoryGrey,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
+                    Spacer(
+                        modifier = Modifier.height(2.dp)
+                    )
+
+                    Text(
+                        text = medicine.frequency,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = HistoryGrey
+                    )
+
+                } else {
+                    Text(
+                        text = "${medicine.time} • ${medicine.frequency}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = HistoryGrey,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.size(2.dp))

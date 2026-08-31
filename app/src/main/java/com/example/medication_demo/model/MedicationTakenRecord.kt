@@ -5,5 +5,6 @@ import java.time.LocalDate
 data class MedicationTakenRecord(
     val medicineId: Int,
     val date: LocalDate,
-    val reminderTime: String
+    val reminderTime: String,
+    val takenTime: String
 )

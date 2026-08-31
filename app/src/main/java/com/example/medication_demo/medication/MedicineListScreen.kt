@@ -166,6 +166,7 @@ fun MedicineListScreen(
                     ) { medicine ->
                         MedicineCard(
                             medicine = medicine,
+                            dosageText = listVm.getDosageText(medicine),
                             status = listVm.getMedicineStatus(medicine),
                             onClick = {
                                 onMedicineClick(medicine.id)
@@ -301,15 +302,10 @@ private fun MedicineFilterRow(
 @Composable
 private fun MedicineCard(
     medicine: Medicine,
+    dosageText: String,
     status: MedicineStatus,
     onClick: () -> Unit
 ) {
-    val dosageText =
-        if (medicine.dosageAmount == "1") {
-            "${medicine.dosageAmount} ${medicine.dosageType}"
-        } else {
-            "${medicine.dosageAmount} ${medicine.dosageType}s"
-        }
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(14.dp),

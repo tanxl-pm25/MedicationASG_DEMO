@@ -49,19 +49,25 @@ import com.example.medication_demo.viewmodel.AppBottomNavigationBar
 import androidx.compose.foundation.clickable
 import androidx.compose.material3.OutlinedButton
 import com.example.medication_demo.model.DoseStatus
-import android.app.TimePickerDialog
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import com.example.medication_demo.utils.getMalaysiaTime
-import java.time.LocalTime
+import androidx.compose.runtime.setValue
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import com.example.medication_demo.components.MedicationTimePickerDialog
+import com.example.medication_demo.utils.getMalaysiaDate
+import com.example.medication_demo.utils.getMalaysiaTime
 
 private val HomeGreen = Color(0xFF159447)
-private  fun getCurrentDate(): String{
-    val formatter = java.text.SimpleDateFormat("EEEE, d MMMM", java.util.Locale.ENGLISH)
-    return formatter.format(java.util.Date())
+private fun getCurrentDate(): String {
+    val formatter =
+        DateTimeFormatter.ofPattern(
+            "EEEE, d MMMM",
+            Locale.ENGLISH
+        )
+    return getMalaysiaDate().format(formatter)
 }
 
 @Composable
@@ -82,10 +88,9 @@ fun HomeScreen(
     onBottomNavSelected: (Int) -> Unit = {},
     onMedicinesClick: () -> Unit = {},
     nextMedicineStatus: DoseStatus? = null,
-    onRescheduleClick: () -> Unit = {},
     onRescheduleConfirm: (String) -> Unit = {}
 ) {
-    val context = LocalContext.current
+    var showRescheduleTimePicker by remember { mutableStateOf(false) }
     val timeFormatter = remember {
         DateTimeFormatter.ofPattern(
             "hh:mm a",
@@ -193,7 +198,7 @@ fun HomeScreen(
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(170.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
@@ -201,7 +206,10 @@ fun HomeScreen(
                             color = Color.White,
                             style = MaterialTheme.typography.bodyMedium
                         )
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            modifier = Modifier.padding(end = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Icon(
                                 imageVector = Icons.Filled.Schedule,
                                 contentDescription = null,
@@ -241,22 +249,7 @@ fun HomeScreen(
                                 }
                                 OutlinedButton(
                                     onClick = {
-                                        val now = getMalaysiaTime()
-                                        TimePickerDialog(
-                                            context,
-                                            { _, hour, minute ->
-
-                                                val selectedTime =
-                                                    LocalTime.of(hour, minute)
-
-                                                onRescheduleConfirm(
-                                                    selectedTime.format(timeFormatter)
-                                                )
-                                            },
-                                            now.hour,
-                                            now.minute,
-                                            false
-                                        ).show()
+                                        showRescheduleTimePicker = true
                                     },
                                     modifier = Modifier.weight(1f),
                                     shape = RoundedCornerShape(10.dp),
@@ -276,6 +269,7 @@ fun HomeScreen(
                                 }
                             }
                         }
+                        DoseStatus.IN_PROGRESS,
                         DoseStatus.UPCOMING -> {
                             OutlinedButton(
                                 onClick = onMarkAsTakenClick,
@@ -335,7 +329,7 @@ fun HomeScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             Row(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 OverviewCard(
@@ -381,8 +375,29 @@ fun HomeScreen(
             }
         }
     }
+    if (showRescheduleTimePicker) {
+        MedicationTimePickerDialog(
+            initialTime = getMalaysiaTime(),
+            onDismiss = {
+                showRescheduleTimePicker = false
+            },
+            validateTime = { selectedTime ->
+                val now = getMalaysiaTime()
+                if (!selectedTime.isAfter(now)) {
+                    "Please select a future time."
+                } else {
+                    null
+                }
+            },
+            onConfirm = { selectedTime ->
+                showRescheduleTimePicker = false
+                onRescheduleConfirm(
+                    selectedTime.format(timeFormatter)
+                )
+            }
+        )
+    }
 }
-
 @Composable
 private fun OverviewCard(
     modifier: Modifier = Modifier,

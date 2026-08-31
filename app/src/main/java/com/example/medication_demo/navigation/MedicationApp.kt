@@ -19,9 +19,9 @@ import com.example.medication_demo.viewmodel.MedicineListViewModel
 import com.example.medication_demo.viewmodel.MedicineViewModel
 import com.example.medication_demo.medication.MedicineScheduleScreen
 import com.example.medication_demo.medication.MedicineCalendarScreen
-import com.example.medication_demo.utils.getMalaysiaDate
-import java.time.LocalDate
-
+import androidx.compose.runtime.produceState
+import kotlinx.coroutines.delay
+import com.example.medication_demo.utils.getMalaysiaTime
 
 @Composable
 fun MedicationApp() {
@@ -33,30 +33,34 @@ fun MedicationApp() {
     val medicines by medicineVm.medicines.collectAsStateWithLifecycle()
     val takenRecords by medicineVm.takenRecords.collectAsStateWithLifecycle()
     val rescheduledDoses by medicineVm.rescheduledDoses.collectAsStateWithLifecycle()
-    val nextDose =
-        medicineListVm.getNextMedicineDose(
+    val medicinesTotal =
+        medicineListVm.getTodayTotalDoseCount(
             medicines = medicines,
             takenRecords = takenRecords,
             rescheduledDoses = rescheduledDoses
         )
-    val today = getMalaysiaDate()
-    val todayMedicines =
-        medicines.filter { medicine ->
-            medicineListVm.isMedicineActiveOnDate(
-                medicine = medicine,
-                date = today
-            )
-        }
-    val medicinesTotal =
-        todayMedicines.sumOf { medicine ->
-            medicine.reminderTimes.size
-        }
     val medicinesTaken =
-        takenRecords.count { record ->
-            record.date == today &&
-                    todayMedicines.any {
-                        it.id == record.medicineId
-                    }
+        medicineListVm.getTodayTakenCount(
+            medicines = medicines,
+            takenRecords = takenRecords,
+            rescheduledDoses = rescheduledDoses
+        )
+    val refreshTime by produceState(
+        initialValue = getMalaysiaTime()
+    ) {
+        while (true) {
+            value = getMalaysiaTime()
+            delay(1000)
+        }
+    }
+    val nextDose =
+        remember(medicines, takenRecords, rescheduledDoses, refreshTime
+        ) {
+            medicineListVm.getNextMedicineDose(
+                medicines = medicines,
+                takenRecords = takenRecords,
+                rescheduledDoses = rescheduledDoses
+            )
         }
     NavHost(
         navController = navController,
@@ -88,9 +92,6 @@ fun MedicationApp() {
                             reminderTime = nextDose.originalTime
                         )
                     }
-                },
-                onRescheduleClick = {
-                    // 下一步做 Reschedule
                 },
                 onRescheduleConfirm = { newTime ->
                     if (nextDose != null) {
@@ -156,6 +157,8 @@ fun MedicationApp() {
         composable("history") {
 
             WeeklyHistoryScreen(
+                medicineVm = medicineVm,
+                medicineListVm = medicineListVm,
                 onBottomNavSelected = { index ->
 
                     when (index) {
@@ -229,9 +232,6 @@ fun MedicationApp() {
                     ?.getString("medicineId")
                     ?.toIntOrNull()
 
-            val medicines by
-            medicineVm.medicines.collectAsStateWithLifecycle()
-
             val medicine =
                 medicines.find {
                     it.id == medicineId
@@ -249,6 +249,12 @@ fun MedicationApp() {
                         navController.navigate(
                             "editMedicine/${medicine.id}"
                         )
+                    },
+                    onTakeNow = {
+                        medicineVm.markAsNeededMedicineTaken(
+                            medicineId = medicine.id
+                        )
+                        navController.popBackStack()
                     },
                     onDeleteClick = {
                         medicineVm.deleteMedicine(medicine.id)

@@ -87,21 +87,23 @@ fun MedicineCalendarScreen(
     val takenRecords by medicineVm.takenRecords.collectAsStateWithLifecycle()
     val rescheduledDoses by medicineVm.rescheduledDoses.collectAsStateWithLifecycle()
     val selectedDateMedicines =
-        medicines
-            .filter { medicine ->
-                medicineListVm.isMedicineActiveOnDate(
-                    medicine = medicine,
-                    date = selectedDate
-                )
-            }
-            .flatMap { medicine ->
-                medicineListVm.createMedicineDoseUiList(
-                    medicine = medicine,
-                    date = selectedDate,
-                    takenRecords = takenRecords,
-                    rescheduledDoses = rescheduledDoses
-                )
-            }
+        medicineListVm.sortDosesByTime(
+            medicines
+                .filter { medicine ->
+                    medicineListVm.isMedicineActiveOnDate(
+                        medicine = medicine,
+                        date = selectedDate
+                    )
+                }
+                .flatMap { medicine ->
+                    medicineListVm.createMedicineDoseUiList(
+                        medicine = medicine,
+                        date = selectedDate,
+                        takenRecords = takenRecords,
+                        rescheduledDoses = rescheduledDoses
+                    )
+                }
+        )
     val takenCount =
         selectedDateMedicines.count {
             it.status == DoseStatus.TAKEN
@@ -419,14 +421,10 @@ private fun CalendarDayCell(
                         .size(5.dp)
                         .background(
                             color = when (calendarDay.status) {
-                                DoseStatus.TAKEN ->
-                                    CalendarGreen
-
-                                DoseStatus.MISSING ->
-                                    CalendarRed
-
-                                DoseStatus.UPCOMING ->
-                                    CalendarOrange
+                                DoseStatus.TAKEN -> CalendarGreen
+                                DoseStatus.IN_PROGRESS -> CalendarGreen
+                                DoseStatus.MISSING -> CalendarRed
+                                DoseStatus.UPCOMING -> CalendarOrange
                             },
                             shape = CircleShape
                         )
@@ -561,6 +559,15 @@ private fun CalendarMedicineCard(
                     )
                 }
 
+                DoseStatus.IN_PROGRESS -> {
+                    Icon(
+                        imageVector = Icons.Default.Schedule,
+                        contentDescription = "In Progress",
+                        tint = CalendarGreen,
+                        modifier = Modifier.size(35.dp)
+                    )
+                }
+
                 DoseStatus.MISSING -> {
                     Icon(
                         imageVector = Icons.Default.Warning,
@@ -605,6 +612,7 @@ private fun CalendarMedicineCard(
                 style = MaterialTheme.typography.labelMedium,
                 color = when (medicine.status) {
                     DoseStatus.TAKEN -> CalendarGreen
+                    DoseStatus.IN_PROGRESS -> CalendarGreen
                     DoseStatus.MISSING -> CalendarRed
                     DoseStatus.UPCOMING -> CalendarOrange
                 }

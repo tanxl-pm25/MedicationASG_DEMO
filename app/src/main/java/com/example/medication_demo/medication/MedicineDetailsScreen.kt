@@ -53,6 +53,7 @@ import com.example.medication_demo.model.Medicine
 import com.example.medication_demo.model.ReminderTimeUi
 import com.example.medication_demo.viewmodel.MedicineListViewModel
 import com.example.medication_demo.model.MedicineStatus
+import androidx.compose.material3.Button
 
 private val DetailGreen = Color(0xFF159447)
 private val DetailLightGreen = Color(0xFFE8F7ED)
@@ -75,13 +76,14 @@ fun MedicineDetailsScreen(
     onEditClick: () -> Unit = {},
     onDeleteClick: () -> Unit = {},
     onMoreClick: () -> Unit = {},
-    onReminderChanged: (Boolean) -> Unit = {}
+    onReminderChanged: (Boolean) -> Unit = {},
+    onTakeNow: () -> Unit = {}
 ) {
     val status = listVm.getMedicineStatus(medicine)
-    var showDeleteDialog by remember {
-        mutableStateOf(false)
-    }
-
+    val dosageText = listVm.getDosageText(medicine)
+    val reminderLabel = listVm.getReminderLabel(medicine)
+    val reminderTimeText = listVm.getReminderTimeText(medicine)
+    var showDeleteDialog by remember { mutableStateOf(false) }
     Scaffold(
         containerColor = DetailBackground,
         topBar = {
@@ -101,7 +103,12 @@ fun MedicineDetailsScreen(
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
-            MedicineSummary(medicine = medicine, status = status)
+            MedicineSummary(
+                medicine = medicine,
+                dosageText = dosageText,
+                reminderTimeText = reminderTimeText,
+                status = status
+            )
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -132,9 +139,31 @@ fun MedicineDetailsScreen(
 
             ReminderSection(
                 medicine = medicine,
+                reminderLabel = reminderLabel,
+                reminderTimeText = reminderTimeText,
                 reminderEnabled = medicine.reminderEnabled,
                 onReminderChanged = onReminderChanged
             )
+
+            if (
+                medicine.frequency.equals(
+                    "As needed",
+                    ignoreCase = true
+                )
+            ) {
+                Spacer(
+                    modifier = Modifier.height(16.dp)
+                )
+
+                Button(
+                    onClick = onTakeNow,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Take Now"
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.height(30.dp))
         }
@@ -227,6 +256,8 @@ private fun MedicineDetailsTopBar(
 @Composable
 private fun MedicineSummary(
     medicine: Medicine,
+    dosageText: String,
+    reminderTimeText: String,
     status: MedicineStatus
 ) {
     Row(
@@ -260,12 +291,6 @@ private fun MedicineSummary(
 
             Spacer(modifier = Modifier.height(5.dp))
 
-            val dosageText =
-                if (medicine.dosageAmount == "1") {
-                    "${medicine.dosageAmount} ${medicine.dosageType}"
-                } else {
-                    "${medicine.dosageAmount} ${medicine.dosageType}s"
-                }
             Text(
                 text = "$dosageText • ${medicine.frequency}",
                 style = MaterialTheme.typography.bodyMedium
@@ -274,13 +299,7 @@ private fun MedicineSummary(
             Spacer(modifier = Modifier.height(5.dp))
 
             Text(
-                text = if (medicine.reminderTimes.isNotEmpty()) {
-                    medicine.reminderTimes.joinToString(", ") {
-                        it.time
-                    }
-                } else {
-                    "No fixed reminder time"
-                },
+                text = reminderTimeText,
                 style = MaterialTheme.typography.bodyMedium
             )
 
@@ -452,9 +471,16 @@ private fun MedicineInformationSection(
             value = medicine.frequency
         )
 
+        val quantityText =
+            if (medicine.quantity == "1") {
+                "${medicine.quantity} ${medicine.dosageType}"
+            } else {
+                "${medicine.quantity} ${medicine.dosageType}s"
+            }
+
         MedicineInformationRow(
             label = "Quantity",
-            value = "${medicine.quantity} ${medicine.dosageType}s"
+            value = quantityText
         )
 
         MedicineInformationRow(
@@ -499,6 +525,8 @@ private fun MedicineInformationRow(
 @Composable
 private fun ReminderSection(
     medicine: Medicine,
+    reminderLabel: String,
+    reminderTimeText: String,
     reminderEnabled: Boolean,
     onReminderChanged: (Boolean) -> Unit
 ) {
@@ -577,12 +605,8 @@ private fun ReminderSection(
                 )
 
                 ReminderInformationRow(
-                    title = "Reminder time",
-                    value = if (medicine.reminderTimes.isNotEmpty()) {
-                        medicine.reminderTimes.joinToString(", ") { it.time }
-                    } else {
-                        "No fixed reminder time"
-                    }
+                    title = reminderLabel,
+                    value = reminderTimeText
                 )
 
                 HorizontalDivider(

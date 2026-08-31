@@ -5,5 +5,6 @@ data class MedicineDoseUi(
     val medicineName: String,
     val dosage: String,
     val status: DoseStatus,
-    val extraText: String? = null
+    val extraText: String? = null,
+    val takenTime: String? = null
 )

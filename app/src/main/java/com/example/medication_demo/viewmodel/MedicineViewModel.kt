@@ -12,6 +12,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import com.example.medication_demo.model.RescheduledDose
 import com.example.medication_demo.utils.getMalaysiaDate
+import com.example.medication_demo.utils.getMalaysiaTime
 
 class MedicineViewModel : ViewModel() {
     private val _medicines = MutableStateFlow<List<Medicine>>(emptyList())
@@ -136,22 +137,63 @@ class MedicineViewModel : ViewModel() {
         medicineId: Int,
         reminderTime: String
     ) {
-        val record = MedicationTakenRecord(
-            medicineId = medicineId,
-            date = getMalaysiaDate(),
-            reminderTime = reminderTime
-        )
-
+        val today = getMalaysiaDate()
+        val actualTakenTime =
+            getMalaysiaTime().format(
+                DateTimeFormatter.ofPattern(
+                    "hh:mm a",
+                    Locale.ENGLISH
+                )
+            )
         val alreadyTaken =
-            _takenRecords.value.any {
-                it.medicineId == medicineId &&
-                        it.date == record.date &&
-                        it.reminderTime == reminderTime
+            _takenRecords.value.any { record ->
+                record.medicineId == medicineId &&
+                        record.date == today &&
+                        record.reminderTime == reminderTime
+            }
+        if (!alreadyTaken) {
+            _takenRecords.value += MedicationTakenRecord(
+                                        medicineId = medicineId,
+                                        date = today,
+                                        reminderTime = reminderTime,
+                                        takenTime = actualTakenTime
+                                    )
+        }
+    }
+
+    fun markAsNeededMedicineTaken(
+        medicineId: Int
+    ) {
+        val today = getMalaysiaDate()
+        val currentTime = getMalaysiaTime()
+
+        val timeFormatter =
+            DateTimeFormatter.ofPattern(
+                "hh:mm a",
+                Locale.ENGLISH
+            )
+
+        val takenTime = currentTime.format(timeFormatter)
+        val alreadyTakenThisMinute =
+            _takenRecords.value.any { record ->
+                record.medicineId == medicineId &&
+                        record.date == today &&
+                        record.reminderTime == takenTime
             }
 
-        if (!alreadyTaken) {
-            _takenRecords.value += record
+        if (alreadyTakenThisMinute) {
+            return
         }
+
+        val newRecord =
+            MedicationTakenRecord(
+                medicineId = medicineId,
+                date = today,
+                reminderTime = takenTime,
+                takenTime = takenTime
+            )
+
+        _takenRecords.value += newRecord
     }
 
     fun onRefillReminderEnabledChange(enabled: Boolean) {
@@ -281,13 +323,14 @@ class MedicineViewModel : ViewModel() {
 
     private fun adjustReminderTimesForFrequency() {
         val required = _requiredReminderTimeCount.value
-        // As needed
         if (required == 0) {
             _reminderTimes.value = emptyList()
             return
         }
-        val current = _reminderTimes.value.toMutableList()
-        // If time not enough, automatically add on
+        val current =
+            _reminderTimes.value
+                .take(required)
+                .toMutableList()
         while (current.size < required) {
             current.add(
                 ReminderTimeUi(
@@ -359,11 +402,17 @@ class MedicineViewModel : ViewModel() {
         val dosageValue = _dosageAmount.value.toDoubleOrNull()
 
         _dosageAmountError.value = when {
+
             _dosageAmount.value.isBlank() ->
                 "Please enter the dosage amount."
 
             dosageValue == null || dosageValue <= 0.0 ->
                 "Dosage amount must be greater than 0."
+
+            quantityValue != null &&
+                    quantityValue > 0 &&
+                    dosageValue > quantityValue ->
+                "Dosage amount cannot exceed the medicine quantity."
 
             else -> null
         }
@@ -480,7 +529,18 @@ class MedicineViewModel : ViewModel() {
     }
 
     fun deleteMedicine(id: Int) {
-        _medicines.value = _medicines.value.filter { it.id != id }
+        _medicines.value =
+            _medicines.value.filter { medicine ->
+                medicine.id != id
+            }
+        _takenRecords.value =
+            _takenRecords.value.filter { record ->
+                record.medicineId != id
+            }
+        _rescheduledDoses.value =
+            _rescheduledDoses.value.filter { dose ->
+                dose.medicineId != id
+            }
     }
 
     fun addReminderTime() {
@@ -551,6 +611,7 @@ class MedicineViewModel : ViewModel() {
         }
         return isValid
     }
+
     fun removeReminderTime(index: Int) {
         if (_reminderTimes.value.size <= 1) {
             return
@@ -733,8 +794,5 @@ class MedicineViewModel : ViewModel() {
         // Choose Gallery then cancel preset
         _presetImageRes.value = null
     }
-
-
-
 
 }
