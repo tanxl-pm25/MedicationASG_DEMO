@@ -20,6 +20,7 @@ import com.example.medication_demo.viewmodel.MedicineViewModel
 import com.example.medication_demo.medication.MedicineScheduleScreen
 import com.example.medication_demo.medication.MedicineCalendarScreen
 import androidx.compose.runtime.produceState
+import com.example.medication_demo.reminder.RefillReminderScreen
 import kotlinx.coroutines.delay
 import com.example.medication_demo.utils.getMalaysiaTime
 
@@ -202,6 +203,54 @@ fun MedicationApp() {
                     navController.popBackStack()
                 }
             )
+        }
+
+        // Reminder Refill
+        composable(
+            route = "refillReminder/{medicineId}"
+        ) { backStackEntry ->
+
+            val medicineId =
+                backStackEntry.arguments
+                    ?.getString("medicineId")
+                    ?.toIntOrNull()
+
+            val medicine =
+                medicines.find {
+                    it.id == medicineId
+                }
+
+            if (medicine != null) {
+
+                RefillReminderScreen(
+                    medicineName = medicine.name,
+
+                    // 这里之后会换成真正 remaining quantity
+                    tabletsLeft = 5,
+
+                    onRefillConfirm = { newQuantity ->
+                        // 下一步接真正 refill
+                    },
+
+                    onRemindAgainConfirm = { minutes ->
+/*
+                        scheduleRefillReminder(
+                            context = context,
+                            medicineId = medicine.id,
+                            medicineName = medicine.name,
+                            delayMinutes = minutes
+                        )
+
+                        showReminderScheduledNotification(
+                            context = context,
+                            minutes = minutes
+                        )
+
+                        activity.finish()
+                        */
+                    }
+                )
+            }
         }
 
         // Add Medicine
