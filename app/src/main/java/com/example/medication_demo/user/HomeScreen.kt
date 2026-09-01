@@ -54,6 +54,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.unit.TextUnit
+import coil.size.Size
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import com.example.medication_demo.components.MedicationTimePickerDialog
@@ -315,6 +317,7 @@ fun HomeScreen(
                     title = "Medicines",
                     valueBold = medicinesTaken,
                     valueRest = " / $medicinesTotal Taken",
+                    fontSize = 13.sp,
                     onClick = onMedicinesClick
                 )
                 OverviewCard(
@@ -322,6 +325,7 @@ fun HomeScreen(
                     icon = Icons.Filled.CalendarMonth,
                     title = "Appointments",
                     valueBold = upcomingAppointments,
+                    fontSize = 13.sp,
                     valueRest = " Upcoming"
                 )
             }
@@ -337,6 +341,7 @@ fun HomeScreen(
                     icon = Icons.Filled.WaterDrop,
                     title = "Water Intake",
                     valueBold = waterGlasses,
+                    fontSize = 13.sp,
                     valueRest = " / 8 Glasses"
                 )
                 OverviewCard(
@@ -344,6 +349,7 @@ fun HomeScreen(
                     icon = Icons.Filled.BarChart,
                     title = "Monthly Statistics",
                     valueBold = monthlyStatText ?: "No record found",
+                    fontSize = 15.sp,
                     valueRest = "",
                 )
             }
@@ -406,6 +412,7 @@ private fun OverviewCard(
     valueBold: String?,
     valueRest: String = "",
     footer: String? = null,
+    fontSize: TextUnit,
     onClick: () -> Unit = {}
 ) {
     Card(
@@ -469,15 +476,15 @@ private fun OverviewCard(
             }
         }
 
-            if (footer != null){
-                Text(
-                    text = footer,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+        if (footer != null){
+            Text(
+                text = footer,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
+}
 
 
 @Preview(showBackground = true, showSystemUi = true)
