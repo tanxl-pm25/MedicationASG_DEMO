@@ -9,13 +9,11 @@ import androidx.compose.material3.DateRangePicker
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDateRangePickerState
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.text.style.TextOverflow
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
-import java.time.temporal.ChronoUnit
 import java.util.Locale
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -32,61 +30,53 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.medication_demo.R
 import com.example.medication_demo.ui.theme.Medication_DemoTheme
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.medication_demo.medication.MedicineImage
+import com.example.medication_demo.model.DoseStatus
+import com.example.medication_demo.viewmodel.AppBottomNavigationBar
+import com.example.medication_demo.viewmodel.MedicineListViewModel
+import com.example.medication_demo.viewmodel.MedicineViewModel
+import com.example.medication_demo.viewmodel.WeeklyHistoryViewModel
+import com.example.medication_demo.model.MedicineHistoryUi
+import com.example.medication_demo.utils.getMalaysiaDate
 
 private val HistoryGreen = Color(0xFF159447)
-private val HistoryLightGreen = Color(0xFFE8F7ED)
 private val HistoryRed = Color(0xFFE53935)
 private val HistoryGrey = Color(0xFF6B7280)
 private val HistoryCardBackground = Color(0xFFF8F8F8)
-private val HistoryDivider = Color(0xFFE5E7EB)
 
-private data class MedicineHistoryUi(
-    val name: String,
-    val dosage: String,
-    val time: String,
-    val frequency: String,
-    val takenCount: Int,
-    val missingCount: Int = 0,
-    val drawableId: Int
-)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WeeklyHistoryScreen(
     onMoreClick: () -> Unit = {},
+    onBottomNavSelected: (Int) -> Unit = {},
+    onMedicineClick: (
+        medicineId: Int,
+        startDate: LocalDate,
+        endDate: LocalDate
+    ) -> Unit,
+    historyVm: WeeklyHistoryViewModel,
+    medicineVm: MedicineViewModel = viewModel(),
+    medicineListVm: MedicineListViewModel = viewModel()
 ) {
     val dateFormatter = remember {
         DateTimeFormatter.ofPattern(
@@ -95,74 +85,117 @@ fun WeeklyHistoryScreen(
         )
     }
 
-    var selectedStartDate by remember {
-        mutableStateOf(
-            LocalDate.of(2025, 5, 10)
-        )
-    }
-
-    var selectedEndDate by remember {
-        mutableStateOf(
-            LocalDate.of(2025, 5, 16)
-        )
-    }
-
-    var showDateRangePicker by remember {
-        mutableStateOf(false)
-    }
-
-    var dateRangeError by remember {
-        mutableStateOf<String?>(null)
-    }
-
-    val medicines = listOf(
-        MedicineHistoryUi(
-            name = "Vitamin D3",
-            dosage = "1 Tablet",
-            time = "08:00 AM",
-            frequency = "Every day",
-            takenCount = 7,
-            drawableId = R.drawable.pill_24dp_1f1f1f_fill0_wght400_grad0_opsz24
-        ),
-        MedicineHistoryUi(
-            name = "Metformin",
-            dosage = "1 Tablet",
-            time = "10:00 AM",
-            frequency = "Every day",
-            takenCount = 7,
-            drawableId = R.drawable.pill_24dp_1f1f1f_fill0_wght400_grad0_opsz24
-        ),
-        MedicineHistoryUi(
-            name = "Amoxicillin",
-            dosage = "1 Tablet",
-            time = "02:00 PM",
-            frequency = "Twice a day",
-            takenCount = 10,
-            missingCount = 4,
-            drawableId = R.drawable.pill_24dp_1f1f1f_fill0_wght400_grad0_opsz24
-        ),
-        MedicineHistoryUi(
-            name = "Omega-3 1000mg",
-            dosage = "1 Capsule",
-            time = "09:00 PM",
-            frequency = "Every day",
-            takenCount = 7,
-            drawableId = R.drawable.pill_24dp_1f1f1f_fill0_wght400_grad0_opsz24
-        ),
-        MedicineHistoryUi(
-            name = "Vitamin B12",
-            dosage = "1 Tablet",
-            time = "08:00 PM",
-            frequency = "Once a week",
-            takenCount = 1,
-            drawableId = R.drawable.pill_24dp_1f1f1f_fill0_wght400_grad0_opsz24
-        )
-    )
-
-    var selectedBottomItem by remember {
-        mutableIntStateOf(2)
-    }
-
+    val selectedStartDate by historyVm.selectedStartDate.collectAsStateWithLifecycle()
+    val selectedEndDate by historyVm.selectedEndDate.collectAsStateWithLifecycle()
+    val showDateRangePicker by historyVm.showDateRangePicker.collectAsStateWithLifecycle()
+    val dateRangeError by historyVm.dateRangeError.collectAsStateWithLifecycle()
+    val medicines by medicineVm.medicines.collectAsStateWithLifecycle()
+    val takenRecords by medicineVm.takenRecords.collectAsStateWithLifecycle()
+    val rescheduledDoses by medicineVm.rescheduledDoses.collectAsStateWithLifecycle()
+    val archivedMedicines by medicineVm.archivedMedicines.collectAsStateWithLifecycle()
+    val historySources =
+        medicines.map { medicine ->
+            medicine to null
+        } + archivedMedicines.map { archived -> archived.medicine to archived.deletedDate }
+    val historyMedicines =
+        historySources.mapNotNull {
+                (medicine, deletedDate) ->
+            val dosageText = medicineListVm.getDosageText(medicine)
+            val dates =
+                generateSequence(selectedStartDate) {
+                    it.plusDays(1)
+                }
+                    .takeWhile {
+                        !it.isAfter(selectedEndDate)
+                    }
+                    .filter { date ->
+                        // Cannot show future history
+                        !date.isAfter(getMalaysiaDate()) &&
+                                // Archived medicine should stop generating history after deletion
+                                (deletedDate == null || !date.isAfter(deletedDate))
+                    }
+                    .toList()
+            val dosesInRange =
+                dates
+                    .filter { date ->
+                        !date.isAfter(getMalaysiaDate())
+                    }
+                    .flatMap { date ->
+                        val historicalMedicine =
+                            medicineVm
+                                .getMedicineForHistoricalDate(
+                                    medicine = medicine,
+                                    date = date
+                                )
+                        medicineListVm
+                            .getMedicineDosesForDate(
+                                medicine = historicalMedicine,
+                                date = date,
+                                takenRecords = takenRecords,
+                                rescheduledDoses = rescheduledDoses
+                            )
+                    }
+            val takenCount =
+                dosesInRange.count {
+                    it.status == DoseStatus.TAKEN
+                }
+            val missingCount =
+                dosesInRange.count {
+                    it.status == DoseStatus.MISSING
+                }
+            if (
+                takenCount == 0 &&
+                missingCount == 0
+            ) {
+                null
+            } else {
+                MedicineHistoryUi(
+                    medicineId = medicine.id,
+                    name = medicine.name,
+                    dosage = dosageText,
+                    time =
+                        when {
+                            medicine.frequency.equals(
+                                "As needed",
+                                ignoreCase = true
+                            ) -> {
+                                val takenTimes =
+                                    dosesInRange
+                                        .filter {
+                                            it.status == DoseStatus.TAKEN
+                                        }
+                                        .map {
+                                            it.takenTime ?: it.time
+                                        }
+                                when {
+                                    takenTimes.isEmpty() -> "-"
+                                    takenTimes.size == 1 -> takenTimes.first()
+                                    else -> takenTimes.joinToString(", ")
+                                }
+                            }
+                            medicineListVm.isHourlyFrequency(medicine) -> {
+                                "From ${
+                                    medicine.reminderTimes
+                                        .firstOrNull()
+                                        ?.time
+                                        ?: "-"
+                                }"
+                            }
+                            else -> {
+                                medicine.reminderTimes
+                                    .joinToString(", ") {
+                                        it.time
+                                    }
+                            }
+                        },
+                    frequency = medicine.frequency,
+                    takenCount = takenCount,
+                    missingCount = missingCount,
+                    presetImageRes = medicine.presetImageRes,
+                    galleryImageUri = medicine.galleryImageUri
+                )
+            }
+        }
     Scaffold(
         containerColor = Color.White,
         topBar = {
@@ -171,11 +204,9 @@ fun WeeklyHistoryScreen(
             )
         },
         bottomBar = {
-            HistoryBottomBar(
-                selectedIndex = selectedBottomItem,
-                onSelected = {
-                    selectedBottomItem = it
-                }
+            AppBottomNavigationBar(
+                selectedIndex = 2,
+                onSelected = onBottomNavSelected
             )
         }
     ) { innerPadding ->
@@ -193,21 +224,35 @@ fun WeeklyHistoryScreen(
                 startDate = selectedStartDate,
                 endDate = selectedEndDate,
                 formatter = dateFormatter,
-                onClick = {
-                    dateRangeError = null
-                    showDateRangePicker = true
-                }
+                onClick = historyVm::openDateRangePicker
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            medicines.forEach { medicine ->
-                HistoryMedicineCard(
-                    medicine = medicine
+            if (historyMedicines.isEmpty()) {
+                Spacer(modifier = Modifier.height(40.dp))
+                Text(
+                    text = "No history record found",
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = HistoryGrey
                 )
-
-                Spacer(modifier = Modifier.height(10.dp))
+            } else {
+                historyMedicines.forEach { medicine ->
+                    HistoryMedicineCard(
+                        medicine = medicine,
+                        onClick = {
+                            onMedicineClick(
+                                medicine.medicineId,
+                                selectedStartDate,
+                                selectedEndDate
+                            )
+                        }
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                }
             }
+
             Spacer(modifier = Modifier.height(20.dp))
         }
     }
@@ -217,27 +262,8 @@ fun WeeklyHistoryScreen(
             initialStartDate = selectedStartDate,
             initialEndDate = selectedEndDate,
             errorMessage = dateRangeError,
-            onDismiss = {
-                showDateRangePicker = false
-                dateRangeError = null
-            },
-            onConfirm = { startDate, endDate ->
-                val selectedDayCount =
-                    ChronoUnit.DAYS.between(
-                        startDate,
-                        endDate
-                    ) + 1
-
-                if (selectedDayCount == 7L) {
-                    selectedStartDate = startDate
-                    selectedEndDate = endDate
-                    dateRangeError = null
-                    showDateRangePicker = false
-                } else {
-                    dateRangeError =
-                        "Please select exactly 7 days."
-                }
-            }
+            onDismiss = historyVm::closeDateRangePicker,
+            onConfirm = historyVm::confirmDateRange
         )
     }
 }
@@ -474,10 +500,12 @@ private fun WeeklyHistoryTopBar(
 
 @Composable
 private fun HistoryMedicineCard(
-    medicine: MedicineHistoryUi
+    medicine: MedicineHistoryUi,
+    onClick: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
+        onClick = onClick,
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(
             containerColor = HistoryCardBackground
@@ -501,13 +529,11 @@ private fun HistoryMedicineCard(
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    painter = painterResource(
-                        id = medicine.drawableId
-                    ),
+                MedicineImage(
+                    presetImageRes = medicine.presetImageRes,
+                    galleryImageUri = medicine.galleryImageUri,
                     contentDescription = medicine.name,
-                    tint = Color.Unspecified,
-                    modifier = Modifier.size(34.dp)
+                    imageSize = 46.dp
                 )
             }
 
@@ -531,11 +557,39 @@ private fun HistoryMedicineCard(
 
                 Spacer(modifier = Modifier.height(3.dp))
 
-                Text(
-                    text = "${medicine.time} • ${medicine.frequency}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = HistoryGrey
-                )
+                if (
+                    medicine.frequency.equals(
+                        "3 times a day",
+                        ignoreCase = true
+                    )
+                ) {
+                    Text(
+                        text = medicine.time,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = HistoryGrey,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
+                    Spacer(
+                        modifier = Modifier.height(2.dp)
+                    )
+
+                    Text(
+                        text = medicine.frequency,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = HistoryGrey
+                    )
+
+                } else {
+                    Text(
+                        text = "${medicine.time} • ${medicine.frequency}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = HistoryGrey,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.size(2.dp))
@@ -563,74 +617,6 @@ private fun HistoryMedicineCard(
     }
 }
 
-private data class HistoryBottomItem(
-    val label: String,
-    val icon: ImageVector
-)
-
-@Composable
-private fun HistoryBottomBar(
-    selectedIndex: Int,
-    onSelected: (Int) -> Unit
-) {
-    val items = listOf(
-        HistoryBottomItem(
-            label = "Home",
-            icon = Icons.Default.Home
-        ),
-        HistoryBottomItem(
-            label = "Medicine",
-            icon = Icons.Default.Medication
-        ),
-        HistoryBottomItem(
-            label = "History",
-            icon = Icons.Default.History
-        ),
-        HistoryBottomItem(
-            label = "Profile",
-            icon = Icons.Default.Person
-        )
-    )
-
-    Column {
-        HorizontalDivider(
-            color = HistoryDivider
-        )
-
-        NavigationBar(
-            containerColor = Color.White
-        ) {
-            items.forEachIndexed { index, item ->
-                NavigationBarItem(
-                    selected = selectedIndex == index,
-                    onClick = {
-                        onSelected(index)
-                    },
-                    icon = {
-                        Icon(
-                            imageVector = item.icon,
-                            contentDescription = item.label
-                        )
-                    },
-                    label = {
-                        Text(
-                            text = item.label,
-                            style = MaterialTheme.typography.labelSmall
-                        )
-                    },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = HistoryGreen,
-                        selectedTextColor = HistoryGreen,
-                        indicatorColor = HistoryLightGreen,
-                        unselectedIconColor = HistoryGrey,
-                        unselectedTextColor = HistoryGrey
-                    )
-                )
-            }
-        }
-    }
-}
-
 private fun LocalDate.toUtcMillis(): Long {
     return atStartOfDay(
         ZoneOffset.UTC
@@ -644,7 +630,7 @@ private fun Long.toLocalDateUtc(): LocalDate {
         .toLocalDate()
 }
 
-@Preview(
+/*@Preview(
     showBackground = true,
     showSystemUi = true
 )
@@ -653,4 +639,4 @@ private fun WeeklyHistoryScreenPreview() {
     Medication_DemoTheme {
         WeeklyHistoryScreen()
     }
-}
+}*/

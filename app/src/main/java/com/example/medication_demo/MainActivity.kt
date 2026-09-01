@@ -1,57 +1,80 @@
 package com.example.medication_demo
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import com.example.medication_demo.history.WeeklyHistoryScreen
-import com.example.medication_demo.medication.AddMedicineScreen
-import com.example.medication_demo.medication.MedicineCalendarScreen
-import com.example.medication_demo.medication.MedicineDetailsScreen
-import com.example.medication_demo.medication.MedicineListScreen
-import com.example.medication_demo.medication.MedicineScheduleScreen
-import com.example.medication_demo.reminder.RefillReminderScreen
+import com.example.medication_demo.navigation.MedicationApp
 import com.example.medication_demo.ui.theme.Medication_DemoTheme
 
 class MainActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
+
+    private val refillMedicineId =
+        mutableStateOf<Int?>(null)
+
+    override fun onCreate(
+        savedInstanceState: Bundle?
+    ) {
         super.onCreate(savedInstanceState)
+
         enableEdgeToEdge()
+
+        // If app is opened by tapping the notification
+        refillMedicineId.value =
+            intent
+                ?.getIntExtra(
+                    "refillMedicineId",
+                    -1
+                )
+                ?.takeIf {
+                    it != -1
+                }
+
         setContent {
+
             Medication_DemoTheme {
-                //RefillReminderScreen()
-                WeeklyHistoryScreen()
-                //MedicineCalendarScreen()
-                //MedicineScheduleScreen()
-                //MedicineDetailsScreen()
-                //MedicineListScreen()
-                /*AddMedicineScreen(
-                    isEditMode = false
-                )*/
+
+                Surface(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+
+                    MedicationApp(
+                        notificationMedicineId =
+                            refillMedicineId.value,
+
+                        onNotificationHandled = {
+                            refillMedicineId.value =
+                                null
+                        }
+                    )
+                }
             }
         }
     }
-}
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
+    // Called when MainActivity already exists
+    // and user taps the notification
+    override fun onNewIntent(
+        intent: Intent
+    ) {
+        super.onNewIntent(intent)
 
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    Medication_DemoTheme {
-        Greeting("Android")
+        setIntent(intent)
+
+        val medicineId =
+            intent.getIntExtra(
+                "refillMedicineId",
+                -1
+            )
+
+        if (medicineId != -1) {
+            refillMedicineId.value =
+                medicineId
+        }
     }
 }

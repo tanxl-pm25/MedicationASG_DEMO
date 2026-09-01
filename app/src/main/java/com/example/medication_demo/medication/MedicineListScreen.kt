@@ -19,113 +19,78 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material.icons.filled.NotificationsNone
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.example.medication_demo.R
 import com.example.medication_demo.ui.theme.Medication_DemoTheme
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.medication_demo.model.Medicine
+import com.example.medication_demo.viewmodel.MedicineViewModel
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import com.example.medication_demo.viewmodel.AppBottomNavigationBar
+import com.example.medication_demo.viewmodel.MedicineListViewModel
+import com.example.medication_demo.model.MedicineStatus
 
 private val AppGreen = Color(0xFF17852B)
-private val LightGreen = Color(0xFFE8F5E9)
 private val ScreenBackground = Color(0xFFFAFAFA)
 private val SoftGrey = Color(0xFFF3F4F6)
 private val TextGrey = Color(0xFF6B7280)
 
-data class MedicineUi(
-    val name: String,
-    val time: String,
-    val frequency: String,
-    val dosage: String,
-    val emoji: String
-)
-
 @Composable
 fun MedicineListScreen(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    medicineVm: MedicineViewModel = viewModel(),
+    listVm: MedicineListViewModel = viewModel(),
+    onAddMedicineClick: () -> Unit = {},
+    onMedicineClick: (Int) -> Unit = {},
+    onBottomNavSelected: (Int) -> Unit = {}
 ) {
-    val medicines = remember {
-        listOf(
-            MedicineUi(
-                name = "Paracetamol 500mg",
-                time = "08:00 AM",
-                frequency = "Every day",
-                dosage = "1 Tablet",
-                emoji = "💊"
-            ),
-            MedicineUi(
-                name = "Metformin 500mg",
-                time = "12:00 PM",
-                frequency = "Every day",
-                dosage = "1 Tablet",
-                emoji = "⚪"
-            ),
-            MedicineUi(
-                name = "Vitamin D3 1000IU",
-                time = "06:00 PM",
-                frequency = "Every day",
-                dosage = "1 Tablet",
-                emoji = "🔵"
-            ),
-            MedicineUi(
-                name = "Omega-3 1000mg",
-                time = "08:00 PM",
-                frequency = "Every day",
-                dosage = "1 Capsule",
-                emoji = "🟡"
-            )
-        )
-    }
-
-    var searchText by remember { mutableStateOf("") }
-    var selectedFilter by remember { mutableStateOf("All") }
-    var selectedBottomItem by remember { mutableIntStateOf(1) }
-
-    val filteredMedicines = medicines.filter {
-        it.name.contains(searchText, ignoreCase = true)
-    }
-
+    val medicines by medicineVm.medicines.collectAsStateWithLifecycle()
+    val searchText by listVm.searchText.collectAsStateWithLifecycle()
+    val selectedFilter by listVm.selectedFilter.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val filteredMedicines = listVm.filterMedicines(
+        medicines = medicines,
+        searchText = searchText,
+        selectedFilter = selectedFilter
+    )
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = ScreenBackground,
         bottomBar = {
-            MedicationBottomBar(
-                selectedIndex = selectedBottomItem,
-                onSelected = { selectedBottomItem = it }
+            AppBottomNavigationBar(
+                selectedIndex = 1,
+                onSelected = onBottomNavSelected
+            )
+        },
+        snackbarHost = {
+            SnackbarHost(
+                hostState = snackbarHostState
             )
         }
     ) { innerPadding ->
@@ -141,31 +106,63 @@ fun MedicineListScreen(
 
             MedicineSearchBar(
                 value = searchText,
-                onValueChange = { searchText = it }
+                onValueChange = listVm::onSearchTextChange
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
             MedicineFilterRow(
                 selectedFilter = selectedFilter,
-                onFilterSelected = { selectedFilter = it }
+                onFilterSelected = listVm::onFilterSelected
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                items(filteredMedicines) { medicine ->
-                    MedicineCard(medicine = medicine)
+            if (filteredMedicines.isEmpty()) {
+                val emptyMessage =
+                    if (searchText.isNotBlank()) {
+                        "No medicine found"
+                    } else {
+                        "No medicines added yet"
+                    }
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = emptyMessage,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = TextGrey
+                    )
+                }
+
+            } else {
+
+                LazyColumn(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    items(
+                        items = filteredMedicines,
+                        key = { it.id }
+                    ) { medicine ->
+                        MedicineCard(
+                            medicine = medicine,
+                            dosageText = listVm.getDosageText(medicine),
+                            status = listVm.getMedicineStatus(medicine),
+                            onClick = {
+                                onMedicineClick(medicine.id)
+                            }
+                        )
+                    }
                 }
             }
 
             Button(
-                onClick = {
-                    // UI version only: function will be connected later
-                },
+                onClick = onAddMedicineClick,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 12.dp)
@@ -243,15 +240,6 @@ private fun MedicineSearchBar(
                 tint = TextGrey
             )
         },
-        trailingIcon = {
-            IconButton(onClick = {}) {
-                Icon(
-                    imageVector = Icons.Default.Tune,
-                    contentDescription = "Filter",
-                    tint = TextGrey
-                )
-            }
-        },
         shape = RoundedCornerShape(12.dp),
         colors = TextFieldDefaults.colors(
             focusedContainerColor = Color.White,
@@ -298,7 +286,10 @@ private fun MedicineFilterRow(
 
 @Composable
 private fun MedicineCard(
-    medicine: MedicineUi
+    medicine: Medicine,
+    dosageText: String,
+    status: MedicineStatus,
+    onClick: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -309,9 +300,7 @@ private fun MedicineCard(
         elevation = CardDefaults.cardElevation(
             defaultElevation = 2.dp
         ),
-        onClick = {
-            // Medicine details page later
-        }
+        onClick = onClick
     ) {
         Row(
             modifier = Modifier
@@ -328,9 +317,11 @@ private fun MedicineCard(
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = medicine.emoji,
-                    fontSize = 27.sp
+                MedicineImage(
+                    presetImageRes = medicine.presetImageRes,
+                    galleryImageUri = medicine.galleryImageUri,
+                    contentDescription = medicine.name,
+                    imageSize = 46.dp
                 )
             }
 
@@ -344,46 +335,124 @@ private fun MedicineCard(
                     style = MaterialTheme.typography.titleMedium
                 )
 
-                Spacer(modifier = Modifier.height(5.dp))
-
-                Text(
-                    text = "${medicine.time}  •  ${medicine.frequency}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = TextGrey
-                )
-
-                Spacer(modifier = Modifier.height(5.dp))
-
-                Box(
-                    modifier = Modifier
-                        .background(
-                            color = SoftGrey,
-                            shape = RoundedCornerShape(4.dp)
-                        )
-                        .padding(horizontal = 7.dp, vertical = 3.dp)
-                ) {
+                Spacer(modifier = Modifier.height(4.dp))
+                if (medicine.reminderTimes.isNotEmpty()) {
+                    medicine.reminderTimes.forEach { reminder ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Schedule,
+                                contentDescription = "Reminder time",
+                                tint = TextGrey,
+                                modifier = Modifier.size(17.dp)
+                            )
+                            Spacer(modifier = Modifier.size(6.dp))
+                            Text(
+                                text = reminder.time,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = TextGrey
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(3.dp))
+                    }
+                } else {
+                    // For "As needed"
                     Text(
-                        text = medicine.dosage,
-                        style = MaterialTheme.typography.labelSmall
+                        text = "No fixed reminder time",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextGrey
+                    )
+                    Spacer(modifier = Modifier.height(3.dp))
+                }
+                Spacer(modifier = Modifier.height(5.dp))
+
+                // Dosage + Frequency
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .background(
+                                color = SoftGrey,
+                                shape = RoundedCornerShape(4.dp)
+                            )
+                            .padding(
+                                horizontal = 7.dp,
+                                vertical = 3.dp
+                            )
+                    ) {
+                        Text(
+                            text = dosageText,
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                    }
+                    Spacer(modifier = Modifier.size(8.dp))
+                    Text(
+                        text = medicine.frequency,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextGrey
                     )
                 }
             }
 
-            Box(
-                modifier = Modifier
-                    .size(28.dp)
-                    .background(
-                        color = AppGreen,
-                        shape = CircleShape
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Check,
-                    contentDescription = "Active",
-                    tint = Color.White,
-                    modifier = Modifier.size(17.dp)
-                )
+            when (status) {
+                MedicineStatus.ACTIVE -> {
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .background(
+                                color = SoftGrey,
+                                shape = CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = "Active",
+                            tint = TextGrey,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+
+                MedicineStatus.UPCOMING -> {
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .background(
+                                color = SoftGrey,
+                                shape = CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Schedule,
+                            contentDescription = "Upcoming",
+                            tint = TextGrey,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+
+                MedicineStatus.COMPLETED -> {
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .background(
+                                color = AppGreen,
+                                shape = CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = "Completed",
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
             }
 
             Icon(
@@ -392,69 +461,6 @@ private fun MedicineCard(
                 tint = TextGrey,
                 modifier = Modifier.padding(start = 6.dp)
             )
-        }
-    }
-}
-
-private data class BottomItem(
-    val label: String,
-    val icon: ImageVector
-)
-
-@Composable
-private fun MedicationBottomBar(
-    selectedIndex: Int,
-    onSelected: (Int) -> Unit
-) {
-    val items = listOf(
-        BottomItem("Home", Icons.Default.Home),
-        BottomItem("Medicine", Icons.Default.Medication),
-        BottomItem("History", Icons.Default.History),
-        BottomItem("Profile", Icons.Default.Person)
-    )
-
-    Column {
-        HorizontalDivider(
-            color = Color(0xFFE5E7EB)
-        )
-
-        NavigationBar(
-            containerColor = Color.White
-        ) {
-            items.forEachIndexed { index, item ->
-                NavigationBarItem(
-                    selected = selectedIndex == index,
-                    onClick = {
-                        onSelected(index)
-                    },
-                    icon = {
-                        if (item.label == "Medicine") {
-                            Icon(
-                                painter = painterResource(R.drawable.pill_24dp_1f1f1f_fill0_wght400_grad0_opsz24),
-                                contentDescription = item.label
-                            )
-                        } else {
-                            Icon(
-                                imageVector = item.icon,
-                                contentDescription = item.label
-                            )
-                        }
-                    },
-                    label = {
-                        Text(
-                            text = item.label,
-                            fontSize = 11.sp
-                        )
-                    },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = AppGreen,
-                        selectedTextColor = AppGreen,
-                        indicatorColor = LightGreen,
-                        unselectedIconColor = TextGrey,
-                        unselectedTextColor = TextGrey
-                    )
-                )
-            }
         }
     }
 }

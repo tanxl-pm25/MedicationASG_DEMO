@@ -18,9 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Schedule
@@ -33,12 +31,26 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.medication_demo.model.DoseStatus
+import com.example.medication_demo.model.MedicineDoseUi
 import com.example.medication_demo.ui.theme.Medication_DemoTheme
+import com.example.medication_demo.utils.getMalaysiaDate
+import com.example.medication_demo.viewmodel.MedicineListViewModel
+import com.example.medication_demo.viewmodel.MedicineViewModel
+import java.time.format.DateTimeFormatter
+import java.util.Locale
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import kotlinx.coroutines.delay
+import com.example.medication_demo.utils.getMalaysiaTime
 
 private val ScheduleGreen = Color(0xFF159447)
 private val ScheduleRed = Color(0xFFE53935)
@@ -47,59 +59,54 @@ private val ScheduleGrey = Color(0xFF6B7280)
 private val ScheduleDivider = Color(0xFFE5E7EB)
 private val ScheduleBackground = Color.White
 
-private enum class MedicineStatus {
-    TAKEN,
-    MISSING,
-    UPCOMING
-}
-
-private data class ScheduleMedicineUi(
-    val time: String,
-    val medicineName: String,
-    val dosage: String,
-    val status: MedicineStatus,
-    val statusText: String,
-    val extraText: String? = null
-)
-
 @Composable
 fun MedicineScheduleScreen(
     onBackClick: () -> Unit = {},
     onMoreClick: () -> Unit = {},
-    onViewCalendarClick: () -> Unit = {}
+    onViewCalendarClick: () -> Unit = {},
+    medicineVm: MedicineViewModel = viewModel(),
+    medicineListVm: MedicineListViewModel = viewModel()
 ) {
-    val scheduleItems = listOf(
-        ScheduleMedicineUi(
-            time = "08:00 AM",
-            medicineName = "Vitamin D3",
-            dosage = "1 Tablet",
-            status = MedicineStatus.TAKEN,
-            statusText = "Taken at\n8:03 AM"
-        ),
-        ScheduleMedicineUi(
-            time = "10:00 AM",
-            medicineName = "Metformin",
-            dosage = "1 Tablet",
-            status = MedicineStatus.TAKEN,
-            statusText = "Taken at\n10:02 AM"
-        ),
-        ScheduleMedicineUi(
-            time = "08:00 PM",
-            medicineName = "Amoxicillin",
-            dosage = "1 Tablet",
-            status = MedicineStatus.MISSING,
-            statusText = "Missing",
-            extraText = "Remind again after 5 minutes"
-        ),
-        ScheduleMedicineUi(
-            time = "09:00 PM",
-            medicineName = "Ibuprofen",
-            dosage = "1 Tablet",
-            status = MedicineStatus.UPCOMING,
-            statusText = "Upcoming"
+    val medicines by medicineVm.medicines.collectAsStateWithLifecycle()
+    val takenRecords by medicineVm.takenRecords.collectAsStateWithLifecycle()
+    val rescheduledDoses by medicineVm.rescheduledDoses.collectAsStateWithLifecycle()
+    val today = getMalaysiaDate()
+    val refreshTime by produceState(
+        initialValue = getMalaysiaTime()
+    ) {
+        while (true) {
+            value = getMalaysiaTime()
+            delay(1000)
+        }
+    }
+    val formattedToday =
+        today.format(
+            DateTimeFormatter.ofPattern(
+                "EEE, dd MMM",
+                Locale.ENGLISH
+            )
         )
-    )
-
+    val scheduleItems =
+        remember(medicines, takenRecords, rescheduledDoses, today, refreshTime
+        ) {
+            medicineListVm.sortDosesByTime(
+                medicines
+                    .filter { medicine ->
+                        medicineListVm.isMedicineActiveOnDate(
+                            medicine = medicine,
+                            date = today
+                        )
+                    }
+                    .flatMap { medicine ->
+                        medicineListVm.createMedicineDoseUiList(
+                            medicine = medicine,
+                            date = today,
+                            takenRecords = takenRecords,
+                            rescheduledDoses = rescheduledDoses
+                        )
+                    }
+            )
+        }
     Scaffold(
         containerColor = ScheduleBackground,
         topBar = {
@@ -114,8 +121,10 @@ fun MedicineScheduleScreen(
                     .fillMaxWidth()
                     .background(Color.White)
                     .padding(
-                        horizontal = 18.dp,
-                        vertical = 14.dp
+                        start = 18.dp,
+                        end = 18.dp,
+                        top = 14.dp,
+                        bottom = 32.dp
                     )
             ) {
                 OutlinedButton(
@@ -150,7 +159,7 @@ fun MedicineScheduleScreen(
             Spacer(modifier = Modifier.height(10.dp))
 
             Text(
-                text = "Mon, 12 May",
+                text = formattedToday,
                 modifier = Modifier.align(Alignment.CenterHorizontally),
                 style = MaterialTheme.typography.titleSmall
             )
@@ -196,17 +205,25 @@ fun MedicineScheduleScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            scheduleItems.forEachIndexed { index, item ->
-                MedicineScheduleRow(item = item)
-
-                if (index != scheduleItems.lastIndex) {
-                    HorizontalDivider(
-                        modifier = Modifier.padding(vertical = 16.dp),
-                        color = ScheduleDivider
-                    )
+            if (scheduleItems.isEmpty()) {
+                Spacer(modifier = Modifier.height(32.dp))
+                Text(
+                    text = "No medication scheduled",
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = ScheduleGrey
+                )
+            } else {
+                scheduleItems.forEachIndexed { index, item ->
+                    MedicineScheduleRow(item = item)
+                    if (index != scheduleItems.lastIndex) {
+                        HorizontalDivider(
+                            modifier = Modifier.padding(vertical = 16.dp),
+                            color = ScheduleDivider
+                        )
+                    }
                 }
             }
-
             Spacer(modifier = Modifier.height(24.dp))
         }
     }
@@ -258,7 +275,7 @@ private fun MedicineScheduleTopBar(
 
 @Composable
 private fun MedicineScheduleRow(
-    item: ScheduleMedicineUi
+    item: MedicineDoseUi
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -305,45 +322,41 @@ private fun MedicineScheduleRow(
 
         Spacer(modifier = Modifier.size(10.dp))
 
-        Text(
-            text = item.statusText,
-            modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.bodyMedium,
-            color = when (item.status) {
-                MedicineStatus.TAKEN -> ScheduleGreen
-                MedicineStatus.MISSING -> ScheduleRed
-                MedicineStatus.UPCOMING -> ScheduleOrange
+        Column(
+            modifier = Modifier.weight(1f)
+        ) {
+            Text(
+                text = item.status.displayText,
+                style = MaterialTheme.typography.bodyMedium,
+                color = when (item.status) {
+                    DoseStatus.TAKEN -> ScheduleGreen
+                    DoseStatus.IN_PROGRESS -> ScheduleGreen
+                    DoseStatus.MISSING -> ScheduleRed
+                    DoseStatus.UPCOMING -> ScheduleOrange
+                }
+            )
+            if (
+                item.status == DoseStatus.TAKEN && item.takenTime != null
+            ) {
+                Spacer(modifier = Modifier.height(3.dp))
+                Text(
+                    text = item.takenTime,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = ScheduleGreen
+                )
             }
-        )
+        }
     }
 }
 
 @Composable
 private fun StatusIcon(
-    status: MedicineStatus
+    status: DoseStatus
 ) {
-    val backgroundColor = when (status) {
-        MedicineStatus.TAKEN -> ScheduleGreen
-        MedicineStatus.MISSING -> ScheduleRed
-        MedicineStatus.UPCOMING -> Color.Transparent
-    }
-
-    val borderColor = when (status) {
-        MedicineStatus.TAKEN -> ScheduleGreen
-        MedicineStatus.MISSING -> ScheduleRed
-        MedicineStatus.UPCOMING -> ScheduleOrange
-    }
-
-    val iconColor = when (status) {
-        MedicineStatus.TAKEN -> Color.White
-        MedicineStatus.MISSING -> Color.White
-        MedicineStatus.UPCOMING -> ScheduleOrange
-    }
-
     Box(
         modifier = Modifier
             .then(
-                if (status == MedicineStatus.TAKEN) {
+                if (status == DoseStatus.TAKEN) {
                     Modifier.size(30.dp)
                         .background(
                             color = ScheduleGreen,
@@ -361,16 +374,25 @@ private fun StatusIcon(
         contentAlignment = Alignment.Center
     ) {
         when (status) {
-            MedicineStatus.TAKEN -> {
+            DoseStatus.TAKEN -> {
                 Icon(
                     imageVector = Icons.Default.Check,
                     contentDescription = "Taken",
-                    tint = iconColor,
+                    tint = Color.White,
                     modifier = Modifier.size(18.dp)
                 )
             }
 
-            MedicineStatus.MISSING -> {
+            DoseStatus.IN_PROGRESS -> {
+                Icon(
+                    imageVector = Icons.Default.Schedule,
+                    contentDescription = "In Progress",
+                    tint = ScheduleGreen,
+                    modifier = Modifier.size(35.dp)
+                )
+            }
+
+            DoseStatus.MISSING -> {
                 Icon(
                     imageVector = Icons.Default.ErrorOutline,
                     contentDescription = "Missing",
@@ -379,17 +401,18 @@ private fun StatusIcon(
                 )
             }
 
-            MedicineStatus.UPCOMING -> {
+            DoseStatus.UPCOMING -> {
                 Icon(
                     imageVector = Icons.Default.Schedule,
                     contentDescription = "Upcoming",
-                    tint = iconColor,
+                    tint = ScheduleOrange,
                     modifier = Modifier.size(35.dp)
                 )
             }
         }
     }
 }
+
 
 @Preview(
     showBackground = true,
