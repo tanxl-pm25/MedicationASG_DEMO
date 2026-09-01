@@ -11,6 +11,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import com.example.medication_demo.model.DoseStatus
+import com.example.medication_demo.model.MedicineDailyHistoryUi
 import com.example.medication_demo.model.MedicineStatus
 import com.example.medication_demo.model.NextMedicineDose
 import com.example.medication_demo.model.RescheduledDose
@@ -409,9 +410,11 @@ class MedicineListViewModel : ViewModel() {
                     getScheduledReminderTimesForDate(
                         medicine = medicine,
                         date = today
-                    ).mapNotNull { originalTime ->                        val doseStatus =
+                    ).mapIndexedNotNull { doseIndex, originalTime ->
+                        val doseStatus =
                             getDoseStatus(
                                 medicineId = medicine.id,
+                                doseIndex = doseIndex,
                                 reminderTimeText = originalTime,
                                 date = today,
                                 takenRecords = takenRecords,
@@ -420,10 +423,10 @@ class MedicineListViewModel : ViewModel() {
                         if (doseStatus == DoseStatus.TAKEN) {
                             null
                         } else {
-
                             val effectiveTime =
                                 getEffectiveReminderTime(
                                     medicineId = medicine.id,
+                                    doseIndex = doseIndex,
                                     originalTime = originalTime,
                                     date = today,
                                     rescheduledDoses = rescheduledDoses
@@ -449,6 +452,7 @@ class MedicineListViewModel : ViewModel() {
                                         dosage = getDosageText(medicine),
                                         reminderTime = effectiveTime,
                                         originalTime = originalTime,
+                                        doseIndex = doseIndex,
                                         status = doseStatus
                                     )
                                 )
@@ -514,12 +518,34 @@ class MedicineListViewModel : ViewModel() {
                 MedicineDoseUi(
                     time = record.takenTime,
                     medicineName = medicine.name,
-                    dosage = getDosageText(medicine),
-                    status = DoseStatus.TAKEN,
+                    dosage = getTakenDosageText(record),                    status = DoseStatus.TAKEN,
                     extraText = null,
                     takenTime = record.takenTime
                 )
             }
+    }
+
+    private fun getTakenDosageText(
+        record: MedicationTakenRecord
+    ): String {
+
+        val amount =
+            record.dosageAmount.trim()
+
+        val type =
+            record.dosageType.trim()
+
+        return if (amount == "1") {
+            "$amount ${type.removeSuffix("s")}"
+        } else {
+            "$amount ${
+                if (type.endsWith("s")) {
+                    type
+                } else {
+                    "${type}s"
+                }
+            }"
+        }
     }
 
     fun getScheduledReminderTimesForDate(
@@ -700,16 +726,16 @@ class MedicineListViewModel : ViewModel() {
 
     fun getEffectiveReminderTime(
         medicineId: Int,
+        doseIndex: Int,
         originalTime: String,
         date: LocalDate,
         rescheduledDoses: List<RescheduledDose>
     ): String {
-
         return rescheduledDoses
             .find { dose ->
                 dose.medicineId == medicineId &&
                         dose.date == date &&
-                        dose.originalTime == originalTime
+                        dose.doseIndex == doseIndex
             }
             ?.newTime
             ?: originalTime
@@ -717,6 +743,7 @@ class MedicineListViewModel : ViewModel() {
 
     fun getDoseStatus(
         medicineId: Int,
+        doseIndex: Int,
         reminderTimeText: String,
         date: LocalDate,
         takenRecords: List<MedicationTakenRecord>,
@@ -727,7 +754,7 @@ class MedicineListViewModel : ViewModel() {
             takenRecords.any { record ->
                 record.medicineId == medicineId &&
                         record.date == date &&
-                        record.reminderTime == reminderTimeText
+                        record.doseIndex == doseIndex
             }
 
         if (isTaken) {
@@ -746,6 +773,7 @@ class MedicineListViewModel : ViewModel() {
         val effectiveTimeText =
             getEffectiveReminderTime(
                 medicineId = medicineId,
+                doseIndex = doseIndex,
                 originalTime = reminderTimeText,
                 date = date,
                 rescheduledDoses = rescheduledDoses
@@ -889,11 +917,11 @@ class MedicineListViewModel : ViewModel() {
                 date = date
             )
 
-        return scheduledTimes.map { originalTime ->
-
+        return scheduledTimes.mapIndexed { doseIndex, originalTime ->
             val effectiveTime =
                 getEffectiveReminderTime(
                     medicineId = medicine.id,
+                    doseIndex = doseIndex,
                     originalTime = originalTime,
                     date = date,
                     rescheduledDoses = rescheduledDoses
@@ -902,6 +930,7 @@ class MedicineListViewModel : ViewModel() {
             val doseStatus =
                 getDoseStatus(
                     medicineId = medicine.id,
+                    doseIndex = doseIndex,
                     reminderTimeText = originalTime,
                     date = date,
                     takenRecords = takenRecords,
@@ -912,16 +941,20 @@ class MedicineListViewModel : ViewModel() {
                 takenRecords.find { record ->
                     record.medicineId == medicine.id &&
                             record.date == date &&
-                            record.reminderTime == originalTime
+                            record.doseIndex == doseIndex
                 }
 
-            val wasRescheduled =
-                effectiveTime != originalTime
+            val wasRescheduled = effectiveTime != originalTime
 
             MedicineDoseUi(
                 time = effectiveTime,
                 medicineName = medicine.name,
-                dosage = dosageText,
+                dosage =
+                    if (takenRecord != null) {
+                        getTakenDosageText(takenRecord)
+                    } else {
+                        dosageText
+                    },
                 status = doseStatus,
                 extraText =
                     if (wasRescheduled) {
@@ -931,6 +964,67 @@ class MedicineListViewModel : ViewModel() {
                     },
                 takenTime = takenRecord?.takenTime
             )
+        }
+    }
+
+    fun getDailyHistoryForRange(
+        medicine: Medicine,
+        startDate: LocalDate,
+        endDate: LocalDate,
+        medicineVm: MedicineViewModel,
+        takenRecords: List<MedicationTakenRecord>,
+        rescheduledDoses: List<RescheduledDose>
+    ): List<MedicineDailyHistoryUi> {
+
+        val dates =
+            generateSequence(startDate) {
+                it.plusDays(1)
+            }
+                .takeWhile {
+                    !it.isAfter(endDate)
+                }
+                .filter {
+                    !it.isAfter(getMalaysiaDate())
+                }
+                .toList()
+
+        return dates.mapNotNull { date ->
+
+            val historicalMedicine =
+                medicineVm.getMedicineForHistoricalDate(
+                    medicine = medicine,
+                    date = date
+                )
+
+            val doses =
+                getMedicineDosesForDate(
+                    medicine = historicalMedicine,
+                    date = date,
+                    takenRecords = takenRecords,
+                    rescheduledDoses = rescheduledDoses
+                )
+
+            if (doses.isEmpty()) {
+                null
+            } else {
+
+                MedicineDailyHistoryUi(
+                    date = date,
+                    frequency =
+                        historicalMedicine.frequency,
+                    doses = doses,
+                    takenCount =
+                        doses.count {
+                            it.status ==
+                                    DoseStatus.TAKEN
+                        },
+                    missingCount =
+                        doses.count {
+                            it.status ==
+                                    DoseStatus.MISSING
+                        }
+                )
+            }
         }
     }
 
@@ -1055,6 +1149,49 @@ class MedicineListViewModel : ViewModel() {
             takenRecords = takenRecords,
             rescheduledDoses = rescheduledDoses
         ).size
+    }
+
+    // Home screen
+    fun getNextMedicineDisplayName(
+        medicines: List<Medicine>,
+        nextDose: NextMedicineDose?,
+        takenRecords: List<MedicationTakenRecord>,
+        rescheduledDoses: List<RescheduledDose>
+    ): String {
+
+        if (medicines.isEmpty()) {
+            return "-"
+        }
+
+        if (nextDose != null) {
+            return nextDose.medicineName
+        }
+
+        val today =
+            getMalaysiaDate()
+
+        val hasTodayScheduledDose =
+            medicines
+                .filter { medicine ->
+                    !medicine.frequency.equals(
+                        "As needed",
+                        ignoreCase = true
+                    )
+                }
+                .any { medicine ->
+
+                    getMedicineDosesForDate(
+                        medicine = medicine,
+                        date = today,
+                        takenRecords = takenRecords,
+                        rescheduledDoses = rescheduledDoses
+                    ).isNotEmpty()
+                }
+        return if (hasTodayScheduledDose) {
+            "You've completed today's schedule"
+        } else {
+            "-"
+        }
     }
 }
 

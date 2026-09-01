@@ -6,5 +6,6 @@ data class NextMedicineDose(
     val dosage: String,
     val reminderTime: String,
     val originalTime: String,
+    val doseIndex: Int,
     val status: DoseStatus
 )

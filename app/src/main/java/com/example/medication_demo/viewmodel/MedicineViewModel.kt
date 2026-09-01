@@ -3,6 +3,7 @@ package com.example.medication_demo.viewmodel
 import androidx.lifecycle.ViewModel
 import com.example.medication_demo.model.MedicationTakenRecord
 import com.example.medication_demo.model.Medicine
+import com.example.medication_demo.model.MedicineScheduleSnapshot
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,10 +14,14 @@ import java.util.Locale
 import com.example.medication_demo.model.RescheduledDose
 import com.example.medication_demo.utils.getMalaysiaDate
 import com.example.medication_demo.utils.getMalaysiaTime
+import com.example.medication_demo.model.ArchivedMedicine
 
 class MedicineViewModel : ViewModel() {
     private val _medicines = MutableStateFlow<List<Medicine>>(emptyList())
     val medicines: StateFlow<List<Medicine>> = _medicines.asStateFlow()
+
+    private val _archivedMedicines = MutableStateFlow<List<ArchivedMedicine>>(emptyList())
+    val archivedMedicines: StateFlow<List<ArchivedMedicine>> = _archivedMedicines.asStateFlow()
 
     private val _medicineName = MutableStateFlow("")
     val medicineName: StateFlow<String> = _medicineName.asStateFlow()
@@ -109,11 +114,52 @@ class MedicineViewModel : ViewModel() {
     private val _takenRecords = MutableStateFlow<List<MedicationTakenRecord>>(emptyList())
     val takenRecords: StateFlow<List<MedicationTakenRecord>> = _takenRecords.asStateFlow()
 
+    private val _remainingQuantities = MutableStateFlow<Map<Int, Double>>(emptyMap())
+
+    val remainingQuantities: StateFlow<Map<Int, Double>> = _remainingQuantities.asStateFlow()
+
+    private val _lowStockMedicineId = MutableStateFlow<Int?>(null)
+    val lowStockMedicineId: StateFlow<Int?> = _lowStockMedicineId.asStateFlow()
+
     private val _rescheduledDoses = MutableStateFlow<List<RescheduledDose>>(emptyList())
     val rescheduledDoses: StateFlow<List<RescheduledDose>> = _rescheduledDoses.asStateFlow()
 
+    private val _scheduleSnapshots = MutableStateFlow<List<MedicineScheduleSnapshot>>(emptyList())
+    val scheduleSnapshots: StateFlow<List<MedicineScheduleSnapshot>> = _scheduleSnapshots.asStateFlow()
+
+    private fun saveScheduleSnapshot(
+        medicine: Medicine,
+        effectiveDate: LocalDate
+    ) {
+
+        val snapshot =
+            MedicineScheduleSnapshot(
+                medicineId = medicine.id,
+                effectiveDate = effectiveDate,
+                quantity = medicine.quantity,
+                dosageAmount = medicine.dosageAmount,
+                dosageType = medicine.dosageType,
+                frequency = medicine.frequency,
+                reminderTimes = medicine.reminderTimes,
+                startDate = medicine.startDate,
+                name = medicine.name,
+
+                presetImageRes = medicine.presetImageRes,
+                galleryImageUri = medicine.galleryImageUri
+            )
+
+        _scheduleSnapshots.value =
+            _scheduleSnapshots.value
+                .filterNot { existing ->
+                    existing.medicineId == medicine.id &&
+                            existing.effectiveDate ==
+                            effectiveDate
+                } +
+                    snapshot
+    }
     fun rescheduleDose(
         medicineId: Int,
+        doseIndex: Int,
         originalTime: String,
         newTime: String
     ) {
@@ -123,10 +169,11 @@ class MedicineViewModel : ViewModel() {
                 .filterNot { dose ->
                     dose.medicineId == medicineId &&
                             dose.date == today &&
-                            dose.originalTime == originalTime
+                            dose.doseIndex == doseIndex
                 } +
                     RescheduledDose(
                         medicineId = medicineId,
+                        doseIndex = doseIndex,
                         date = today,
                         originalTime = originalTime,
                         newTime = newTime
@@ -135,9 +182,14 @@ class MedicineViewModel : ViewModel() {
 
     fun markDoseAsTaken(
         medicineId: Int,
+        doseIndex: Int,
         reminderTime: String
     ) {
         val today = getMalaysiaDate()
+        val medicine =
+            _medicines.value.find {
+                it.id == medicineId
+            } ?: return
         val actualTakenTime =
             getMalaysiaTime().format(
                 DateTimeFormatter.ofPattern(
@@ -149,30 +201,116 @@ class MedicineViewModel : ViewModel() {
             _takenRecords.value.any { record ->
                 record.medicineId == medicineId &&
                         record.date == today &&
-                        record.reminderTime == reminderTime
+                        record.doseIndex == doseIndex
             }
         if (!alreadyTaken) {
-            _takenRecords.value += MedicationTakenRecord(
-                                        medicineId = medicineId,
-                                        date = today,
-                                        reminderTime = reminderTime,
-                                        takenTime = actualTakenTime
-                                    )
+            _takenRecords.value +=
+                MedicationTakenRecord(
+                    medicineId = medicineId,
+                    date = today,
+                    doseIndex = doseIndex,
+                    reminderTime = reminderTime,
+                    takenTime = actualTakenTime,
+
+                    // Snapshot
+                    dosageAmount = medicine.dosageAmount,
+                    dosageType = medicine.dosageType
+                )
+
+            reduceRemainingQuantity(
+                medicineId = medicineId
+            )
         }
+    }
+
+    fun getRemainingQuantity(
+        medicine: Medicine
+    ): Double {
+
+        return _remainingQuantities.value[
+            medicine.id
+        ] ?: medicine.quantity.toDoubleOrNull() ?: 0.0
+    }
+
+    fun getRemainingQuantityText(
+        medicine: Medicine
+    ): String {
+
+        val remaining =
+            getRemainingQuantity(medicine)
+
+        return if (remaining % 1.0 == 0.0) {
+            remaining.toInt().toString()
+        } else {
+            remaining.toString()
+        }
+    }
+
+    private fun reduceRemainingQuantity(
+        medicineId: Int
+    ) {
+
+        val medicine =
+            _medicines.value.find {
+                it.id == medicineId
+            } ?: return
+
+        val currentRemaining =
+            getRemainingQuantity(medicine)
+
+        val dosage =
+            medicine.dosageAmount
+                .toDoubleOrNull()
+                ?: return
+
+        if (dosage <= 0) {
+            return
+        }
+
+        val newRemaining =
+            (currentRemaining - dosage)
+                .coerceAtLeast(0.0)
+
+        _remainingQuantities.value += (medicineId to newRemaining)
+
+        checkRefillReminder(
+            medicine = medicine,
+            previousRemaining = currentRemaining,
+            newRemaining = newRemaining
+        )
+    }
+
+    private fun checkRefillReminder(
+        medicine: Medicine,
+        previousRemaining: Double,
+        newRemaining: Double
+    ) {
+        if (!medicine.refillReminderEnabled) {
+            return
+        }
+        val threshold =
+            medicine.refillQuantity
+                .toDoubleOrNull()
+                ?: return
+        if (previousRemaining > threshold && newRemaining <= threshold) {
+            _lowStockMedicineId.value = medicine.id
+        }
+    }
+
+    fun clearLowStockEvent() {
+        _lowStockMedicineId.value = null
     }
 
     fun markAsNeededMedicineTaken(
         medicineId: Int
-    ) {
+    ): Boolean {
         val today = getMalaysiaDate()
         val currentTime = getMalaysiaTime()
-
         val timeFormatter =
             DateTimeFormatter.ofPattern(
                 "hh:mm a",
                 Locale.ENGLISH
             )
-
         val takenTime = currentTime.format(timeFormatter)
         val alreadyTakenThisMinute =
             _takenRecords.value.any { record ->
@@ -180,20 +318,40 @@ class MedicineViewModel : ViewModel() {
                         record.date == today &&
                         record.reminderTime == takenTime
             }
-
         if (alreadyTakenThisMinute) {
-            return
+            return false
         }
+        val nextDoseIndex =
+            _takenRecords.value
+                .filter { record ->
+                    record.medicineId == medicineId &&
+                            record.date == today
+                }
+                .maxOfOrNull { record ->
+                    record.doseIndex
+                }
+                ?.plus(1)
+                ?: 0
+
+        val medicine =
+            _medicines.value.find {
+                it.id == medicineId
+            } ?: return false
 
         val newRecord =
             MedicationTakenRecord(
                 medicineId = medicineId,
                 date = today,
+                doseIndex = nextDoseIndex,
                 reminderTime = takenTime,
-                takenTime = takenTime
+                takenTime = takenTime,
+                dosageAmount = medicine.dosageAmount,
+                dosageType = medicine.dosageType
             )
 
         _takenRecords.value += newRecord
+        reduceRemainingQuantity(medicineId = medicineId)
+        return true
     }
 
     fun onRefillReminderEnabledChange(enabled: Boolean) {
@@ -471,19 +629,57 @@ class MedicineViewModel : ViewModel() {
         return !hasError
     }
 
-    fun updateMedicine(id: Int): Boolean {
+    fun refillMedicine(
+        medicineId: Int,
+        refillQuantity: Int
+    ) {
+        if (refillQuantity <= 0) {
+            return
+        }
 
+        val medicine =
+            _medicines.value.find {
+                it.id == medicineId
+            } ?: return
+
+        val currentRemaining = getRemainingQuantity(medicine)
+        val newRemaining = currentRemaining + refillQuantity.toDouble()
+
+        _remainingQuantities.value += (medicineId to newRemaining)
+    }
+
+    fun updateMedicine(id: Int): Boolean {
         if (!validateMedicineForm()) {
             return false
         }
+        val oldMedicine =
+            _medicines.value.find {
+                it.id == id
+            } ?: return false
+        // Original total quantity stored in Medicine
+        val oldTotalQuantity = oldMedicine.quantity.toDoubleOrNull() ?: 0.0
+        // Current actual remaining quantity
+        val oldRemaining = getRemainingQuantity(oldMedicine)
+        // Quantity entered by user in Edit Medicine
+        val editedQuantity = _quantity.value.toDoubleOrNull() ?: return false
 
+        val quantityDifference = editedQuantity - oldRemaining
+        val newTotalQuantity =
+            (oldTotalQuantity + quantityDifference)
+                .coerceAtLeast(0.0)
+        val newRemaining = editedQuantity.coerceAtLeast(0.0)
+        val newTotalQuantityText =
+            if (newTotalQuantity % 1.0 == 0.0) {
+                newTotalQuantity.toInt().toString()
+            } else {
+                newTotalQuantity.toString()
+            }
         _medicines.value =
             _medicines.value.map { medicine ->
-
                 if (medicine.id == id) {
                     medicine.copy(
                         name = _medicineName.value,
-                        quantity = _quantity.value,
+                        quantity = newTotalQuantityText,
                         dosageAmount = _dosageAmount.value,
                         dosageType = _dosageType.value,
                         refillReminderEnabled = _refillReminderEnabled.value,
@@ -493,14 +689,65 @@ class MedicineViewModel : ViewModel() {
                         startDate = _startDate.value,
                         notes = _notes.value,
                         presetImageRes = _presetImageRes.value,
-                        galleryImageUri = _galleryImageUri.value                    )
+                        galleryImageUri = _galleryImageUri.value
+                    )
                 } else {
                     medicine
                 }
             }
+        _remainingQuantities.value += (id to newRemaining)
+        val updatedMedicine =
+            _medicines.value.find {
+                it.id == id
+            }
+
+        if (updatedMedicine != null) {
+            saveScheduleSnapshot(
+                medicine = updatedMedicine,
+                effectiveDate = getMalaysiaDate()
+            )
+        }
 
         return true
     }
+
+    fun getScheduleSnapshotForDate(
+        medicineId: Int,
+        date: LocalDate
+    ): MedicineScheduleSnapshot? {
+
+        return _scheduleSnapshots.value
+            .filter { snapshot ->
+                snapshot.medicineId == medicineId &&
+                        !snapshot.effectiveDate
+                            .isAfter(date)
+            }
+            .maxByOrNull {
+                it.effectiveDate
+            }
+    }
+
+    fun getMedicineForHistoricalDate(
+        medicine: Medicine,
+        date: LocalDate
+    ): Medicine {
+
+        val snapshot =
+            getScheduleSnapshotForDate(
+                medicineId = medicine.id,
+                date = date
+            ) ?: return medicine
+
+        return medicine.copy(
+            quantity = snapshot.quantity,
+            dosageAmount = snapshot.dosageAmount,
+            dosageType = snapshot.dosageType,
+            frequency = snapshot.frequency,
+            reminderTimes = snapshot.reminderTimes,
+            startDate = snapshot.startDate
+        )
+    }
+
     fun addMedicine(): Boolean {
 
         if (!validateMedicineForm()) {
@@ -508,7 +755,7 @@ class MedicineViewModel : ViewModel() {
         }
 
         val newMedicine = Medicine(
-            id = (_medicines.value.maxOfOrNull { it.id } ?: 0) + 1,
+            id = generateNextMedicineId(),
             name = _medicineName.value,
             quantity = _quantity.value,
             dosageAmount = _dosageAmount.value,
@@ -524,23 +771,51 @@ class MedicineViewModel : ViewModel() {
         )
 
         _medicines.value += newMedicine
+        _remainingQuantities.value += (newMedicine.id to (newMedicine.quantity.toDoubleOrNull() ?: 0.0))
+        val medicineStartDate =
+            try {
+                LocalDate.parse(
+                    newMedicine.startDate,
+                    dateFormatter
+                )
+            } catch (_: Exception) {
+                getMalaysiaDate()
+            }
 
+        saveScheduleSnapshot(
+            medicine = newMedicine,
+            effectiveDate = medicineStartDate
+        )
         return true
     }
 
     fun deleteMedicine(id: Int) {
+        val medicineToDelete =
+            _medicines.value.find { medicine ->
+                medicine.id == id
+            } ?: return
+        // Keep a copy for History
+        val archivedMedicine =
+            ArchivedMedicine(
+                medicine = medicineToDelete,
+                deletedDate = getMalaysiaDate()
+            )
+        _archivedMedicines.value =
+            _archivedMedicines.value
+                .filterNot { archived ->
+                    archived.medicine.id == id
+                } + archivedMedicine
+        // Remove from current active medicine list
         _medicines.value =
             _medicines.value.filter { medicine ->
                 medicine.id != id
             }
-        _takenRecords.value =
-            _takenRecords.value.filter { record ->
-                record.medicineId != id
-            }
-        _rescheduledDoses.value =
-            _rescheduledDoses.value.filter { dose ->
-                dose.medicineId != id
-            }
+        // Current stock is no longer needed
+        _remainingQuantities.value -= id
+        // Clear low stock event if this medicine happens to be the current event
+        if (_lowStockMedicineId.value == id) {
+            _lowStockMedicineId.value = null
+        }
     }
 
     fun addReminderTime() {
@@ -701,7 +976,7 @@ class MedicineViewModel : ViewModel() {
 
     fun loadMedicineForEdit(medicine: Medicine) {
         _medicineName.value = medicine.name
-        _quantity.value = medicine.quantity
+        _quantity.value = getRemainingQuantityText(medicine)
         _dosageAmount.value = medicine.dosageAmount
         _dosageType.value = medicine.dosageType
         _refillReminderEnabled.value = medicine.refillReminderEnabled
@@ -795,4 +1070,23 @@ class MedicineViewModel : ViewModel() {
         _presetImageRes.value = null
     }
 
+    private fun generateNextMedicineId(): Int {
+
+        val activeIds =
+            _medicines.value.map {
+                it.id
+            }
+
+        val archivedIds =
+            _archivedMedicines.value.map {
+                it.medicine.id
+            }
+
+        val highestId =
+            (activeIds + archivedIds)
+                .maxOrNull()
+                ?: 0
+
+        return highestId + 1
+    }
 }

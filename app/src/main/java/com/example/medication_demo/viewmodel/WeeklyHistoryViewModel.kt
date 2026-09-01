@@ -9,7 +9,6 @@ import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 
 class WeeklyHistoryViewModel : ViewModel() {
-
     private val _selectedEndDate = MutableStateFlow(getMalaysiaDate())
     val selectedEndDate: StateFlow<LocalDate> = _selectedEndDate.asStateFlow()
 
@@ -44,9 +43,10 @@ class WeeklyHistoryViewModel : ViewModel() {
         endDate: LocalDate
     ) {
 
+        val currentDate = getMalaysiaDate()
         if (
-            startDate.isAfter(getMalaysiaDate()) ||
-            endDate.isAfter(getMalaysiaDate())
+            startDate.isAfter(currentDate) ||
+            endDate.isAfter(currentDate)
         ) {
             _dateRangeError.value =
                 "History date cannot be in the future."

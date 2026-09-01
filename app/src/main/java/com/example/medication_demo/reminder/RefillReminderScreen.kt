@@ -1,6 +1,7 @@
 package com.example.medication_demo.reminder
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -37,6 +38,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.medication_demo.R
 import com.example.medication_demo.ui.theme.Medication_DemoTheme
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.ui.unit.sp
+import androidx.compose.material3.RadioButton
+import com.example.medication_demo.medication.MedicineImage
+
 
 private val ReminderGreen = Color(0xFF159447)
 private val ReminderBackground = Color.White
@@ -47,7 +55,9 @@ fun RefillReminderScreen(
     medicineName: String = "Metformin",
     tabletsLeft: Int = 5,
     onRefillConfirm: (Int) -> Unit = {},
-    onRemindAgainConfirm: (Int) -> Unit = {}
+    onRemindAgainConfirm: (Int) -> Unit = {},
+    presetImageRes: Int? = null,
+    galleryImageUri: String? = null,
 ) {
     var showRefillDialog by remember {
         mutableStateOf(false)
@@ -79,12 +89,11 @@ fun RefillReminderScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                Image(
-                    painter = painterResource(
-                        id = R.drawable.pill_24dp_1f1f1f_fill0_wght400_grad0_opsz24
-                    ),
-                    contentDescription = "Low medicine quantity reminder",
-                    modifier = Modifier.size(190.dp)
+                MedicineImage(
+                    presetImageRes = presetImageRes,
+                    galleryImageUri = galleryImageUri,
+                    contentDescription = medicineName,
+                    imageSize = 190.dp
                 )
 
                 Spacer(
@@ -115,7 +124,7 @@ fun RefillReminderScreen(
 
                 Text(
                     text =
-                        "It’s time to refill your\n$medicineName.",
+                        "It’s time to refill your medicine.",
                     style = MaterialTheme.typography.bodyLarge,
                     color = ReminderTextGrey,
                     textAlign = TextAlign.Center
@@ -215,27 +224,24 @@ private fun RefillQuantityDialog(
     onDismiss: () -> Unit,
     onConfirm: (Int) -> Unit
 ) {
-    var quantityText by remember {
-        mutableStateOf("")
-    }
-
-    var errorMessage by remember {
-        mutableStateOf<String?>(null)
-    }
-
+    var quantityText by remember { mutableStateOf("") }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
     AlertDialog(
         onDismissRequest = onDismiss,
 
         title = {
             Text(
-                text = "Refill $medicineName"
+                text = "Refill $medicineName",
+                style = MaterialTheme.typography.titleMedium,
+                fontSize = 24.sp
             )
         },
 
         text = {
             Column {
                 Text(
-                    text = "Enter the new medicine quantity."
+                    text = "Enter the quantity you want to add.",
+                    fontSize = 15.sp
                 )
 
                 Spacer(
@@ -244,36 +250,36 @@ private fun RefillQuantityDialog(
 
                 OutlinedTextField(
                     value = quantityText,
-
                     onValueChange = { value ->
                         if (value.all { it.isDigit() }) {
                             quantityText = value
                             errorMessage = null
                         }
                     },
-
                     label = {
-                        Text("New Quantity")
+                        Text(
+                            text = "Refill Quantity"
+                        )
                     },
-
+                    placeholder = {
+                        Text(
+                            text = "E.g. 30"
+                        )
+                    },
                     singleLine = true,
-
                     keyboardOptions =
                         KeyboardOptions(
-                            keyboardType =
-                                KeyboardType.Number
+                            keyboardType = KeyboardType.Number
                         ),
-
-                    isError =
-                        errorMessage != null,
-
+                    isError = errorMessage != null,
                     supportingText = {
                         if (errorMessage != null) {
                             Text(
                                 text = errorMessage!!
                             )
                         }
-                    }
+                    },
+                    shape = RoundedCornerShape(10.dp),
                 )
             }
         },
@@ -301,13 +307,13 @@ private fun RefillQuantityDialog(
                 )
             }
         },
-
         dismissButton = {
             TextButton(
                 onClick = onDismiss
             ) {
                 Text(
-                    text = "Cancel"
+                    text = "Cancel",
+                    color = ReminderTextGrey
                 )
             }
         }
@@ -319,7 +325,15 @@ private fun RemindAgainDialog(
     onDismiss: () -> Unit,
     onConfirm: (Int) -> Unit
 ) {
-    var minutesText by remember {
+    var selectedMinutes by remember {
+        mutableStateOf<Int?>(30)
+    }
+
+    var isCustom by remember {
+        mutableStateOf(false)
+    }
+
+    var customMinutes by remember {
         mutableStateOf("")
     }
 
@@ -327,72 +341,221 @@ private fun RemindAgainDialog(
         mutableStateOf<String?>(null)
     }
 
+    val commonOptions =
+        listOf(5, 10, 15, 30, 60)
+
     AlertDialog(
         onDismissRequest = onDismiss,
 
         title = {
             Text(
-                text = "Remind Again"
+                text = "Remind Again",
+                style = MaterialTheme.typography.titleMedium,
+                fontSize = 24.sp
             )
         },
 
         text = {
-            Column {
+            Column(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+
                 Text(
-                    text = "How many minutes later would you like to be reminded?"
+                    text =
+                        "When would you like us to remind you again?",
+                    fontSize = 15.sp
                 )
 
                 Spacer(
-                    modifier = Modifier.height(12.dp)
+                    modifier = Modifier.height(10.dp)
                 )
 
-                OutlinedTextField(
-                    value = minutesText,
+                commonOptions.forEach { minutes ->
 
-                    onValueChange = { value ->
-                        if (value.all { it.isDigit() }) {
-                            minutesText = value
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                selectedMinutes = minutes
+                                isCustom = false
+                                errorMessage = null
+                            }
+                            .padding(vertical = 2.dp),
+
+                        verticalAlignment =
+                            Alignment.CenterVertically
+                    ) {
+
+                        RadioButton(
+                            selected =
+                                !isCustom &&
+                                        selectedMinutes == minutes,
+
+                            onClick = {
+                                selectedMinutes = minutes
+                                isCustom = false
+                                errorMessage = null
+                            }
+                        )
+
+                        Spacer(
+                            modifier = Modifier.width(8.dp)
+                        )
+
+                        Text(
+                            text = "$minutes minutes"
+                        )
+                    }
+                }
+
+                // Custom option
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            isCustom = true
+                            selectedMinutes = null
                             errorMessage = null
                         }
-                    },
+                        .padding(vertical = 2.dp),
 
-                    label = {
-                        Text("Minutes")
-                    },
+                    verticalAlignment =
+                        Alignment.CenterVertically
+                ) {
 
-                    singleLine = true,
+                    RadioButton(
+                        selected = isCustom,
 
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Number
-                    ),
-
-                    isError = errorMessage != null,
-
-                    supportingText = {
-                        if (errorMessage != null) {
-                            Text(
-                                text = errorMessage!!
-                            )
+                        onClick = {
+                            isCustom = true
+                            selectedMinutes = null
+                            errorMessage = null
                         }
+                    )
+
+                    Spacer(
+                        modifier = Modifier.width(8.dp)
+                    )
+
+                    Text(
+                        text = "Custom time",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+
+                if (isCustom) {
+
+                    Spacer(
+                        modifier = Modifier.height(10.dp)
+                    )
+
+                    Text(
+                        text = "Remind after",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = ReminderTextGrey
+                    )
+
+                    Spacer(
+                        modifier = Modifier.height(6.dp)
+                    )
+
+                    Row(
+                        verticalAlignment =
+                            Alignment.CenterVertically
+                    ) {
+
+                        OutlinedTextField(
+                            value = customMinutes,
+
+                            onValueChange = { value ->
+                                if (value.all { it.isDigit() }) {
+                                    customMinutes = value
+                                    errorMessage = null
+                                }
+                            },
+
+                            modifier = Modifier.width(100.dp),
+
+                            placeholder = {
+                                Text("E.g. 45")
+                            },
+
+                            singleLine = true,
+
+                            keyboardOptions =
+                                KeyboardOptions(
+                                    keyboardType =
+                                        KeyboardType.Number
+                                ),
+
+                            isError =
+                                errorMessage != null,
+
+                            shape =
+                                RoundedCornerShape(8.dp),
+
+                            colors =
+                                OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor =
+                                        ReminderGreen,
+                                    cursorColor =
+                                        ReminderGreen
+                                )
+                        )
+
+                        Spacer(
+                            modifier = Modifier.width(10.dp)
+                        )
+
+                        Text(
+                            text = "minutes",
+                            style =
+                                MaterialTheme.typography.bodyMedium,
+                            color = ReminderTextGrey
+                        )
                     }
-                )
+
+                    if (errorMessage != null) {
+
+                        Spacer(
+                            modifier = Modifier.height(4.dp)
+                        )
+
+                        Text(
+                            text = errorMessage!!,
+                            style =
+                                MaterialTheme.typography.bodySmall,
+                            color = Color.Red
+                        )
+                    }
+                }
             }
         },
 
         confirmButton = {
             TextButton(
                 onClick = {
-                    val minutes =
-                        minutesText.toIntOrNull()
 
-                    if (
-                        minutes == null ||
-                        minutes <= 0
-                    ) {
-                        errorMessage =
-                            "Please enter a number greater than 0."
+                    if (isCustom) {
+
+                        val minutes =
+                            customMinutes.toIntOrNull()
+
+                        if (
+                            minutes == null ||
+                            minutes <= 0
+                        ) {
+                            errorMessage =
+                                "Please enter a number greater than 0."
+                        } else {
+                            onConfirm(minutes)
+                        }
+
                     } else {
-                        onConfirm(minutes)
+
+                        selectedMinutes?.let { minutes ->
+                            onConfirm(minutes)
+                        }
                     }
                 }
             ) {
@@ -408,7 +571,8 @@ private fun RemindAgainDialog(
                 onClick = onDismiss
             ) {
                 Text(
-                    text = "Cancel"
+                    text = "Cancel",
+                    color = ReminderTextGrey
                 )
             }
         }
@@ -423,5 +587,18 @@ private fun RemindAgainDialog(
 private fun RefillReminderScreenPreview() {
     Medication_DemoTheme {
         RefillReminderScreen()
+    }
+}
+
+@Preview(showBackground = true,
+    showSystemUi = true)
+@Composable
+private fun RefillQuantityDialogPreview() {
+    Medication_DemoTheme {
+        RefillQuantityDialog(
+            medicineName = "haha",
+            onDismiss = {},
+            onConfirm = {}
+        )
     }
 }

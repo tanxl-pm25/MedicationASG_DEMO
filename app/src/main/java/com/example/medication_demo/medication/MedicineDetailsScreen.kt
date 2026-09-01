@@ -71,6 +71,7 @@ private val DetailBackground = Color(0xFFFFFFFF)
 @Composable
 fun MedicineDetailsScreen(
     medicine: Medicine,
+    remainingQuantity: Double,
     listVm: MedicineListViewModel = viewModel(),
     onBackClick: () -> Unit = {},
     onEditClick: () -> Unit = {},
@@ -127,7 +128,10 @@ fun MedicineDetailsScreen(
 
             Spacer(modifier = Modifier.height(18.dp))
 
-            MedicineInformationSection(medicine = medicine)
+            MedicineInformationSection(
+                medicine = medicine,
+                remainingQuantity = remainingQuantity
+            )
 
             Spacer(modifier = Modifier.height(14.dp))
 
@@ -449,7 +453,8 @@ private fun MedicineActionButton(
 
 @Composable
 private fun MedicineInformationSection(
-    medicine: Medicine
+    medicine: Medicine,
+    remainingQuantity: Double
 ) {
     Column(
         modifier = Modifier.fillMaxWidth()
@@ -471,15 +476,22 @@ private fun MedicineInformationSection(
             value = medicine.frequency
         )
 
-        val quantityText =
-            if (medicine.quantity == "1") {
-                "${medicine.quantity} ${medicine.dosageType}"
+        val remainingText =
+            if (remainingQuantity % 1.0 == 0.0) {
+                remainingQuantity.toInt().toString()
             } else {
-                "${medicine.quantity} ${medicine.dosageType}s"
+                remainingQuantity.toString()
+            }
+
+        val quantityText =
+            if (remainingQuantity == 1.0) {
+                "$remainingText ${medicine.dosageType}"
+            } else {
+                "$remainingText ${medicine.dosageType}s"
             }
 
         MedicineInformationRow(
-            label = "Quantity",
+            label = "Remaining Quantity",
             value = quantityText
         )
 
@@ -614,9 +626,22 @@ private fun ReminderSection(
                     color = DetailDivider
                 )
 
+                val enabledRepeats =
+                    medicine.reminderTimes
+                        .filter {
+                            it.reminderOptionsEnabled && it.minutes.isNotBlank()
+                        }.map { it.minutes }.distinct()
+
+                val repeatEveryText =
+                    when {
+                        enabledRepeats.isEmpty() -> "-"
+                        enabledRepeats.size == 1 -> "${enabledRepeats.first()} minutes"
+                        else ->
+                            enabledRepeats.joinToString(", ") { "$it minutes" }
+                    }
                 ReminderInformationRow(
-                    title = "Repeat",
-                    value = medicine.frequency
+                    title = "Repeat Every",
+                    value = repeatEveryText
                 )
             }
         }
@@ -689,7 +714,8 @@ private fun MedicineDetailsScreenPreview() {
 
         Medication_DemoTheme {
             MedicineDetailsScreen(
-                medicine = sampleMedicine
+                medicine = sampleMedicine,
+                remainingQuantity = 24.0
             )
         }
     }

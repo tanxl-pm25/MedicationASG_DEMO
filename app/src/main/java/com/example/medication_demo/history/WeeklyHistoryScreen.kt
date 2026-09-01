@@ -69,7 +69,12 @@ private val HistoryCardBackground = Color(0xFFF8F8F8)
 fun WeeklyHistoryScreen(
     onMoreClick: () -> Unit = {},
     onBottomNavSelected: (Int) -> Unit = {},
-    historyVm: WeeklyHistoryViewModel = viewModel(),
+    onMedicineClick: (
+        medicineId: Int,
+        startDate: LocalDate,
+        endDate: LocalDate
+    ) -> Unit,
+    historyVm: WeeklyHistoryViewModel,
     medicineVm: MedicineViewModel = viewModel(),
     medicineListVm: MedicineListViewModel = viewModel()
 ) {
@@ -87,8 +92,14 @@ fun WeeklyHistoryScreen(
     val medicines by medicineVm.medicines.collectAsStateWithLifecycle()
     val takenRecords by medicineVm.takenRecords.collectAsStateWithLifecycle()
     val rescheduledDoses by medicineVm.rescheduledDoses.collectAsStateWithLifecycle()
+    val archivedMedicines by medicineVm.archivedMedicines.collectAsStateWithLifecycle()
+    val historySources =
+        medicines.map { medicine ->
+            medicine to null
+        } + archivedMedicines.map { archived -> archived.medicine to archived.deletedDate }
     val historyMedicines =
-        medicines.mapNotNull { medicine ->
+        historySources.mapNotNull {
+                (medicine, deletedDate) ->
             val dosageText = medicineListVm.getDosageText(medicine)
             val dates =
                 generateSequence(selectedStartDate) {
@@ -97,6 +108,12 @@ fun WeeklyHistoryScreen(
                     .takeWhile {
                         !it.isAfter(selectedEndDate)
                     }
+                    .filter { date ->
+                        // Cannot show future history
+                        !date.isAfter(getMalaysiaDate()) &&
+                                // Archived medicine should stop generating history after deletion
+                                (deletedDate == null || !date.isAfter(deletedDate))
+                    }
                     .toList()
             val dosesInRange =
                 dates
@@ -104,12 +121,19 @@ fun WeeklyHistoryScreen(
                         !date.isAfter(getMalaysiaDate())
                     }
                     .flatMap { date ->
-                        medicineListVm.getMedicineDosesForDate(
-                            medicine = medicine,
-                            date = date,
-                            takenRecords = takenRecords,
-                            rescheduledDoses = rescheduledDoses
-                        )
+                        val historicalMedicine =
+                            medicineVm
+                                .getMedicineForHistoricalDate(
+                                    medicine = medicine,
+                                    date = date
+                                )
+                        medicineListVm
+                            .getMedicineDosesForDate(
+                                medicine = historicalMedicine,
+                                date = date,
+                                takenRecords = takenRecords,
+                                rescheduledDoses = rescheduledDoses
+                            )
                     }
             val takenCount =
                 dosesInRange.count {
@@ -126,6 +150,7 @@ fun WeeklyHistoryScreen(
                 null
             } else {
                 MedicineHistoryUi(
+                    medicineId = medicine.id,
                     name = medicine.name,
                     dosage = dosageText,
                     time =
@@ -215,7 +240,14 @@ fun WeeklyHistoryScreen(
             } else {
                 historyMedicines.forEach { medicine ->
                     HistoryMedicineCard(
-                        medicine = medicine
+                        medicine = medicine,
+                        onClick = {
+                            onMedicineClick(
+                                medicine.medicineId,
+                                selectedStartDate,
+                                selectedEndDate
+                            )
+                        }
                     )
                     Spacer(modifier = Modifier.height(10.dp))
                 }
@@ -468,10 +500,12 @@ private fun WeeklyHistoryTopBar(
 
 @Composable
 private fun HistoryMedicineCard(
-    medicine: MedicineHistoryUi
+    medicine: MedicineHistoryUi,
+    onClick: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
+        onClick = onClick,
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(
             containerColor = HistoryCardBackground
@@ -596,7 +630,7 @@ private fun Long.toLocalDateUtc(): LocalDate {
         .toLocalDate()
 }
 
-@Preview(
+/*@Preview(
     showBackground = true,
     showSystemUi = true
 )
@@ -605,4 +639,4 @@ private fun WeeklyHistoryScreenPreview() {
     Medication_DemoTheme {
         WeeklyHistoryScreen()
     }
-}
+}*/

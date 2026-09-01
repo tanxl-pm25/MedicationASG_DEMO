@@ -84,6 +84,16 @@ import androidx.compose.ui.layout.ContentScale
 import coil.compose.AsyncImage
 import com.example.medication_demo.utils.getMalaysiaDate
 import com.example.medication_demo.components.MedicationTimePickerDialog
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
+import com.example.medication_demo.ui.AppTopBar
 
 private val EditGreen = Color(0xFF148A32)
 private val EditRed = Color(0xFFFF3B30)
@@ -133,14 +143,37 @@ fun AddMedicineScreen(
                 )
             }
         }
+    val context = LocalContext.current
+    val notificationPermissionLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.RequestPermission()
+        ) { isGranted ->
+            if (isGranted) {
+                vm.onRefillReminderEnabledChange(true)
+            }
+        }
     var showImageOptions by remember { mutableStateOf(false) }
     var showPresetImages by remember { mutableStateOf(false) }
+    var showAsNeededGuide by remember { mutableStateOf(false) }
+    var showHelpDialog by remember { mutableStateOf(false) }
     Scaffold(
         containerColor = EditBackground,
         topBar = {
-            AddMedicineTopBar(
-                title = if (isEditMode) "Edit Medicine" else "Add Medicine",
-                onBackClick = onBackClick
+            AppTopBar(
+                title =
+                    if (isEditMode) {
+                        "Edit Medicine"
+                    } else {
+                        "Add Medicine"
+                    },
+
+                onBackClick = onBackClick,
+
+                showMoreMenu = true,
+
+                onHelpClick = {
+                    showHelpDialog = true
+                }
             )
         }
     ) { innerPadding ->
@@ -276,7 +309,32 @@ fun AddMedicineScreen(
 
                 RefillReminderSwitch(
                     checked = refillReminderEnabled,
-                    onCheckedChange = vm::onRefillReminderEnabledChange
+                    onCheckedChange = { enabled ->
+                        if (!enabled) {
+                            // User turns the reminder OFF.
+                            vm.onRefillReminderEnabledChange(false)
+                        } else {
+                            // Android 13 and above require notification permission
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                val permissionGranted =
+                                    ContextCompat.checkSelfPermission(
+                                        context,
+                                        Manifest.permission.POST_NOTIFICATIONS
+                                    ) == PackageManager.PERMISSION_GRANTED
+                                if (permissionGranted) {
+                                    vm.onRefillReminderEnabledChange(true)
+                                } else {
+                                    notificationPermissionLauncher.launch(
+                                        Manifest.permission.POST_NOTIFICATIONS
+                                    )
+                                }
+                            } else {
+                                // Android 12 and below do not require
+                                // POST_NOTIFICATIONS runtime permission.
+                                vm.onRefillReminderEnabledChange(true)
+                            }
+                        }
+                    }
                 )
             }
 
@@ -464,6 +522,35 @@ fun AddMedicineScreen(
             Spacer(modifier = Modifier.height(32.dp))
         }
     }
+    if (showHelpDialog) {
+
+        AlertDialog(
+            onDismissRequest = {
+                showHelpDialog = false
+            },
+
+            title = {
+                Text("Medicine Help")
+            },
+
+            text = {
+                Text(
+                    "Enter your medicine information, dosage, " +
+                            "frequency and reminder settings."
+                )
+            },
+
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showHelpDialog = false
+                    }
+                ) {
+                    Text("Got it")
+                }
+            }
+        )
+    }
     if (showFrequencyDialog) {
         FrequencyDialog(
             frequencyDraft = frequencyDraft,
@@ -477,11 +564,11 @@ fun AddMedicineScreen(
             onCustomUnitChange = vm::onCustomFrequencyUnitChange,
             onCancel = vm::closeFrequencyDialog,
             onDone = {
-                val success =
-                    vm.confirmFrequency()
-
-                if (success) {
-                    vm.closeFrequencyDialog()
+                val success = vm.confirmFrequency()
+                if (success) { vm.closeFrequencyDialog()
+                    if (frequencyDraft == "As needed") {
+                        showAsNeededGuide = true
+                    }
                 }
             }
         )
@@ -499,7 +586,6 @@ fun AddMedicineScreen(
                     style = MaterialTheme.typography.titleMedium
                 )
             },
-
             text = {
                 Column {
                     TextButton(
@@ -510,7 +596,6 @@ fun AddMedicineScreen(
                     ) {
                         Text("Choose from Gallery")
                     }
-
                     TextButton(
                         onClick = {
                             showImageOptions = false
@@ -545,19 +630,16 @@ fun AddMedicineScreen(
             R.drawable.fluid_24dp_1f1f1f_fill0_wght400_grad0_opsz24,
             R.drawable.surgical_24dp_1f1f1f_fill0_wght400_grad0_opsz24
         )
-
         AlertDialog(
             onDismissRequest = {
                 showPresetImages = false
             },
-
             title = {
                 Text(
                     text = "Choose Medicine Image",
                     style = MaterialTheme.typography.titleMedium
                 )
             },
-
             text = {
                 LazyRow(
                     horizontalArrangement =
@@ -608,8 +690,100 @@ fun AddMedicineScreen(
             }
         )
     }
+    if (showAsNeededGuide) {
+        AsNeededGuideDialog(
+            onDismiss = {
+                showAsNeededGuide = false
+            }
+        )
+    }
 }
 
+@Composable
+private fun AsNeededGuideDialog(
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+
+        title = {
+            Text(
+                text = "How to take your medicine",
+                style = MaterialTheme.typography.titleMedium
+            )
+        },
+
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+
+                Image(
+                    painter = painterResource(
+                        id = R.drawable.medication_reminder_android
+                    ),
+                    contentDescription = "Take Now guide",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 300.dp),
+                    contentScale = ContentScale.Fit
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = buildAnnotatedString {
+                        append("For ")
+                        withStyle(
+                            style = SpanStyle(
+                                color = Color(0xFF009688),
+                                fontWeight = FontWeight.Bold
+                            )
+                        ) {
+                            append("\"As needed\"")
+                        }
+                        append(
+                            " medicine, you can record a dose anytime by tapping "
+                        )
+                        withStyle(
+                            style = SpanStyle(
+                                color = Color(0xFF009688),
+                                fontWeight = FontWeight.Bold
+                            )
+                        ) {
+                            append("Take Now")
+                        }
+                        append(
+                            " on the "
+                        )
+                        withStyle(
+                            style = SpanStyle(
+                                color = Color(0xFF009688),
+                                fontWeight = FontWeight.Bold
+                            )
+                        ) {
+                            append("\"Medicine Details screen\"")
+                        }
+                        append(".")
+                    },
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        },
+
+        confirmButton = {
+            Button(
+                onClick = onDismiss,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = EditGreen
+                )
+            ) {
+                Text("Got it")
+            }
+        }
+    )
+}
 @Composable
 private fun MedicineImageSelector(
     presetImageRes: Int?,
@@ -730,50 +904,6 @@ private fun NumberInputField(
                 text = errorMessage,
                 style = MaterialTheme.typography.bodySmall,
                 color = EditRed
-            )
-        }
-    }
-}
-
-@Composable
-private fun AddMedicineTopBar(
-    title: String,
-    onBackClick: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Color.White)
-            .padding(
-                start = 6.dp,
-                end = 6.dp,
-                top = 28.dp,
-                bottom = 6.dp
-            ),
-    ) {
-        IconButton(
-            onClick = onBackClick,
-            modifier = Modifier.align(Alignment.CenterStart)
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Back"
-            )
-        }
-
-        Text(
-            text = title,
-            modifier = Modifier.align(Alignment.Center),
-            style = MaterialTheme.typography.titleLarge
-        )
-
-        IconButton(
-            onClick = {},
-            modifier = Modifier.align(Alignment.CenterEnd)
-        ) {
-            Icon(
-                imageVector = Icons.Default.MoreVert,
-                contentDescription = "More options"
             )
         }
     }

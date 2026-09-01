@@ -66,8 +66,6 @@ fun MedicineListScreen(
     modifier: Modifier = Modifier,
     medicineVm: MedicineViewModel = viewModel(),
     listVm: MedicineListViewModel = viewModel(),
-    snackbarMessage: String? = null,
-    onSnackbarShown: () -> Unit = {},
     onAddMedicineClick: () -> Unit = {},
     onMedicineClick: (Int) -> Unit = {},
     onBottomNavSelected: (Int) -> Unit = {}
@@ -81,19 +79,6 @@ fun MedicineListScreen(
         searchText = searchText,
         selectedFilter = selectedFilter
     )
-
-    LaunchedEffect(snackbarMessage) {
-        if (snackbarMessage != null) {
-
-            snackbarHostState.showSnackbar(
-                message = snackbarMessage,
-                duration = SnackbarDuration.Short
-            )
-
-            onSnackbarShown()
-        }
-    }
-
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = ScreenBackground,
