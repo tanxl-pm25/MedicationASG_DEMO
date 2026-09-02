@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -35,22 +35,36 @@ private val EditGreen = Color(0xFF159447)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EditUsernameScreen(
-    currentName: String,
+fun EditEmailScreen(
+    currentEmail: String,
     onBackClick: () -> Unit = {},
-    onSaveClick: (newName: String) -> Unit = {}
+    onSaveClick: (newEmail: String) -> Unit = {}
 ) {
-    var name by remember { mutableStateOf(currentName) }
+    var email by remember { mutableStateOf(currentEmail) }
     var submitAttempted by remember { mutableStateOf(false) }
-    val nameHasError = submitAttempted && name.isBlank()
+
+    val emailHasError = submitAttempted &&
+            (email.isBlank() || !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches())
+
+    val errorMessage = when {
+        !submitAttempted -> " "
+        email.isBlank() -> "Email cannot be empty"
+        !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches() ->
+            "Please enter a valid email"
+        else -> " "
+    }
 
     Scaffold(
         containerColor = Color.White,
         topBar = {
             TopAppBar(
-                title = { Text("Edit Username") },
+                title = {
+                    Text("Edit Email")
+                },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
+                    IconButton(
+                        onClick = onBackClick
+                    ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back"
@@ -60,41 +74,61 @@ fun EditUsernameScreen(
             )
         }
     ) { innerPadding ->
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
                 .padding(24.dp)
         ) {
+
             OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = { Text("Username") },
+                value = email,
+                onValueChange = {
+                    email = it
+                },
+                label = {
+                    Text("Email")
+                },
                 leadingIcon = {
-                    Icon(imageVector = Icons.Filled.Person, contentDescription = null)
+                    Icon(
+                        imageVector = Icons.Filled.Email,
+                        contentDescription = null
+                    )
                 },
                 singleLine = true,
-                isError = nameHasError,
+                isError = emailHasError,
                 supportingText = {
-                    Text(if (nameHasError) "Username cannot be empty" else " ")
+                    Text(errorMessage)
                 },
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(
+                modifier = Modifier.height(20.dp)
+            )
 
             Button(
                 onClick = {
                     submitAttempted = true
-                    if (name.isNotBlank()) {
-                        onSaveClick(name.trim())
+
+                    val isValidEmail =
+                        email.isNotBlank() &&
+                                android.util.Patterns.EMAIL_ADDRESS
+                                    .matcher(email)
+                                    .matches()
+
+                    if (isValidEmail) {
+                        onSaveClick(email.trim())
                     }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
                 shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = EditGreen)
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = EditGreen
+                )
             ) {
                 Text(
                     text = "Save",
@@ -107,8 +141,10 @@ fun EditUsernameScreen(
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
-private fun EditUsernameScreenPreview() {
+private fun EditEmailScreenPreview() {
     Medication_DemoTheme {
-        EditUsernameScreen(currentName = "")
+        EditEmailScreen(
+            currentEmail = ""
+        )
     }
 }
