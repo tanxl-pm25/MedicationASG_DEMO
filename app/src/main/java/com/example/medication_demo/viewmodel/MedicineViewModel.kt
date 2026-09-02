@@ -1,6 +1,5 @@
 package com.example.medication_demo.viewmodel
 
-import androidx.lifecycle.ViewModel
 import com.example.medication_demo.model.MedicationTakenRecord
 import com.example.medication_demo.model.Medicine
 import com.example.medication_demo.model.MedicineScheduleSnapshot
@@ -15,16 +14,37 @@ import com.example.medication_demo.model.RescheduledDose
 import com.example.medication_demo.utils.getMalaysiaDate
 import com.example.medication_demo.utils.getMalaysiaTime
 import com.example.medication_demo.model.ArchivedMedicine
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import com.example.medication_demo.storage.MedicineLocalStorage
+import androidx.lifecycle.viewModelScope
+import com.example.medication_demo.repository.MedicineRepository
+import kotlinx.coroutines.launch
 
-class MedicineViewModel : ViewModel() {
-    private val _medicines = MutableStateFlow<List<Medicine>>(emptyList())
-    val medicines: StateFlow<List<Medicine>> = _medicines.asStateFlow()
+class MedicineViewModel(
+    application: Application
+) : AndroidViewModel(application) {
 
-    private val _archivedMedicines = MutableStateFlow<List<ArchivedMedicine>>(emptyList())
+    private val localStorage = MedicineLocalStorage(application)
+    private val medicineRepository = MedicineRepository()
+
+    private val _medicines = MutableStateFlow(localStorage.loadMedicines())
+    val medicines = _medicines.asStateFlow()
+
+    private val _archivedMedicines = MutableStateFlow<List<ArchivedMedicine>>(localStorage.loadArchivedMedicines())
     val archivedMedicines: StateFlow<List<ArchivedMedicine>> = _archivedMedicines.asStateFlow()
 
     private val _medicineName = MutableStateFlow("")
     val medicineName: StateFlow<String> = _medicineName.asStateFlow()
+
+    private val _remainingQuantities = MutableStateFlow<Map<Int, Double>>(localStorage.loadRemainingQuantities())
+    val remainingQuantities: StateFlow<Map<Int, Double>> = _remainingQuantities.asStateFlow()
+
+    private val _rescheduledDoses = MutableStateFlow<List<RescheduledDose>>(localStorage.loadRescheduledDoses())
+    val rescheduledDoses: StateFlow<List<RescheduledDose>> = _rescheduledDoses.asStateFlow()
+
+    private val _scheduleSnapshots = MutableStateFlow<List<MedicineScheduleSnapshot>>(localStorage.loadScheduleSnapshots())
+    val scheduleSnapshots: StateFlow<List<MedicineScheduleSnapshot>> = _scheduleSnapshots.asStateFlow()
 
     private val _quantity = MutableStateFlow("")
     val quantity: StateFlow<String> = _quantity.asStateFlow()
@@ -111,21 +131,11 @@ class MedicineViewModel : ViewModel() {
     private val _galleryImageUri = MutableStateFlow<String?>(null)
     val galleryImageUri: StateFlow<String?> = _galleryImageUri.asStateFlow()
 
-    private val _takenRecords = MutableStateFlow<List<MedicationTakenRecord>>(emptyList())
+    private val _takenRecords = MutableStateFlow<List<MedicationTakenRecord>>(localStorage.loadTakenRecords())
     val takenRecords: StateFlow<List<MedicationTakenRecord>> = _takenRecords.asStateFlow()
-
-    private val _remainingQuantities = MutableStateFlow<Map<Int, Double>>(emptyMap())
-
-    val remainingQuantities: StateFlow<Map<Int, Double>> = _remainingQuantities.asStateFlow()
 
     private val _lowStockMedicineId = MutableStateFlow<Int?>(null)
     val lowStockMedicineId: StateFlow<Int?> = _lowStockMedicineId.asStateFlow()
-
-    private val _rescheduledDoses = MutableStateFlow<List<RescheduledDose>>(emptyList())
-    val rescheduledDoses: StateFlow<List<RescheduledDose>> = _rescheduledDoses.asStateFlow()
-
-    private val _scheduleSnapshots = MutableStateFlow<List<MedicineScheduleSnapshot>>(emptyList())
-    val scheduleSnapshots: StateFlow<List<MedicineScheduleSnapshot>> = _scheduleSnapshots.asStateFlow()
 
     private fun saveScheduleSnapshot(
         medicine: Medicine,
@@ -154,8 +164,8 @@ class MedicineViewModel : ViewModel() {
                     existing.medicineId == medicine.id &&
                             existing.effectiveDate ==
                             effectiveDate
-                } +
-                    snapshot
+                } + snapshot
+        localStorage.saveScheduleSnapshots(_scheduleSnapshots.value)
     }
     fun rescheduleDose(
         medicineId: Int,
@@ -178,6 +188,7 @@ class MedicineViewModel : ViewModel() {
                         originalTime = originalTime,
                         newTime = newTime
                     )
+        localStorage.saveRescheduledDoses(_rescheduledDoses.value)
     }
 
     fun markDoseAsTaken(
@@ -211,15 +222,12 @@ class MedicineViewModel : ViewModel() {
                     doseIndex = doseIndex,
                     reminderTime = reminderTime,
                     takenTime = actualTakenTime,
-
                     // Snapshot
                     dosageAmount = medicine.dosageAmount,
                     dosageType = medicine.dosageType
                 )
-
-            reduceRemainingQuantity(
-                medicineId = medicineId
-            )
+            localStorage.saveTakenRecords(_takenRecords.value)
+            reduceRemainingQuantity(medicineId = medicineId)
         }
     }
 
@@ -272,7 +280,7 @@ class MedicineViewModel : ViewModel() {
                 .coerceAtLeast(0.0)
 
         _remainingQuantities.value += (medicineId to newRemaining)
-
+        localStorage.saveRemainingQuantities(_remainingQuantities.value)
         checkRefillReminder(
             medicine = medicine,
             previousRemaining = currentRemaining,
@@ -350,6 +358,7 @@ class MedicineViewModel : ViewModel() {
             )
 
         _takenRecords.value += newRecord
+        localStorage.saveTakenRecords(_takenRecords.value)
         reduceRemainingQuantity(medicineId = medicineId)
         return true
     }
@@ -396,10 +405,6 @@ class MedicineViewModel : ViewModel() {
         if (isValid) {
             _refillQuantityError.value = null
         }
-    }
-
-    fun onFrequencyChange(value: String) {
-        _frequency.value = value
     }
 
     fun openFrequencyEditor() {
@@ -527,20 +532,29 @@ class MedicineViewModel : ViewModel() {
         _notes.value = value
     }
 
-    private fun validateMedicineForm(): Boolean {
+    private fun validateMedicineForm(
+        editingMedicineId: Int? = null)
+    : Boolean {
         var hasError = false
-
         _medicineNameError.value =
-            if (_medicineName.value.isBlank()) {
-                "Please enter the medicine name."
-            } else {
-                null
+            when {
+                _medicineName.value.isBlank() ->
+                    "Please enter the medicine name."
+                _medicines.value.any { medicine ->
+                    medicine.id != editingMedicineId &&
+                            medicine.name.trim().equals(
+                                _medicineName.value.trim(),
+                                ignoreCase = true
+                            )
+                } ->
+                    "This medicine already exists."
+                else ->
+                    null
             }
 
         if (_medicineNameError.value != null) {
             hasError = true
         }
-
         val quantityValue = _quantity.value.toIntOrNull()
 
         _quantityError.value = when {
@@ -646,10 +660,12 @@ class MedicineViewModel : ViewModel() {
         val newRemaining = currentRemaining + refillQuantity.toDouble()
 
         _remainingQuantities.value += (medicineId to newRemaining)
+        localStorage.saveRemainingQuantities(_remainingQuantities.value)
     }
 
     fun updateMedicine(id: Int): Boolean {
-        if (!validateMedicineForm()) {
+        if (!validateMedicineForm(editingMedicineId = id)
+        ) {
             return false
         }
         val oldMedicine =
@@ -695,7 +711,9 @@ class MedicineViewModel : ViewModel() {
                     medicine
                 }
             }
+        localStorage.saveMedicines(_medicines.value)
         _remainingQuantities.value += (id to newRemaining)
+        localStorage.saveRemainingQuantities(_remainingQuantities.value)
         val updatedMedicine =
             _medicines.value.find {
                 it.id == id
@@ -706,6 +724,9 @@ class MedicineViewModel : ViewModel() {
                 medicine = updatedMedicine,
                 effectiveDate = getMalaysiaDate()
             )
+            viewModelScope.launch {
+                medicineRepository.updateMedicine(updatedMedicine)
+            }
         }
 
         return true
@@ -771,7 +792,14 @@ class MedicineViewModel : ViewModel() {
         )
 
         _medicines.value += newMedicine
+        localStorage.saveMedicines(_medicines.value)
         _remainingQuantities.value += (newMedicine.id to (newMedicine.quantity.toDoubleOrNull() ?: 0.0))
+        localStorage.saveRemainingQuantities(_remainingQuantities.value)
+        viewModelScope.launch {
+            medicineRepository.addMedicine(
+                newMedicine
+            )
+        }
         val medicineStartDate =
             try {
                 LocalDate.parse(
@@ -798,20 +826,26 @@ class MedicineViewModel : ViewModel() {
         val archivedMedicine =
             ArchivedMedicine(
                 medicine = medicineToDelete,
-                deletedDate = getMalaysiaDate()
+                deletedDate = getMalaysiaDate(),
+                deletedTime = getMalaysiaTime()
             )
         _archivedMedicines.value =
             _archivedMedicines.value
                 .filterNot { archived ->
                     archived.medicine.id == id
                 } + archivedMedicine
+        localStorage.saveArchivedMedicines(_archivedMedicines.value)
         // Remove from current active medicine list
         _medicines.value =
             _medicines.value.filter { medicine ->
                 medicine.id != id
             }
+        localStorage.saveMedicines(_medicines.value)
         // Current stock is no longer needed
         _remainingQuantities.value -= id
+        localStorage.saveRemainingQuantities(_remainingQuantities.value)
+        viewModelScope.launch { medicineRepository.deleteMedicine(id) }
+
         // Clear low stock event if this medicine happens to be the current event
         if (_lowStockMedicineId.value == id) {
             _lowStockMedicineId.value = null
@@ -922,6 +956,7 @@ class MedicineViewModel : ViewModel() {
                 medicine
             }
         }
+        localStorage.saveMedicines(_medicines.value)
     }
 
     private fun getRequiredTimeCount(
@@ -1076,17 +1111,17 @@ class MedicineViewModel : ViewModel() {
             _medicines.value.map {
                 it.id
             }
-
         val archivedIds =
             _archivedMedicines.value.map {
                 it.medicine.id
             }
-
+        val takenRecordIds =
+            _takenRecords.value.map {
+                it.medicineId
+            }
         val highestId =
-            (activeIds + archivedIds)
-                .maxOrNull()
-                ?: 0
-
+            (activeIds + archivedIds + takenRecordIds)
+                .maxOrNull() ?: 0
         return highestId + 1
     }
 }

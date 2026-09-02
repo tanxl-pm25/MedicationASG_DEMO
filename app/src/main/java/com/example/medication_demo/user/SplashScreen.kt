@@ -19,9 +19,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.medication_demo.R
 import com.example.medication_demo.ui.theme.Medication_DemoTheme
 
@@ -45,13 +48,14 @@ fun SplashScreen(
             Image(
                 painter = painterResource(id = R.drawable.heart_logo),
                 contentDescription = "App logo",
-                modifier = Modifier.height(100.dp)
+                modifier = Modifier.height(120.dp)
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
                 text = "Smart Medication\nCompanion",
+                fontSize = 30.sp,
                 style = MaterialTheme.typography.titleLarge,
                 textAlign = TextAlign.Center
             )

@@ -17,21 +17,21 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ErrorOutline
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -49,6 +49,8 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.example.medication_demo.ui.AppTopBar
 import kotlinx.coroutines.delay
 import com.example.medication_demo.utils.getMalaysiaTime
 
@@ -62,12 +64,12 @@ private val ScheduleBackground = Color.White
 @Composable
 fun MedicineScheduleScreen(
     onBackClick: () -> Unit = {},
-    onMoreClick: () -> Unit = {},
     onViewCalendarClick: () -> Unit = {},
     medicineVm: MedicineViewModel = viewModel(),
     medicineListVm: MedicineListViewModel = viewModel()
 ) {
     val medicines by medicineVm.medicines.collectAsStateWithLifecycle()
+    val archivedMedicines by medicineVm.archivedMedicines.collectAsStateWithLifecycle()
     val takenRecords by medicineVm.takenRecords.collectAsStateWithLifecycle()
     val rescheduledDoses by medicineVm.rescheduledDoses.collectAsStateWithLifecycle()
     val today = getMalaysiaDate()
@@ -87,32 +89,35 @@ fun MedicineScheduleScreen(
             )
         )
     val scheduleItems =
-        remember(medicines, takenRecords, rescheduledDoses, today, refreshTime
+        remember(
+            medicines,
+            archivedMedicines,
+            takenRecords,
+            rescheduledDoses,
+            today,
+            refreshTime
         ) {
-            medicineListVm.sortDosesByTime(
-                medicines
-                    .filter { medicine ->
-                        medicineListVm.isMedicineActiveOnDate(
-                            medicine = medicine,
-                            date = today
-                        )
-                    }
-                    .flatMap { medicine ->
-                        medicineListVm.createMedicineDoseUiList(
-                            medicine = medicine,
-                            date = today,
-                            takenRecords = takenRecords,
-                            rescheduledDoses = rescheduledDoses
-                        )
-                    }
+            medicineListVm.getEffectiveDosesForDate(
+                medicines = medicines,
+                archivedMedicines = archivedMedicines,
+                date = today,
+                takenRecords = takenRecords,
+                rescheduledDoses = rescheduledDoses,
+                medicineVm = medicineVm
             )
         }
+    var showHelpDialog by remember { mutableStateOf(false) }
+
     Scaffold(
         containerColor = ScheduleBackground,
         topBar = {
-            MedicineScheduleTopBar(
+            AppTopBar(
+                title = "Medicine Schedule",
                 onBackClick = onBackClick,
-                onMoreClick = onMoreClick
+                showMoreMenu = true,
+                onHelpClick = {
+                    showHelpDialog = true
+                }
             )
         },
         bottomBar = {
@@ -227,49 +232,27 @@ fun MedicineScheduleScreen(
             Spacer(modifier = Modifier.height(24.dp))
         }
     }
-}
+    if (showHelpDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showHelpDialog = false
+            },
+            title = { Text("Schedule Help")
+            },
 
-@Composable
-private fun MedicineScheduleTopBar(
-    onBackClick: () -> Unit,
-    onMoreClick: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Color.White)
-            .padding(
-                start = 6.dp,
-                end = 6.dp,
-                top = 28.dp,
-                bottom = 8.dp
-            ),
-    ) {
-        IconButton(
-            onClick = onBackClick,
-            modifier = Modifier.align(Alignment.CenterStart)
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Back"
-            )
-        }
-
-        Text(
-            text = "Medicine Schedule",
-            modifier = Modifier.align(Alignment.Center),
-            style = MaterialTheme.typography.titleLarge
+            text = {
+                Text("You can view your daily schedule at here, ")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showHelpDialog = false
+                    }
+                ) {
+                    Text("Got it")
+                }
+            }
         )
-
-        IconButton(
-            onClick = onMoreClick,
-            modifier = Modifier.align(Alignment.CenterEnd)
-        ) {
-            Icon(
-                imageVector = Icons.Default.MoreVert,
-                contentDescription = "More options"
-            )
-        }
     }
 }
 
@@ -283,13 +266,17 @@ private fun MedicineScheduleRow(
     ) {
         Text(
             text = item.time,
-            modifier = Modifier.weight(0.9f),
+            modifier = Modifier.width(72.dp),
             style = MaterialTheme.typography.bodyMedium
         )
 
-        StatusIcon(
-            status = item.status
-        )
+        // STATUS ICON
+        Box(
+            modifier = Modifier.width(36.dp),
+            contentAlignment = Alignment.TopCenter
+        ) {
+            StatusIcon(status = item.status)
+        }
 
         Spacer(modifier = Modifier.size(12.dp))
 

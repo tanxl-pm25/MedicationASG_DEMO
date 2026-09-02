@@ -22,13 +22,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -38,6 +37,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -64,6 +64,7 @@ import com.example.medication_demo.model.MedicineDoseUi
 import com.example.medication_demo.model.CalendarDayUi
 import com.example.medication_demo.model.DoseStatus
 import com.example.medication_demo.utils.getMalaysiaDate
+import com.example.medication_demo.ui.AppTopBar
 
 private val CalendarGreen = Color(0xFF159447)
 private val CalendarLightGreen = Color(0xFFE8F7ED)
@@ -76,7 +77,6 @@ private val CalendarDivider = Color(0xFFE5E7EB)
 @Composable
 fun MedicineCalendarScreen(
     onBackClick: () -> Unit = {},
-    onMoreClick: () -> Unit = {},
     medicineVm: MedicineViewModel = viewModel(),
     medicineListVm: MedicineListViewModel = viewModel()
 ) {
@@ -86,36 +86,32 @@ fun MedicineCalendarScreen(
     val medicines by medicineVm.medicines.collectAsStateWithLifecycle()
     val takenRecords by medicineVm.takenRecords.collectAsStateWithLifecycle()
     val rescheduledDoses by medicineVm.rescheduledDoses.collectAsStateWithLifecycle()
+    val archivedMedicines by medicineVm.archivedMedicines.collectAsStateWithLifecycle()
     val selectedDateMedicines =
-        medicineListVm.sortDosesByTime(
-            medicines
-                .filter { medicine ->
-                    medicineListVm.isMedicineActiveOnDate(
-                        medicine = medicine,
-                        date = selectedDate
-                    )
-                }
-                .flatMap { medicine ->
-                    medicineListVm.createMedicineDoseUiList(
-                        medicine = medicine,
-                        date = selectedDate,
-                        takenRecords = takenRecords,
-                        rescheduledDoses = rescheduledDoses
-                    )
-                }
+        medicineListVm.getEffectiveDosesForDate(
+            medicines = medicines,
+            archivedMedicines = archivedMedicines,
+            date = selectedDate,
+            takenRecords = takenRecords,
+            rescheduledDoses = rescheduledDoses,
+            medicineVm = medicineVm
         )
     val takenCount =
         selectedDateMedicines.count {
             it.status == DoseStatus.TAKEN
         }
     val totalCount = selectedDateMedicines.size
-
+    var showHelpDialog by remember { mutableStateOf(false) }
     Scaffold(
         containerColor = Color.White,
         topBar = {
-            CalendarTopBar(
+            AppTopBar(
+                title = "Medication Calendar",
                 onBackClick = onBackClick,
-                onMoreClick = onMoreClick
+                showMoreMenu = true,
+                onHelpClick = {
+                    showHelpDialog = true
+                }
             )
         }
     ) { innerPadding ->
@@ -153,11 +149,14 @@ fun MedicineCalendarScreen(
                 displayedMonth = displayedMonth,
                 selectedDate = selectedDate,
                 getStatusForDate = { date ->
-                    medicineListVm.getDateDoseStatus(
+
+                    medicineListVm.getEffectiveDateDoseStatus(
                         medicines = medicines,
+                        archivedMedicines = archivedMedicines,
                         date = date,
                         takenRecords = takenRecords,
-                        rescheduledDoses = rescheduledDoses
+                        rescheduledDoses = rescheduledDoses,
+                        medicineVm = medicineVm
                     )
                 },
                 onDateSelected = {
@@ -218,49 +217,33 @@ fun MedicineCalendarScreen(
             Spacer(modifier = Modifier.height(30.dp))
         }
     }
-}
+    if (showHelpDialog) {
 
-@Composable
-private fun CalendarTopBar(
-    onBackClick: () -> Unit,
-    onMoreClick: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Color.White)
-            .padding(
-                start = 6.dp,
-                end = 6.dp,
-                top = 28.dp,
-                bottom = 8.dp
-            )
-    ) {
-        IconButton(
-            onClick = onBackClick,
-            modifier = Modifier.align(Alignment.CenterStart)
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Back"
-            )
-        }
+        AlertDialog(
+            onDismissRequest = {
+                showHelpDialog = false
+            },
 
-        Text(
-            text = "Medication Calendar",
-            modifier = Modifier.align(Alignment.Center),
-            style = MaterialTheme.typography.titleLarge
+            title = {
+                Text("Medicine Help")
+            },
+
+            text = {
+                Text(
+                    "You can select the day you want to track your record."
+                )
+            },
+
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showHelpDialog = false
+                    }
+                ) {
+                    Text("Got it")
+                }
+            }
         )
-
-        IconButton(
-            onClick = onMoreClick,
-            modifier = Modifier.align(Alignment.CenterEnd)
-        ) {
-            Icon(
-                imageVector = Icons.Default.MoreVert,
-                contentDescription = "More options"
-            )
-        }
     }
 }
 

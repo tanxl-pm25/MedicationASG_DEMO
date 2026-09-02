@@ -1,6 +1,7 @@
 package com.example.medication_demo.user
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -44,13 +45,19 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.util.Patterns
 import com.example.medication_demo.R
 import com.example.medication_demo.ui.theme.Medication_DemoTheme
 
 private val LoginGreen = Color(0xFF159447)
 
+private fun isValidEmail(email: String): Boolean {
+    return Patterns.EMAIL_ADDRESS.matcher(email).matches()
+}
+
 @Composable
 fun LoginScreen(
+    errorMessage: String? = null,
     onLoginClick: (email: String, password: String) -> Unit = { _, _ -> },
     onForgotPasswordClick: () -> Unit = {},
     onGoogleLoginClick: () -> Unit = {},
@@ -60,6 +67,9 @@ fun LoginScreen(
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var showValidation by remember { mutableStateOf(false) }
+
+    val emailHasError = showValidation && (email.isBlank() || !isValidEmail(email))
+    val passwordHasError = showValidation && password.isBlank()
 
     Scaffold(
         containerColor = Color.White
@@ -107,7 +117,18 @@ fun LoginScreen(
                         contentDescription = null
                     )
                 },
-                isError = showValidation && email.isBlank(),
+                isError = emailHasError,
+                supportingText = {
+                    if (emailHasError) {
+                        Text(
+                            text = if (email.isBlank()) {
+                                "Email cannot be empty"
+                            } else {
+                                "Please enter a valid email address"
+                            }
+                        )
+                    }
+                },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -138,12 +159,19 @@ fun LoginScreen(
                     }
                 },
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                isError = showValidation && password.isBlank(),
+                isError = passwordHasError || errorMessage != null,
+                supportingText = {
+                    if (passwordHasError) {
+                        Text("Password cannot be empty")
+                    } else if (errorMessage != null) {
+                        Text(errorMessage)
+                    }
+                },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(2.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -154,19 +182,21 @@ fun LoginScreen(
                 ) {
                     Text(
                         text = "Forgot password?",
+                        fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
+                        textDecoration = TextDecoration.Underline,
                         color = LoginGreen
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
             // Login button
             Button(
                 onClick = {
                     showValidation = true
-                    if (email.isNotBlank() && password.isNotBlank()) {
+                    if (email.isNotBlank() && isValidEmail(email) && password.isNotBlank()) {
                         onLoginClick(email, password)
                     }
                 },
@@ -234,7 +264,33 @@ fun LoginScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(10.dp))
+
+            OutlinedButton(
+                onClick = onGoogleLoginClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                shape = RoundedCornerShape(12.dp),
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ){
+                    Image(
+                        painter = painterResource(id = R.drawable.age_cake_pic),
+                        contentDescription = null,
+                        modifier = Modifier.height(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Text(
+                        text = "Continue with Facebook",
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
 
             Row {
                 Text(
@@ -247,7 +303,9 @@ fun LoginScreen(
                     style = MaterialTheme.typography.bodyMedium,
                     color = LoginGreen,
                     textDecoration = TextDecoration.Underline,
-                    modifier = Modifier.padding(0.dp)
+                    modifier = Modifier
+                        .padding(0.dp)
+                        .clickable { onSignUpClick() }
                 )
             }
         }

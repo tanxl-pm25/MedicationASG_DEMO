@@ -158,16 +158,6 @@ fun MedicineHistoryDetailScreen(
                             }
 
                             Spacer(
-                                modifier = Modifier.height(4.dp)
-                            )
-
-                            Text(
-                                text = day.frequency,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = HistoryDetailGrey
-                            )
-
-                            Spacer(
                                 modifier = Modifier.height(10.dp)
                             )
 
@@ -219,7 +209,7 @@ fun MedicineHistoryDetailScreen(
                             }
 
                             Spacer(
-                                modifier = Modifier.height(14.dp)
+                                modifier = Modifier.height(6.dp)
                             )
 
                             day.doses.forEachIndexed {
@@ -229,7 +219,7 @@ fun MedicineHistoryDetailScreen(
                                 Column(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(vertical = 6.dp)
+                                        .padding(vertical = 4.dp)
                                 ) {
 
                                     Text(
@@ -238,38 +228,58 @@ fun MedicineHistoryDetailScreen(
                                             MaterialTheme.typography.bodyLarge
                                     )
 
-                                    Spacer(
-                                        modifier =
-                                            Modifier.height(3.dp)
-                                    )
-
-                                    Text(
-                                        text = dose.dosage,
-                                        style =
-                                            MaterialTheme.typography.bodySmall,
-                                        color =
-                                            HistoryDetailGrey
-                                    )
-
-                                    if (
-                                        dose.status ==
-                                        DoseStatus.TAKEN &&
-                                        dose.takenTime != null
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
 
+                                        Text(
+                                            text = dose.dosage,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = HistoryDetailGrey
+                                        )
+
                                         Spacer(
-                                            modifier =
-                                                Modifier.height(5.dp)
+                                            modifier = Modifier.width(6.dp)
                                         )
 
                                         Text(
-                                            text =
-                                                "Taken at ${dose.takenTime}",
-                                            style =
-                                                MaterialTheme.typography.bodySmall,
-                                            color =
-                                                HistoryDetailGreen
+                                            text = "•",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = HistoryDetailGrey
                                         )
+
+                                        Spacer(
+                                            modifier = Modifier.width(6.dp)
+                                        )
+
+                                        Text(
+                                            text = day.frequency,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = HistoryDetailGrey
+                                        )
+                                    }
+
+                                    when (dose.status) {
+                                        DoseStatus.TAKEN -> {
+                                            if (dose.takenTime != null) {
+                                                Spacer(modifier = Modifier.height(5.dp))
+                                                Text(
+                                                    text = "Taken at ${dose.takenTime}",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = HistoryDetailGreen
+                                                )
+                                            }
+                                        }
+
+                                        DoseStatus.MISSING -> {
+                                            Spacer(modifier = Modifier.height(5.dp))
+                                            Text(
+                                                text = "Missing at ${dose.time}",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = HistoryDetailRed
+                                            )
+                                        }
+                                        else -> Unit
                                     }
                                 }
 

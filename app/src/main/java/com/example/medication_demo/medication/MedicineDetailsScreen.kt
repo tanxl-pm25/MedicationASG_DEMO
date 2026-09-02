@@ -18,10 +18,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.AlertDialog
@@ -29,7 +27,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
@@ -54,6 +51,7 @@ import com.example.medication_demo.model.ReminderTimeUi
 import com.example.medication_demo.viewmodel.MedicineListViewModel
 import com.example.medication_demo.model.MedicineStatus
 import androidx.compose.material3.Button
+import com.example.medication_demo.ui.AppTopBar
 
 private val DetailGreen = Color(0xFF159447)
 private val DetailLightGreen = Color(0xFFE8F7ED)
@@ -76,7 +74,6 @@ fun MedicineDetailsScreen(
     onBackClick: () -> Unit = {},
     onEditClick: () -> Unit = {},
     onDeleteClick: () -> Unit = {},
-    onMoreClick: () -> Unit = {},
     onReminderChanged: (Boolean) -> Unit = {},
     onTakeNow: () -> Unit = {}
 ) {
@@ -85,12 +82,17 @@ fun MedicineDetailsScreen(
     val reminderLabel = listVm.getReminderLabel(medicine)
     val reminderTimeText = listVm.getReminderTimeText(medicine)
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showHelpDialog by remember { mutableStateOf(false) }
     Scaffold(
         containerColor = DetailBackground,
         topBar = {
-            MedicineDetailsTopBar(
+            AppTopBar(
+                title = "Medicine Details",
                 onBackClick = onBackClick,
-                onMoreClick = onMoreClick
+                showMoreMenu = true,
+                onHelpClick = {
+                    showHelpDialog = true
+                }
             )
         }
     ) { innerPadding ->
@@ -172,6 +174,37 @@ fun MedicineDetailsScreen(
             Spacer(modifier = Modifier.height(30.dp))
         }
     }
+    if (showHelpDialog) {
+
+        AlertDialog(
+            onDismissRequest = {
+                showHelpDialog = false
+            },
+
+            title = {
+                Text("Medicine Help")
+            },
+
+            text = {
+                Text(
+                    "This is the medicine details page."
+                            + "You can select edit or delete medicine."
+                    +"If you turn off the medicine reminder, notification will not be send"
+                )
+            },
+
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showHelpDialog = false
+                    }
+                ) {
+                    Text("Got it")
+                }
+            }
+        )
+    }
+
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = {
@@ -214,48 +247,6 @@ fun MedicineDetailsScreen(
     }
 }
 
-@Composable
-private fun MedicineDetailsTopBar(
-    onBackClick: () -> Unit,
-    onMoreClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Color.White)
-            .padding(
-                start = 8.dp,
-                end = 8.dp,
-                top = 28.dp,
-                bottom = 8.dp
-            ),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        IconButton(
-            onClick = onBackClick
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Back"
-            )
-        }
-
-        Text(
-            text = "Medicine Details",
-            modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.titleLarge
-        )
-
-        IconButton(
-            onClick = onMoreClick
-        ) {
-            Icon(
-                imageVector = Icons.Default.MoreVert,
-                contentDescription = "More options"
-            )
-        }
-    }
-}
 
 @Composable
 private fun MedicineSummary(

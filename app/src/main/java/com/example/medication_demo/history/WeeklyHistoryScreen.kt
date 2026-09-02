@@ -30,6 +30,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -44,9 +45,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.medication_demo.ui.theme.Medication_DemoTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.medication_demo.medication.MedicineImage
@@ -57,6 +56,8 @@ import com.example.medication_demo.viewmodel.MedicineViewModel
 import com.example.medication_demo.viewmodel.WeeklyHistoryViewModel
 import com.example.medication_demo.model.MedicineHistoryUi
 import com.example.medication_demo.utils.getMalaysiaDate
+import com.example.medication_demo.model.HistoryMedicineSource
+import com.example.medication_demo.utils.isDoseBeforeMedicineDeletion
 
 private val HistoryGreen = Color(0xFF159447)
 private val HistoryRed = Color(0xFFE53935)
@@ -95,11 +96,22 @@ fun WeeklyHistoryScreen(
     val archivedMedicines by medicineVm.archivedMedicines.collectAsStateWithLifecycle()
     val historySources =
         medicines.map { medicine ->
-            medicine to null
-        } + archivedMedicines.map { archived -> archived.medicine to archived.deletedDate }
+            HistoryMedicineSource(
+                medicine = medicine
+            )
+        } + archivedMedicines.map { archived ->
+            HistoryMedicineSource(
+                medicine = archived.medicine,
+                deletedDate = archived.deletedDate,
+                deletedTime = archived.deletedTime
+            )
+        }
     val historyMedicines =
-        historySources.mapNotNull {
-                (medicine, deletedDate) ->
+        historySources.mapNotNull { source ->
+            val medicine = source.medicine
+            val deletedDate = source.deletedDate
+            val deletedTime = source.deletedTime
+
             val dosageText = medicineListVm.getDosageText(medicine)
             val dates =
                 generateSequence(selectedStartDate) {
@@ -115,18 +127,12 @@ fun WeeklyHistoryScreen(
                                 (deletedDate == null || !date.isAfter(deletedDate))
                     }
                     .toList()
+
             val dosesInRange =
-                dates
-                    .filter { date ->
-                        !date.isAfter(getMalaysiaDate())
-                    }
-                    .flatMap { date ->
-                        val historicalMedicine =
-                            medicineVm
-                                .getMedicineForHistoricalDate(
-                                    medicine = medicine,
-                                    date = date
-                                )
+                dates.flatMap { date ->
+                    val historicalMedicine =
+                        medicineVm.getMedicineForHistoricalDate(medicine = medicine, date = date)
+                    val doses =
                         medicineListVm
                             .getMedicineDosesForDate(
                                 medicine = historicalMedicine,
@@ -134,7 +140,22 @@ fun WeeklyHistoryScreen(
                                 takenRecords = takenRecords,
                                 rescheduledDoses = rescheduledDoses
                             )
-                    }
+                            .filter { dose ->
+                                val isBeforeDeletion =
+                                    isDoseBeforeMedicineDeletion(
+                                        medicineId = medicine.id,
+                                        date = date,
+                                        doseTime = dose.time,
+                                        archivedMedicines = archivedMedicines
+                                    )
+                                val isHistoryStatus =
+                                    dose.status == DoseStatus.TAKEN || dose.status == DoseStatus.MISSING
+                                isBeforeDeletion && isHistoryStatus
+                            }
+
+                    doses
+                }
+
             val takenCount =
                 dosesInRange.count {
                     it.status == DoseStatus.TAKEN
@@ -613,6 +634,14 @@ private fun HistoryMedicineCard(
                     )
                 }
             }
+            Spacer(modifier = Modifier.width(6.dp))
+
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = "View history details",
+                tint = HistoryGrey,
+                modifier = Modifier.size(20.dp)
+            )
         }
     }
 }

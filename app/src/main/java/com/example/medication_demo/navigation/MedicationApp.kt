@@ -1,63 +1,102 @@
 package com.example.medication_demo.navigation
 
-import androidx.compose.ui.platform.LocalContext
-import com.example.medication_demo.reminder.AppointmentReminder
-import com.example.medication_demo.appointment.AddAppointmentScreen
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.medication_demo.appointment.AddAppointmentScreen
+import com.example.medication_demo.appointment.AppointmentDetailsScreen
+import com.example.medication_demo.appointment.AppointmentListScreen
+import com.example.medication_demo.appointment.EditAppointmentScreen
+import com.example.medication_demo.appointment.RescheduleAppointmentScreen
+import com.example.medication_demo.data.SupabaseClientProvider
+import com.example.medication_demo.history.MedicineHistoryDetailScreen
 import com.example.medication_demo.history.WeeklyHistoryScreen
 import com.example.medication_demo.medication.AddMedicineScreen
+import com.example.medication_demo.medication.MedicineCalendarScreen
 import com.example.medication_demo.medication.MedicineDetailsScreen
 import com.example.medication_demo.medication.MedicineListScreen
-import com.example.medication_demo.user.HomeScreen
-import com.example.medication_demo.viewmodel.MedicineListViewModel
-import com.example.medication_demo.viewmodel.MedicineViewModel
 import com.example.medication_demo.medication.MedicineScheduleScreen
-import com.example.medication_demo.medication.MedicineCalendarScreen
-import androidx.compose.runtime.produceState
-import androidx.compose.ui.platform.LocalContext
-import com.example.medication_demo.waterIntake.WaterIntakeScreen
-import com.example.medication_demo.appointment.RescheduleAppointmentScreen
-import com.example.medication_demo.appointment.EditAppointmentScreen
-import com.example.medication_demo.repository.AppointmentRepository
 import com.example.medication_demo.model.AppointmentStatus
-import com.example.medication_demo.appointment.AppointmentListScreen
+import com.example.medication_demo.navigation.MedicationApp
+import com.example.medication_demo.notification.NotificationHelper
+import com.example.medication_demo.reminder.AppointmentReminder
 import com.example.medication_demo.reminder.RefillReminderScreen
-import com.example.medication_demo.statistics.MonthlyStatisticsScreen
+import com.example.medication_demo.reminder.scheduleRefillReminder
+import com.example.medication_demo.reminder.showRefillNotification
+import com.example.medication_demo.repository.AppointmentRepository
 import com.example.medication_demo.statistics.MedicationPerformanceScreen
 import com.example.medication_demo.statistics.MissedMedicationScreen
-import kotlinx.coroutines.delay
+import com.example.medication_demo.statistics.MonthlyStatisticsScreen
+import com.example.medication_demo.user.AgeScreen
+import com.example.medication_demo.user.CreateAccountScreen
+import com.example.medication_demo.user.EmailVerificationScreen
+import com.example.medication_demo.user.ForgotPasswordScreen
+import com.example.medication_demo.user.GenderScreen
+import com.example.medication_demo.user.HomeScreen
+import com.example.medication_demo.user.LoginScreen
+import com.example.medication_demo.user.PersonalInfoScreen
+import com.example.medication_demo.user.ProfileScreen
+import com.example.medication_demo.user.ResetPasswordScreen
+import com.example.medication_demo.user.SettingScreen
+import com.example.medication_demo.user.SplashScreen
 import com.example.medication_demo.utils.getMalaysiaTime
-import com.example.medication_demo.reminder.showRefillNotification
-import androidx.compose.runtime.LaunchedEffect
-import com.example.medication_demo.reminder.scheduleRefillReminder
-import com.example.medication_demo.history.MedicineHistoryDetailScreen
-import java.time.LocalDate
-import androidx.compose.ui.Modifier
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.unit.dp
-import com.example.medication_demo.appointment.AppointmentDetailsScreen
-import com.example.medication_demo.utils.getMalaysiaDate
+import com.example.medication_demo.viewmodel.MedicineListViewModel
+import com.example.medication_demo.viewmodel.MedicineViewModel
+import com.example.medication_demo.viewmodel.UserViewModel
 import com.example.medication_demo.viewmodel.WaterIntakeViewModel
 import com.example.medication_demo.viewmodel.WeeklyHistoryViewModel
+import com.example.medication_demo.waterIntake.WaterIntakeScreen
+import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.status.SessionStatus
+import java.time.LocalDate
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+
 @Composable
 fun MedicationApp(
+    pendingDeepLinkType: String?, onDeepLinkConsumed: () -> Unit,
     onNotificationHandled: () -> Unit = {},
     notificationMedicineId: Int? = null
     ) {
+    // 通知权限的请求器(Android 13以上才需要真的跳出来问)
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = { /* 不管用户答应还是拒绝,都不需要额外处理 */ }
+    )
+    val userVm: UserViewModel = viewModel()
+    val currentUserName by userVm.userName.collectAsStateWithLifecycle()
+    val currentUserEmail by userVm.userEmail.collectAsStateWithLifecycle()
+    val currentUserGender by userVm.userGender.collectAsStateWithLifecycle()
+    val currentUserAge by userVm.userAge.collectAsStateWithLifecycle()
+    val latestDeepLinkType = rememberUpdatedState(pendingDeepLinkType)
+
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -68,6 +107,7 @@ fun MedicationApp(
     val medicines by medicineVm.medicines.collectAsStateWithLifecycle()
     val historyVm: WeeklyHistoryViewModel = viewModel()
     val takenRecords by medicineVm.takenRecords.collectAsStateWithLifecycle()
+    val archivedMedicines by medicineVm.archivedMedicines.collectAsStateWithLifecycle()
     val rescheduledDoses by medicineVm.rescheduledDoses.collectAsStateWithLifecycle()
     val appointments by AppointmentRepository.appointments.collectAsStateWithLifecycle()
     val waterVm: WaterIntakeViewModel = viewModel()
@@ -85,14 +125,18 @@ fun MedicationApp(
     val medicinesTotal =
         medicineListVm.getTodayTotalDoseCount(
             medicines = medicines,
+            archivedMedicines = archivedMedicines,
             takenRecords = takenRecords,
-            rescheduledDoses = rescheduledDoses
+            rescheduledDoses = rescheduledDoses,
+            medicineVm = medicineVm
         )
     val medicinesTaken =
         medicineListVm.getTodayTakenCount(
             medicines = medicines,
+            archivedMedicines = archivedMedicines,
             takenRecords = takenRecords,
-            rescheduledDoses = rescheduledDoses
+            rescheduledDoses = rescheduledDoses,
+            medicineVm = medicineVm
         )
     val refreshTime by produceState(
         initialValue = getMalaysiaTime()
@@ -113,12 +157,10 @@ fun MedicationApp(
             )
         }
     val nextMedicineDisplayName =
-        remember(medicines, nextDose, takenRecords, rescheduledDoses) {
+        remember(nextDose,medicinesTotal) {
             medicineListVm.getNextMedicineDisplayName(
-                medicines = medicines,
                 nextDose = nextDose,
-                takenRecords = takenRecords,
-                rescheduledDoses = rescheduledDoses
+                todayTotalDoseCount = medicinesTotal
             )
         }
     LaunchedEffect(lowStockMedicineId) {
@@ -147,7 +189,6 @@ fun MedicationApp(
     LaunchedEffect(
         notificationMedicineId
     ) {
-
         val medicineId =
             notificationMedicineId
                 ?: return@LaunchedEffect
@@ -160,13 +201,318 @@ fun MedicationApp(
 
         onNotificationHandled()
     }
+    LaunchedEffect(Unit) {
+        NotificationHelper.createNotificationChannel(context)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val hasPermission = ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+
+            if (!hasPermission) {
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+    }
+    // 监听Supabase的登入状态 —— Google登入/密码重设都是浏览器跳转的,
+    // 没有明确的"onSuccess"时间点,要靠这个才知道什么时候该跳去哪个页面
+    LaunchedEffect(Unit) {
+        SupabaseClientProvider.client.auth.sessionStatus.collect { status ->
+            if (status is SessionStatus.Authenticated) {
+                if (latestDeepLinkType.value == "recovery") {
+                    // 是密码重设连结跳回来的,导去设新密码的页面
+                    navController.navigate("resetPassword") {
+                        popUpTo(0) { inclusive = true }
+                    }
+                    onDeepLinkConsumed()
+                } else {
+                    val currentRoute = navController.currentBackStackEntry?.destination?.route
+                    val authFlowRoutes = setOf(
+                        "splash", "login", "createAccount",
+                        "forgotPassword", "emailVerification", "gender", "age"
+                    )
+                    if (currentRoute == null || currentRoute in authFlowRoutes) {
+                        navController.navigate("home") {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
         NavHost(
             navController = navController,
-            startDestination = "home"
+            startDestination = "splash"
         ) {
+            // Splash Screen
+            composable("splash") {
+                SplashScreen(
+                    onGetStartedClick = {
+                        navController.navigate("login")
+                    }
+                )
+            }
+
+            // Login Screen
+            composable("login") {
+                val loginErrorMessage by userVm.errorMessage.collectAsStateWithLifecycle()
+
+                LaunchedEffect(Unit) {
+                    userVm.clearErrorMessage()
+                }
+
+                LoginScreen(
+                    errorMessage = loginErrorMessage,
+                    onLoginClick = { email, password ->
+                        userVm.login(
+                            email = email,
+                            password = password,
+                            onSuccess = {
+                                navController.navigate("home") {
+                                    popUpTo("splash") { inclusive = true }
+                                }
+                            }
+                        )
+                    },
+                    onForgotPasswordClick = {
+                        navController.navigate("forgotPassword")
+                    },
+                    onGoogleLoginClick = {
+                        userVm.loginWithGoogle()
+                    },
+                    onSignUpClick = {
+                        navController.navigate("createAccount")
+                    }
+                )
+            }
+
+            // Create Account Screen
+            composable("createAccount") {
+                val signUpErrorMessage by userVm.errorMessage.collectAsStateWithLifecycle()
+                val isSignUpLoading by userVm.isLoading.collectAsStateWithLifecycle()
+
+                LaunchedEffect(Unit) {
+                    userVm.clearErrorMessage()
+                }
+
+                CreateAccountScreen(
+                    errorMessage = signUpErrorMessage,
+                    isLoading = isSignUpLoading,
+                    onBackClick = {
+                        navController.popBackStack()
+                    },
+                    onSignUpClick = { name, email, password, _ ->
+                        userVm.signUp(
+                            name = name,
+                            email = email,
+                            password = password,
+                            onSuccess = {
+                                NotificationHelper.showVerificationSentNotification(
+                                    context = context,
+                                    email = email
+                                )
+                                navController.navigate("emailVerification")
+                            }
+                        )
+                    },
+                    onGoogleClick = {
+                        userVm.loginWithGoogle()
+                    },
+                    onLoginClick = {
+                        navController.popBackStack()
+                    }
+                )
+            }
+
+            // Forgot Password Screen
+            composable("forgotPassword") {
+                val forgotPasswordErrorMessage by userVm.errorMessage.collectAsStateWithLifecycle()
+                var isResetEmailSent by remember { mutableStateOf(false) }
+
+                LaunchedEffect(Unit) {
+                    userVm.clearErrorMessage()
+                }
+
+                ForgotPasswordScreen(
+                    errorMessage = forgotPasswordErrorMessage,
+                    isEmailSent = isResetEmailSent,
+                    onSendResetLinkClick = { email ->
+                        userVm.sendPasswordResetEmail(
+                            email = email,
+                            onSuccess = {
+                                isResetEmailSent = true
+                            }
+                        )
+                    },
+                    onBackToLoginClick = {
+                        navController.popBackStack()
+                    }
+                )
+            }
+
+            // Reset Password Screen (用户点了email连结跳回app之后设新密码)
+            composable("resetPassword") {
+                val resetPasswordErrorMessage by userVm.errorMessage.collectAsStateWithLifecycle()
+                var isResetSuccess by remember { mutableStateOf(false) }
+
+                LaunchedEffect(Unit) {
+                    userVm.clearErrorMessage()
+                }
+
+                ResetPasswordScreen(
+                    errorMessage = resetPasswordErrorMessage,
+                    isSuccess = isResetSuccess,
+                    onResetPasswordClick = { newPassword ->
+                        userVm.updatePassword(
+                            newPassword = newPassword,
+                            onSuccess = {
+                                isResetSuccess = true
+                            }
+                        )
+                    },
+                    onBackToLoginClick = {
+                        navController.navigate("login") {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                )
+            }
+
+            // Email Verification Screen
+            composable("emailVerification") {
+                val verifyErrorMessage by userVm.errorMessage.collectAsStateWithLifecycle()
+
+                LaunchedEffect(Unit) {
+                    userVm.clearErrorMessage()
+                }
+
+                EmailVerificationScreen(
+                    email = currentUserEmail.ifBlank { "example@gmail.com" },
+                    errorMessage = verifyErrorMessage,
+                    onVerifyClick = { code ->
+                        userVm.verifyEmail(
+                            email = currentUserEmail,
+                            code = code,
+                            onSuccess = {
+                                navController.navigate("gender")
+                            }
+                        )
+                    },
+                    onResendClick = {
+                        userVm.resendVerificationCode(currentUserEmail)
+                    },
+                    onBackClick = {
+                        navController.popBackStack()
+                    }
+                )
+            }
+
+            // Onboarding - Gender
+            composable("gender") {
+                GenderScreen(
+                    onNextClick = { gender ->
+                        userVm.onGenderSelected(gender)
+                        navController.navigate("age")
+                    }
+                )
+            }
+
+            // Onboarding - Age
+            composable("age") {
+                AgeScreen(
+                    onBackClick = {
+                        navController.popBackStack()
+                    },
+                    onNextClick = { age ->
+                        userVm.onAgeSelected(age)
+                        navController.navigate("home") {
+                            popUpTo("splash") { inclusive = true }
+                        }
+                    }
+                )
+            }
+
+            // Profile Screen
+            composable("profile") {
+                ProfileScreen(
+                    name = currentUserName.ifBlank { "User" },
+                    email = currentUserEmail.ifBlank { "--" },
+                    onPersonalInfoClick = {
+                        navController.navigate("personalInfo")
+                    },
+                    onEmergencyContactsClick = {
+                        // TODO: Emergency Contacts screen还没做
+                    },
+                    onRemindersClick = {
+                        // TODO: Reminders设置还没做
+                    },
+                    onPreferencesClick = {
+                        navController.navigate("settings")
+                    },
+                    onHelpSupportClick = {
+                        // TODO: Help & Support还没做
+                    },
+                    onLogoutClick = {
+                        userVm.logout()
+                        navController.navigate("login") {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    },
+                    onBottomNavSelected = { index ->
+                        when (index) {
+                            0 -> navController.navigate("home")
+                            1 -> navController.navigate("medicine")
+                            2 -> navController.navigate("history")
+                            3 -> {
+                                // Already on Profile
+                            }
+                        }
+                    }
+                )
+            }
+
+            // Settings Screen
+            composable("settings") {
+                SettingScreen(
+                    onBackClick = {
+                        navController.popBackStack()
+                    }
+                )
+            }
+
+            // Personal Info Screen
+            composable("personalInfo") {
+                PersonalInfoScreen(
+                    name = currentUserName.ifBlank { "User" },
+                    email = currentUserEmail.ifBlank { "--" },
+                    gender = currentUserGender,
+                    age = currentUserAge,
+                    onBackClick = {
+                        navController.popBackStack()
+                    },
+                    onPhotoClick = {
+                        // TODO: 之后接换头像功能
+                    },
+                    onNameClick = {
+                        // TODO: 之后接改username功能
+                    },
+                    onEmailClick = {
+                        // TODO: 之后接改email功能
+                    },
+                    onGenderChange = { gender ->
+                        userVm.updateGender(gender)
+                    },
+                    onAgeChange = { age ->
+                        userVm.updateAge(age)
+                    }
+                )
+            }
+
             // Home Screen
             composable("home") {
                 HomeScreen(
@@ -222,7 +568,6 @@ fun MedicationApp(
                             0 -> {
                                 // Already on home
                             }
-
                             1 -> navController.navigate("medicine")
                             2 -> navController.navigate("history")
                             3 -> navController.navigate("profile")
@@ -449,9 +794,7 @@ fun MedicationApp(
                                 // Already on History
                             }
 
-                            3 -> {
-                                // Profile later
-                            }
+                            3 -> navController.navigate("profile")
                         }
                     }
                 )
@@ -486,7 +829,8 @@ fun MedicationApp(
             // Reminder Refill
             composable(
                 route = "refillReminder/{medicineId}"
-            ) { backStackEntry ->
+            )
+            { backStackEntry ->
 
                 val medicineId =
                     backStackEntry.arguments
@@ -526,7 +870,8 @@ fun MedicationApp(
                                     .currentSnackbarData
                                     ?.dismiss()
                                 snackbarHostState.showSnackbar(
-                                    message = "Refill successful. Remaining quantity: $remainingText"
+                                    message = "Refill successful. Remaining quantity: $remainingText",
+                                    duration = SnackbarDuration.Short
                                 )
                             }
                         },
@@ -569,7 +914,8 @@ fun MedicationApp(
             // Medicine Details
             composable(
                 route = "medicineDetails/{medicineId}"
-            ) { backStackEntry ->
+            )
+            { backStackEntry ->
 
                 val medicineId =
                     backStackEntry.arguments
@@ -614,7 +960,8 @@ fun MedicationApp(
 
                                     snackbarHostState.showSnackbar(
                                         message =
-                                            "This medicine was already taken within the last minute."
+                                            "This medicine was already taken within the last minute.",
+                                        duration = SnackbarDuration.Short
                                     )
                                 }
                             }
@@ -629,7 +976,8 @@ fun MedicationApp(
                                     .currentSnackbarData
                                     ?.dismiss()
                                 snackbarHostState.showSnackbar(
-                                    message = "$medicineName was deleted successfully."
+                                    message = "$medicineName was deleted successfully.",
+                                    duration = SnackbarDuration.Short
                                 )
                             }
                         },
@@ -646,7 +994,8 @@ fun MedicationApp(
             // Edit Medicine
             composable(
                 route = "editMedicine/{medicineId}"
-            ) { backStackEntry ->
+            )
+            { backStackEntry ->
 
                 val medicineId =
                     backStackEntry.arguments
@@ -675,7 +1024,8 @@ fun MedicationApp(
                             "{medicineId}/" +
                             "{startDate}/" +
                             "{endDate}"
-            ) { backStackEntry ->
+            )
+            { backStackEntry ->
                 val medicineId =
                     backStackEntry.arguments
                         ?.getString("medicineId")

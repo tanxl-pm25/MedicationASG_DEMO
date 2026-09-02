@@ -1,6 +1,7 @@
 package com.example.medication_demo.viewmodel
 
 import androidx.lifecycle.ViewModel
+import com.example.medication_demo.model.ArchivedMedicine
 import com.example.medication_demo.model.MedicationTakenRecord
 import com.example.medication_demo.model.Medicine
 import com.example.medication_demo.model.MedicineDoseUi
@@ -8,8 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.util.Locale
+import java.time.LocalTime
 import com.example.medication_demo.model.DoseStatus
 import com.example.medication_demo.model.MedicineDailyHistoryUi
 import com.example.medication_demo.model.MedicineStatus
@@ -20,6 +20,12 @@ import com.example.medication_demo.utils.getMalaysiaTime
 import java.time.YearMonth
 import java.time.temporal.ChronoUnit
 
+import com.example.medication_demo.utils.MEDICINE_DATE_FORMATTER
+import com.example.medication_demo.utils.MEDICINE_TIME_FORMATTER
+import com.example.medication_demo.utils.parseMedicineDate
+import com.example.medication_demo.utils.parseMedicineTime
+import com.example.medication_demo.utils.isDoseBeforeMedicineDeletion
+
 class MedicineListViewModel : ViewModel() {
     private val _searchText = MutableStateFlow("")
     val searchText: StateFlow<String> = _searchText.asStateFlow()
@@ -27,7 +33,6 @@ class MedicineListViewModel : ViewModel() {
     private val _selectedFilter = MutableStateFlow("All")
     val selectedFilter: StateFlow<String> = _selectedFilter.asStateFlow()
 
-    private val dateFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH)
 
 
     fun onSearchTextChange(value: String) {
@@ -58,14 +63,10 @@ class MedicineListViewModel : ViewModel() {
     }
 
     fun calculateEndDate(medicine: Medicine): LocalDate? {
-        val startDate = try {
-            LocalDate.parse(
-                medicine.startDate,
-                dateFormatter
-            )
-        } catch (_: Exception) {
-            return null
-        }
+        val startDate =
+            parseMedicineDate(
+                medicine.startDate
+            ) ?: return null
 
         // Total number of times the medicine can be taken
         val totalDoses = getTotalDoses(medicine)
@@ -124,14 +125,10 @@ class MedicineListViewModel : ViewModel() {
         medicine: Medicine,
         date: LocalDate
     ): Boolean {
-        val startDate = try {
-            LocalDate.parse(
-                medicine.startDate,
-                dateFormatter
-            )
-        } catch (_: Exception) {
-            return false
-        }
+        val startDate =
+            parseMedicineDate(
+                medicine.startDate
+            ) ?: return false
         val endDate = calculateEndDate(medicine)
         // Not yet start
         if (date.isBefore(startDate)) {
@@ -156,7 +153,7 @@ class MedicineListViewModel : ViewModel() {
             }
             "once a week" -> {
                 val daysBetween =
-                    java.time.temporal.ChronoUnit.DAYS.between(
+                    ChronoUnit.DAYS.between(
                         startDate,
                         date
                     )
@@ -204,7 +201,7 @@ class MedicineListViewModel : ViewModel() {
             "days" -> {
 
                 val daysBetween =
-                    java.time.temporal.ChronoUnit.DAYS.between(
+                    ChronoUnit.DAYS.between(
                         startDate,
                         date
                     )
@@ -215,7 +212,7 @@ class MedicineListViewModel : ViewModel() {
             "weeks" -> {
 
                 val daysBetween =
-                    java.time.temporal.ChronoUnit.DAYS.between(
+                    ChronoUnit.DAYS.between(
                         startDate,
                         date
                     )
@@ -284,20 +281,10 @@ class MedicineListViewModel : ViewModel() {
                         ?.time
                         ?: return null
 
-                val timeFormatter =
-                    DateTimeFormatter.ofPattern(
-                        "hh:mm a",
-                        Locale.ENGLISH
-                    )
-
-                val firstReminderTime = try {
-                    java.time.LocalTime.parse(
-                        firstReminderText,
-                        timeFormatter
-                    )
-                } catch (_: Exception) {
-                    return null
-                }
+                val firstReminderTime =
+                    parseMedicineTime(
+                        firstReminderText
+                    ) ?: return null
 
                 val firstDoseDateTime =
                     startDate.atTime(
@@ -360,14 +347,10 @@ class MedicineListViewModel : ViewModel() {
     }
 
     fun getMedicineStatus(medicine: Medicine): MedicineStatus {
-        val startDate = try {
-            LocalDate.parse(
-                medicine.startDate,
-                dateFormatter
-            )
-        } catch (_: Exception) {
-            return MedicineStatus.ACTIVE
-        }
+        val startDate =
+            parseMedicineDate(
+                medicine.startDate
+            ) ?: return MedicineStatus.ACTIVE
 
         val today = getMalaysiaDate()
 
@@ -393,11 +376,6 @@ class MedicineListViewModel : ViewModel() {
         rescheduledDoses: List<RescheduledDose>
     ): NextMedicineDose? {
         val today = getMalaysiaDate()
-        val timeFormatter =
-            DateTimeFormatter.ofPattern(
-                "hh:mm a",
-                Locale.ENGLISH
-            )
         val doses =
             medicines
                 .filter { medicine ->
@@ -432,15 +410,10 @@ class MedicineListViewModel : ViewModel() {
                                     rescheduledDoses = rescheduledDoses
                                 )
 
-                            val parsedTime = try {
-                                java.time.LocalTime.parse(
-                                    effectiveTime,
-                                    timeFormatter
+                            val parsedTime =
+                                parseMedicineTime(
+                                    effectiveTime
                                 )
-                            } catch (_: Exception) {
-                                null
-                            }
-
                             if (parsedTime == null) {
                                 null
                             } else {
@@ -584,14 +557,10 @@ class MedicineListViewModel : ViewModel() {
             if (totalDoses <= 0) {
                 return emptyList()
             }
-            val startDate = try {
-                LocalDate.parse(
-                    medicine.startDate,
-                    dateFormatter
-                )
-            } catch (_: Exception) {
-                return emptyList()
-            }
+            val startDate =
+                parseMedicineDate(
+                    medicine.startDate
+                ) ?: return emptyList()
             if (date.isBefore(startDate)) {
                 return emptyList()
             }
@@ -651,14 +620,10 @@ class MedicineListViewModel : ViewModel() {
             return emptyList()
         }
 
-        val startDate = try {
-            LocalDate.parse(
-                medicine.startDate,
-                dateFormatter
-            )
-        } catch (_: Exception) {
-            return emptyList()
-        }
+        val startDate =
+            parseMedicineDate(
+                medicine.startDate
+            ) ?: return emptyList()
 
         if (date.isBefore(startDate)) {
             return emptyList()
@@ -670,20 +635,10 @@ class MedicineListViewModel : ViewModel() {
                 ?.time
                 ?: return emptyList()
 
-        val timeFormatter =
-            DateTimeFormatter.ofPattern(
-                "hh:mm a",
-                Locale.ENGLISH
-            )
-
-        val firstReminderTime = try {
-            java.time.LocalTime.parse(
-                firstReminderText,
-                timeFormatter
-            )
-        } catch (_: Exception) {
-            return emptyList()
-        }
+        val firstReminderTime =
+            parseMedicineTime(
+                firstReminderText
+            ) ?: return emptyList()
 
         val firstDoseDateTime = startDate.atTime(firstReminderTime)
         val currentDateStart = date.atStartOfDay()
@@ -710,7 +665,7 @@ class MedicineListViewModel : ViewModel() {
                 result.add(
                     doseDateTime
                         .toLocalTime()
-                        .format(timeFormatter)
+                        .format(MEDICINE_TIME_FORMATTER)
                 )
             }
 
@@ -779,17 +734,10 @@ class MedicineListViewModel : ViewModel() {
                 rescheduledDoses = rescheduledDoses
             )
 
-        val reminderTime = try {
-            java.time.LocalTime.parse(
-                effectiveTimeText,
-                DateTimeFormatter.ofPattern(
-                    "hh:mm a",
-                    Locale.ENGLISH
-                )
-            )
-        } catch (_: Exception) {
-            return DoseStatus.UPCOMING
-        }
+        val reminderTime =
+            parseMedicineTime(
+                effectiveTimeText
+            ) ?: return DoseStatus.UPCOMING
 
         val currentTime = getMalaysiaTime()
 
@@ -813,45 +761,101 @@ class MedicineListViewModel : ViewModel() {
         }
     }
 
-    fun getDateDoseStatus(
+    fun getEffectiveDosesForDate(
         medicines: List<Medicine>,
+        archivedMedicines: List<ArchivedMedicine>,
         date: LocalDate,
         takenRecords: List<MedicationTakenRecord>,
-        rescheduledDoses: List<RescheduledDose>
-    ): DoseStatus? {
+        rescheduledDoses: List<RescheduledDose>,
+        medicineVm: MedicineViewModel
+    ): List<MedicineDoseUi> {
 
-        val dosesForDate =
+        val activeDoses =
             medicines
                 .filter { medicine ->
-                    isMedicineActiveOnDate(
-                        medicine = medicine,
-                        date = date
-                    )
+                    !medicine.frequency.equals(
+                        "As needed",
+                        ignoreCase = true
+                    ) &&
+                            isMedicineActiveOnDate(
+                                medicine = medicine,
+                                date = date
+                            )
                 }
                 .flatMap { medicine ->
-                    createMedicineDoseUiList(
+                    getMedicineDosesForDate(
                         medicine = medicine,
                         date = date,
                         takenRecords = takenRecords,
                         rescheduledDoses = rescheduledDoses
                     )
                 }
+        val archivedDoses =
+            archivedMedicines
+                .filter { archived ->
+                    !date.isAfter(
+                        archived.deletedDate
+                    )
+                }
+                .flatMap { archived ->
+                    val historicalMedicine =
+                        medicineVm.getMedicineForHistoricalDate(
+                            medicine = archived.medicine,
+                            date = date
+                        )
+                    getMedicineDosesForDate(
+                        medicine = historicalMedicine,
+                        date = date,
+                        takenRecords = takenRecords,
+                        rescheduledDoses = rescheduledDoses
+                    ).filter { dose ->
+                        isDoseBeforeMedicineDeletion(
+                            medicineId = archived.medicine.id,
+                            date = date,
+                            doseTime = dose.time,
+                            archivedMedicines = archivedMedicines
+                        )
+                    }
+                }
+        return sortDosesByTime(
+            activeDoses + archivedDoses
+        )
+    }
+
+    fun getEffectiveDateDoseStatus(
+        medicines: List<Medicine>,
+        archivedMedicines: List<ArchivedMedicine>,
+        date: LocalDate,
+        takenRecords: List<MedicationTakenRecord>,
+        rescheduledDoses: List<RescheduledDose>,
+        medicineVm: MedicineViewModel
+    ): DoseStatus? {
+
+        val doses =
+            getEffectiveDosesForDate(
+                medicines = medicines,
+                archivedMedicines = archivedMedicines,
+                date = date,
+                takenRecords = takenRecords,
+                rescheduledDoses = rescheduledDoses,
+                medicineVm = medicineVm
+            )
 
         return when {
-            dosesForDate.isEmpty() ->
+            doses.isEmpty() ->
                 null
 
-            dosesForDate.all {
+            doses.all {
                 it.status == DoseStatus.TAKEN
             } ->
                 DoseStatus.TAKEN
 
-            dosesForDate.any {
+            doses.any {
                 it.status == DoseStatus.MISSING
             } ->
                 DoseStatus.MISSING
 
-            dosesForDate.any {
+            doses.any {
                 it.status == DoseStatus.IN_PROGRESS
             } ->
                 DoseStatus.IN_PROGRESS
@@ -989,7 +993,6 @@ class MedicineListViewModel : ViewModel() {
                 .toList()
 
         return dates.mapNotNull { date ->
-
             val historicalMedicine =
                 medicineVm.getMedicineForHistoricalDate(
                     medicine = medicine,
@@ -1002,7 +1005,18 @@ class MedicineListViewModel : ViewModel() {
                     date = date,
                     takenRecords = takenRecords,
                     rescheduledDoses = rescheduledDoses
-                )
+                ).filter { dose ->
+                    val isBeforeDeletion =
+                        isDoseBeforeMedicineDeletion(
+                            medicineId = medicine.id,
+                            date = date,
+                            doseTime = dose.time,
+                            archivedMedicines = medicineVm.archivedMedicines.value
+                        )
+                    val isHistoryStatus = dose.status == DoseStatus.TAKEN || dose.status == DoseStatus.MISSING
+
+                    isBeforeDeletion && isHistoryStatus
+                }
 
             if (doses.isEmpty()) {
                 null
@@ -1042,64 +1056,28 @@ class MedicineListViewModel : ViewModel() {
         doses: List<MedicineDoseUi>
     ): List<MedicineDoseUi> {
 
-        val formatter =
-            DateTimeFormatter.ofPattern(
-                "hh:mm a",
-                Locale.ENGLISH
-            )
-
         return doses.sortedBy { dose ->
-            try {
-                java.time.LocalTime.parse(
-                    dose.time,
-                    formatter
-                )
-            } catch (_: Exception) {
-                java.time.LocalTime.MAX
-            }
+            parseMedicineTime(
+                dose.time
+            ) ?: LocalTime.MAX
         }
-    }
-
-    fun getTodayMedicineDoses(
-        medicines: List<Medicine>,
-        takenRecords: List<MedicationTakenRecord>,
-        rescheduledDoses: List<RescheduledDose>
-    ): List<MedicineDoseUi> {
-
-        val today = getMalaysiaDate()
-
-        return medicines
-            .filter { medicine ->
-
-                !medicine.frequency.equals(
-                    "As needed",
-                    ignoreCase = true
-                ) &&
-                        isMedicineActiveOnDate(
-                            medicine = medicine,
-                            date = today
-                        )
-            }
-            .flatMap { medicine ->
-                getMedicineDosesForDate(
-                    medicine = medicine,
-                    date = today,
-                    takenRecords = takenRecords,
-                    rescheduledDoses = rescheduledDoses
-                )
-            }
     }
 
     fun getTodayTakenCount(
         medicines: List<Medicine>,
+        archivedMedicines: List<ArchivedMedicine>,
         takenRecords: List<MedicationTakenRecord>,
-        rescheduledDoses: List<RescheduledDose>
+        rescheduledDoses: List<RescheduledDose>,
+        medicineVm: MedicineViewModel
     ): Int {
 
-        return getTodayMedicineDoses(
+        return getEffectiveDosesForDate(
             medicines = medicines,
+            archivedMedicines = archivedMedicines,
+            date = getMalaysiaDate(),
             takenRecords = takenRecords,
-            rescheduledDoses = rescheduledDoses
+            rescheduledDoses = rescheduledDoses,
+            medicineVm = medicineVm
         ).count {
             it.status == DoseStatus.TAKEN
         }
@@ -1140,58 +1118,37 @@ class MedicineListViewModel : ViewModel() {
 
     fun getTodayTotalDoseCount(
         medicines: List<Medicine>,
+        archivedMedicines: List<ArchivedMedicine>,
         takenRecords: List<MedicationTakenRecord>,
-        rescheduledDoses: List<RescheduledDose>
+        rescheduledDoses: List<RescheduledDose>,
+        medicineVm: MedicineViewModel
     ): Int {
 
-        return getTodayMedicineDoses(
+        return getEffectiveDosesForDate(
             medicines = medicines,
+            archivedMedicines = archivedMedicines,
+            date = getMalaysiaDate(),
             takenRecords = takenRecords,
-            rescheduledDoses = rescheduledDoses
+            rescheduledDoses = rescheduledDoses,
+            medicineVm = medicineVm
         ).size
     }
 
     // Home screen
     fun getNextMedicineDisplayName(
-        medicines: List<Medicine>,
         nextDose: NextMedicineDose?,
-        takenRecords: List<MedicationTakenRecord>,
-        rescheduledDoses: List<RescheduledDose>
+        todayTotalDoseCount: Int
     ): String {
-
-        if (medicines.isEmpty()) {
-            return "-"
-        }
 
         if (nextDose != null) {
             return nextDose.medicineName
         }
 
-        val today =
-            getMalaysiaDate()
-
-        val hasTodayScheduledDose =
-            medicines
-                .filter { medicine ->
-                    !medicine.frequency.equals(
-                        "As needed",
-                        ignoreCase = true
-                    )
-                }
-                .any { medicine ->
-
-                    getMedicineDosesForDate(
-                        medicine = medicine,
-                        date = today,
-                        takenRecords = takenRecords,
-                        rescheduledDoses = rescheduledDoses
-                    ).isNotEmpty()
-                }
-        return if (hasTodayScheduledDose) {
-            "You've completed today's schedule"
-        } else {
-            "-"
+        if (todayTotalDoseCount > 0) {
+            return "You've completed today's schedule"
         }
+
+        return "-"
     }
 }
 

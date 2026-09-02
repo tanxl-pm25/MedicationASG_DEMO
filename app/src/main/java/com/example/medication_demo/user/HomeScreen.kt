@@ -50,8 +50,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.material3.OutlinedButton
 import com.example.medication_demo.model.DoseStatus
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -118,13 +116,7 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .verticalScroll(rememberScrollState())
-                .padding(
-                    start = 20.dp,
-                    end = 20.dp,
-                    top = 20.dp,
-                    bottom = 20.dp
-                )
+                .padding(20.dp)
         ) {
             // Top
             Row(
@@ -201,25 +193,11 @@ fun HomeScreen(
 
                     Spacer(modifier = Modifier.height(6.dp))
 
-                    val isScheduleCompleted =
-                        nextMedicineName == "You've completed today's schedule"
-
                     Text(
-                        text = nextMedicineName ?: "-",
-                        style =
-                            if (isScheduleCompleted) {
-                                MaterialTheme.typography.bodyLarge
-                            } else {
-                                MaterialTheme.typography.titleLarge
-                            },
-                        fontSize =
-                            if (isScheduleCompleted) {
-                                20.sp
-                            } else {
-                                24.sp
-                            },
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        text = nextMedicineName ?: "--",
+                        color = Color.White,
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -533,25 +511,21 @@ private fun HomeScreenPreview() {
         HomeScreen(username = "Sarah")
     }
 }
-@Preview(
-    showBackground = true,
-    showSystemUi = true,
-    name = "Schedule Completed"
-)
+
+@Preview(showBackground = true, showSystemUi = true, name = "With data")
 @Composable
-private fun HomeScreenCompletedPreview() {
+private fun HomeScreenFilledPreview() {
     Medication_DemoTheme {
         HomeScreen(
             username = "Sarah",
-            nextMedicineName =
-                "You've completed today's schedule",
-            nextMedicineDose = null,
-            nextMedicineTime = null,
+            nextMedicineName = "Vitamin D3",
+            nextMedicineDose = "1 Tablet",
+            nextMedicineTime = "08:00 AM",
             medicinesTaken = "3",
             medicinesTotal = 3,
             upcomingAppointments = "1",
             waterGlasses = "4",
-            monthlyStatText = "Good job! 🎉",
+            monthlyStatText = "Good job! \uD83C\uDF89",
             hasUnreadNotofication = true
         )
     }

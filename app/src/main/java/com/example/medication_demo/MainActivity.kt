@@ -1,24 +1,30 @@
 package com.example.medication_demo
 
-import com.example.medication_demo.viewmodel.WaterIntakeViewModel
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
-import androidx.activity.result.contract.ActivityResultContracts
-import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import com.example.medication_demo.data.SupabaseClientProvider
 import com.example.medication_demo.navigation.MedicationApp
 import com.example.medication_demo.repository.AppointmentRepository
 import com.example.medication_demo.ui.theme.Medication_DemoTheme
+import io.github.jan.supabase.auth.handleDeeplinks
 
 class MainActivity : ComponentActivity() {
+
+    // 记录这次 deep link 是否为密码重设连结
+    private var pendingDeepLinkType by mutableStateOf<String?>(null)
 
     private val refillMedicineId =
         mutableStateOf<Int?>(null)
@@ -49,45 +55,31 @@ class MainActivity : ComponentActivity() {
 
         enableEdgeToEdge()
 
-        // If app is opened by tapping the notification
+        handleIncomingIntent(intent)
+
         refillMedicineId.value =
-            intent
-                ?.getIntExtra(
-                    "refillMedicineId",
-                    -1
-                )
-                ?.takeIf {
-                    it != -1
-                }
-
-
-        AppointmentRepository.initialize(applicationContext)
-        WaterIntakeViewModel().initialize(applicationContext)
-
-        // If app is opened by tapping the notification
-        refillMedicineId.value =
-            intent?.getIntExtra(
+            intent.getIntExtra(
                 "refillMedicineId",
                 -1
-            )?.takeIf {
+            ).takeIf {
                 it != -1
             }
 
+        AppointmentRepository.initialize(applicationContext)
+
         setContent {
-
             Medication_DemoTheme {
-
                 Surface(
                     modifier = Modifier.fillMaxSize()
                 ) {
-
                     MedicationApp(
-                        notificationMedicineId =
-                            refillMedicineId.value,
-
+                        pendingDeepLinkType = pendingDeepLinkType,
+                        onDeepLinkConsumed = {
+                            pendingDeepLinkType = null
+                        },
+                        notificationMedicineId = refillMedicineId.value,
                         onNotificationHandled = {
-                            refillMedicineId.value =
-                                null
+                            refillMedicineId.value = null
                         }
                     )
                 }
@@ -95,14 +87,13 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    // Called when MainActivity already exists
-    // and user taps the notification
     override fun onNewIntent(
         intent: Intent
     ) {
         super.onNewIntent(intent)
 
         setIntent(intent)
+        handleIncomingIntent(intent)
 
         val medicineId =
             intent.getIntExtra(
@@ -111,8 +102,23 @@ class MainActivity : ComponentActivity() {
             )
 
         if (medicineId != -1) {
-            refillMedicineId.value =
-                medicineId
+            refillMedicineId.value = medicineId
         }
+    }
+
+    private fun handleIncomingIntent(
+        intent: Intent
+    ) {
+        val uriString = intent.data?.toString()
+
+        if (
+            uriString != null &&
+            uriString.contains("type=recovery")
+        ) {
+            pendingDeepLinkType = "recovery"
+        }
+
+        SupabaseClientProvider.client
+            .handleDeeplinks(intent)
     }
 }
