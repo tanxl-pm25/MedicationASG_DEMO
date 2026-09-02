@@ -50,6 +50,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.material3.OutlinedButton
 import com.example.medication_demo.model.DoseStatus
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -57,6 +58,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import com.example.medication_demo.components.MainScreenActionIcon
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import com.example.medication_demo.components.MedicationTimePickerDialog
@@ -147,30 +149,12 @@ fun HomeScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                Box{
-                    IconButton(
-                        onClick = onNotificationClick,
-                        modifier = Modifier.size(40.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.NotificationsNone,
-                            contentDescription = "Notifications",
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                    if (hasUnreadNotofication){
-                        Box(
-                            modifier = Modifier
-                                .size(9.dp)
-                                .background(
-                                    color = Color.Red,
-                                    shape = CircleShape
-                                )
-                                .align(Alignment.TopEnd)
-                                .offset(x = (-20).dp, y = 20.dp)
-                        )
-                    }
-                }
+                MainScreenActionIcon(
+                    icon = Icons.Filled.NotificationsNone,
+                    contentDescription = "Notifications",
+                    onClick = onNotificationClick,
+                    showBadge = hasUnreadNotofication
+                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -241,6 +225,10 @@ fun HomeScreen(
                                     onClick = onMarkAsTakenClick,
                                     modifier = Modifier.weight(1f),
                                     shape = RoundedCornerShape(10.dp),
+                                    contentPadding = PaddingValues(
+                                        horizontal = 8.dp,
+                                        vertical = 10.dp
+                                    ),
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = Color.White,
                                         contentColor = HomeGreen
@@ -248,7 +236,10 @@ fun HomeScreen(
                                 ) {
                                     Text(
                                         text = "Mark as Taken",
-                                        fontWeight = FontWeight.Bold
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.sp,
+                                        maxLines = 1,
+                                        softWrap = false
                                     )
                                 }
                                 OutlinedButton(
@@ -257,6 +248,10 @@ fun HomeScreen(
                                     },
                                     modifier = Modifier.weight(1f),
                                     shape = RoundedCornerShape(10.dp),
+                                    contentPadding = PaddingValues(
+                                        horizontal = 8.dp,
+                                        vertical = 10.dp
+                                    ),
                                     border = BorderStroke(
                                         width = 1.dp,
                                         color = Color.White
@@ -268,7 +263,10 @@ fun HomeScreen(
                                 ) {
                                     Text(
                                         text = "Reschedule",
-                                        fontWeight = FontWeight.Bold
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.sp,
+                                        maxLines = 1,
+                                        softWrap = false
                                     )
                                 }
                             }

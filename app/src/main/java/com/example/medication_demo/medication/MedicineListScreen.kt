@@ -50,6 +50,8 @@ import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.remember
+import com.example.medication_demo.components.MainScreenActionIcon
+import com.example.medication_demo.components.MainScreenTopBar
 import com.example.medication_demo.viewmodel.AppBottomNavigationBar
 import com.example.medication_demo.viewmodel.MedicineListViewModel
 import com.example.medication_demo.model.MedicineStatus
@@ -98,7 +100,18 @@ fun MedicineListScreen(
                 .padding(innerPadding)
                 .padding(horizontal = 16.dp)
         ) {
-            MedicineTopBar()
+            MainScreenTopBar(
+                title = "All Medicines",
+                rightIcon = Icons.Default.NotificationsNone,
+                rightIconDescription = "Notifications",
+                onRightIconClick = {
+                    // Notification page later
+                },
+                modifier = Modifier.padding(
+                    start = 5.dp
+                ),
+                titleStartPadding = 5.dp
+            )
 
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -117,11 +130,21 @@ fun MedicineListScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             if (filteredMedicines.isEmpty()) {
+
                 val emptyMessage =
-                    if (searchText.isNotBlank()) {
-                        "No medicine found"
-                    } else {
-                        "No medicines added yet"
+                    when {
+                        searchText.isNotBlank() -> {
+                            "No medicine found"
+                        }
+                        medicines.isEmpty() -> {
+                            "No medicines added yet"
+                        }
+                        selectedFilter != "All" -> {
+                            "No ${selectedFilter.lowercase()} medicines"
+                        }
+                        else -> {
+                            "No medicines added yet"
+                        }
                     }
 
                 Box(
@@ -188,34 +211,6 @@ fun MedicineListScreen(
 }
 
 @Composable
-private fun MedicineTopBar() {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 18.dp, bottom = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = "All Medicines",
-            modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.titleLarge
-        )
-
-        IconButton(
-            onClick = {
-                // Notification page later
-            }
-        ) {
-            Icon(
-                imageVector = Icons.Default.NotificationsNone,
-                contentDescription = "Notifications",
-                modifier = Modifier.size(24.dp)
-            )
-        }
-    }
-}
-
-@Composable
 private fun MedicineSearchBar(
     value: String,
     onValueChange: (String) -> Unit
@@ -258,7 +253,7 @@ private fun MedicineFilterRow(
 
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(18.dp)
+        horizontalArrangement = Arrangement.spacedBy(9.dp)
     ) {
         filters.forEach { filter ->
             FilterChip(
@@ -269,7 +264,8 @@ private fun MedicineFilterRow(
                 label = {
                     Text(
                         text = filter,
-                        style = MaterialTheme.typography.labelMedium
+                        style = MaterialTheme.typography.labelSmall,
+                        maxLines = 1
                     )
                 },
                 colors = FilterChipDefaults.filterChipColors(

@@ -35,7 +35,6 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -48,6 +47,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.medication_demo.components.MainScreenTopBar
 import com.example.medication_demo.medication.MedicineImage
 import com.example.medication_demo.model.DoseStatus
 import com.example.medication_demo.viewmodel.AppBottomNavigationBar
@@ -219,11 +219,6 @@ fun WeeklyHistoryScreen(
         }
     Scaffold(
         containerColor = Color.White,
-        topBar = {
-            WeeklyHistoryTopBar(
-                onMoreClick = onMoreClick
-            )
-        },
         bottomBar = {
             AppBottomNavigationBar(
                 selectedIndex = 2,
@@ -239,6 +234,16 @@ fun WeeklyHistoryScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp)
         ) {
+            MainScreenTopBar(
+                title = "Weekly History",
+                rightIcon = Icons.Default.MoreVert,
+                rightIconDescription = "More options",
+                onRightIconClick = onMoreClick,
+                modifier = Modifier.padding(
+                    start = 5.dp
+                ),
+                titleStartPadding = 5.dp
+            )
             Spacer(modifier = Modifier.height(4.dp))
 
             WeeklyDateRangeSelector(
@@ -483,39 +488,6 @@ private fun WeeklyDateRangeDialog(
             showModeToggle = false,
             modifier = Modifier.height(500.dp)
         )
-    }
-}
-
-@Composable
-private fun WeeklyHistoryTopBar(
-    onMoreClick: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Color.White)
-            .padding(
-                start = 6.dp,
-                end = 6.dp,
-                top = 28.dp,
-                bottom = 8.dp
-            )
-    ) {
-        Text(
-            text = "Weekly History",
-            modifier = Modifier.align(Alignment.Center),
-            style = MaterialTheme.typography.titleLarge
-        )
-
-        IconButton(
-            onClick = onMoreClick,
-            modifier = Modifier.align(Alignment.CenterEnd)
-        ) {
-            Icon(
-                imageVector = Icons.Default.MoreVert,
-                contentDescription = "More options"
-            )
-        }
     }
 }
 
