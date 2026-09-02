@@ -85,12 +85,16 @@ fun HomeScreen(
     medicinesTotal: Int = 0,
     upcomingAppointments: String? = null,
     waterGlasses: String? = null,
+    waterGoal: Int = 0,
     monthlyStatText: String? = null,
     hasUnreadNotofication: Boolean = false,
     onMarkAsTakenClick: () -> Unit = {},
     onNotificationClick: () -> Unit = {},
     onBottomNavSelected: (Int) -> Unit = {},
     onMedicinesClick: () -> Unit = {},
+    onAppointmentClick: () -> Unit ={},
+    onWaterIntakeClick: () -> Unit = {},
+    onMonthlyStatisticsClick: () -> Unit = {},
     nextMedicineStatus: DoseStatus? = null,
     onRescheduleConfirm: (String) -> Unit = {}
 ) {
@@ -348,7 +352,8 @@ fun HomeScreen(
                     title = "Appointments",
                     valueBold = upcomingAppointments,
                     fontSize = 13.sp,
-                    valueRest = " Upcoming"
+                    valueRest = " Upcoming",
+                    onClick = onAppointmentClick
                 )
             }
 
@@ -362,9 +367,20 @@ fun HomeScreen(
                     modifier = Modifier.weight(1f),
                     icon = Icons.Filled.WaterDrop,
                     title = "Water Intake",
-                    valueBold = waterGlasses,
+                    valueBold =
+                        if (waterGoal > 0) {
+                            waterGlasses
+                        } else {
+                            "Set your"
+                        },
+                    valueRest =
+                        if (waterGoal > 0) {
+                            " / $waterGoal Glasses"
+                        } else {
+                            " daily goal"
+                        },
                     fontSize = 13.sp,
-                    valueRest = " / 8 Glasses"
+                    onClick = onWaterIntakeClick
                 )
                 OverviewCard(
                     modifier = Modifier.weight(1f),
@@ -373,6 +389,7 @@ fun HomeScreen(
                     valueBold = monthlyStatText ?: "No record found",
                     fontSize = 15.sp,
                     valueRest = "",
+                    onClick = onMonthlyStatisticsClick
                 )
             }
 
