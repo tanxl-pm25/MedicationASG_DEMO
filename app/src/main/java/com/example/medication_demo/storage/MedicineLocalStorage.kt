@@ -15,12 +15,13 @@ import com.example.medication_demo.model.MedicineScheduleSnapshot
 import com.example.medication_demo.model.MedicineScheduleSnapshotStorage
 
 class MedicineLocalStorage(
-    context: Context
+    context: Context,
+    userId: String
 ) {
 
     private val sharedPreferences =
         context.getSharedPreferences(
-            "medicine_preferences",
+            "medicine_preferences_$userId",
             Context.MODE_PRIVATE
         )
 

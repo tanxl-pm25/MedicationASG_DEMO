@@ -20,12 +20,19 @@ import com.example.medication_demo.storage.MedicineLocalStorage
 import androidx.lifecycle.viewModelScope
 import com.example.medication_demo.repository.MedicineRepository
 import kotlinx.coroutines.launch
+import com.example.medication_demo.data.SupabaseClientProvider
+import com.example.medication_demo.utils.parseMedicineDate
+import io.github.jan.supabase.auth.auth
 
 class MedicineViewModel(
     application: Application
 ) : AndroidViewModel(application) {
 
-    private val localStorage = MedicineLocalStorage(application)
+    private var localStorage =
+        MedicineLocalStorage(
+            context = application,
+            userId = "guest"
+        )
     private val medicineRepository = MedicineRepository()
 
     private val _medicines = MutableStateFlow(localStorage.loadMedicines())
@@ -801,14 +808,9 @@ class MedicineViewModel(
             )
         }
         val medicineStartDate =
-            try {
-                LocalDate.parse(
-                    newMedicine.startDate,
-                    dateFormatter
-                )
-            } catch (_: Exception) {
-                getMalaysiaDate()
-            }
+            parseMedicineDate(
+                newMedicine.startDate
+            ) ?: getMalaysiaDate()
 
         saveScheduleSnapshot(
             medicine = newMedicine,
@@ -1119,9 +1121,100 @@ class MedicineViewModel(
             _takenRecords.value.map {
                 it.medicineId
             }
+        val rescheduledDoseIds =
+            _rescheduledDoses.value.map {
+                it.medicineId
+            }
+
+        val snapshotIds =
+            _scheduleSnapshots.value.map {
+                it.medicineId
+            }
         val highestId =
-            (activeIds + archivedIds + takenRecordIds)
+            (
+                    activeIds +
+                            archivedIds +
+                            takenRecordIds +
+                            rescheduledDoseIds +
+                            snapshotIds
+                    )
                 .maxOrNull() ?: 0
         return highestId + 1
+    }
+
+    fun switchUser(userId: String) {
+        localStorage =
+            MedicineLocalStorage(
+                context = getApplication(),
+                userId = userId
+            )
+        _medicines.value = localStorage.loadMedicines()
+        _archivedMedicines.value = localStorage.loadArchivedMedicines()
+        _remainingQuantities.value = localStorage.loadRemainingQuantities()
+        _rescheduledDoses.value = localStorage.loadRescheduledDoses()
+        _scheduleSnapshots.value = localStorage.loadScheduleSnapshots()
+        _takenRecords.value = localStorage.loadTakenRecords()
+        _lowStockMedicineId.value = null
+        resetAddMedicineForm()
+        syncMedicinesFromCloud()
+    }
+
+    fun syncMedicinesFromCloud() {
+        viewModelScope.launch {
+            try {
+                val cloudMedicines =
+                    medicineRepository.getMedicines()
+
+                if (cloudMedicines.isNotEmpty()) {
+
+                    val uniqueCloudMedicines =
+                        cloudMedicines.distinctBy {
+                            it.id
+                        }
+
+                    _medicines.value = uniqueCloudMedicines
+
+                    localStorage.saveMedicines(
+                        _medicines.value
+                    )
+
+                    // If cloud medicine is first time on this phone,
+                    // initialise its local remaining quantity.
+                    val updatedQuantities =
+                        _remainingQuantities.value
+                            .toMutableMap()
+
+                    uniqueCloudMedicines.forEach { medicine ->
+
+                        if (
+                            !updatedQuantities.containsKey(
+                                medicine.id
+                            )
+                        ) {
+                            updatedQuantities[
+                                medicine.id
+                            ] =
+                                medicine.quantity
+                                    .toDoubleOrNull()
+                                    ?: 0.0
+                        }
+                    }
+
+                    _remainingQuantities.value =
+                        updatedQuantities
+
+                    localStorage.saveRemainingQuantities(
+                        _remainingQuantities.value
+                    )
+                }
+
+            } catch (e: Exception) {
+                android.util.Log.e(
+                    "MedicineViewModel",
+                    "Failed to sync medicines from Supabase",
+                    e
+                )
+            }
+        }
     }
 }

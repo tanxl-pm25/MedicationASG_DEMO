@@ -195,6 +195,10 @@ fun MedicationApp(
     LaunchedEffect(Unit) {
         SupabaseClientProvider.client.auth.sessionStatus.collect { status ->
             if (status is SessionStatus.Authenticated) {
+                val userId = SupabaseClientProvider.client.auth.currentUserOrNull()?.id
+                if (userId != null) {
+                    medicineVm.switchUser(userId)
+                }
                 if (latestDeepLinkType.value == "recovery") {
                     // 是密码重设连结跳回来的,导去设新密码的页面
                     navController.navigate("resetPassword") {
@@ -249,7 +253,9 @@ fun MedicationApp(
                             password = password,
                             onSuccess = {
                                 navController.navigate("home") {
-                                    popUpTo("splash") { inclusive = true }
+                                    popUpTo("splash") {
+                                        inclusive = true
+                                    }
                                 }
                             }
                         )
@@ -434,25 +440,23 @@ fun MedicationApp(
                     },
                     onLogoutClick = {
                         userVm.logout()
+                        medicineVm.switchUser("guest")
                         navController.navigate("login") {
                             popUpTo(0) { inclusive = true }
                         }
                     },
                     onBottomNavSelected = { index ->
-                        when (index) {
-                            0 -> navController.navigate("home")
-                            1 -> navController.navigate("medicine")
-                            2 -> navController.navigate("history")
-                            3 -> {
-                                // Already on Profile
-                            }
-                        }
+                        navigateBottomBar(
+                            index = index,
+                            navController = navController
+                        )
                     }
                 )
             }
 
             // Settings Screen
-            composable("settings") {
+            composable("settings")
+            {
                 SettingScreen(
                     onBackClick = {
                         navController.popBackStack()
@@ -527,14 +531,10 @@ fun MedicationApp(
                         }
                     },
                     onBottomNavSelected = { index ->
-                        when (index) {
-                            0 -> {
-                                // Already on home
-                            }
-                            1 -> navController.navigate("medicine")
-                            2 -> navController.navigate("history")
-                            3 -> navController.navigate("profile")
-                        }
+                        navigateBottomBar(
+                            index = index,
+                            navController = navController
+                        )
                     }
                 )
             }
@@ -553,23 +553,10 @@ fun MedicationApp(
                         )
                     },
                     onBottomNavSelected = { index ->
-                        when (index) {
-                            0 -> {
-                                navController.navigate("home")
-                            }
-
-                            1 -> {
-                                // Already on Medicine
-                            }
-
-                            2 -> {
-                                navController.navigate("history")
-                            }
-
-                            3 -> {
-                                // Profile later
-                            }
-                        }
+                        navigateBottomBar(
+                            index = index,
+                            navController = navController
+                        )
                     }
                 )
             }
@@ -592,21 +579,10 @@ fun MedicationApp(
                         )
                     },
                     onBottomNavSelected = { index ->
-                        when (index) {
-                            0 -> {
-                                navController.navigate("home")
-                            }
-
-                            1 -> {
-                                navController.navigate("medicine")
-                            }
-
-                            2 -> {
-                                // Already on History
-                            }
-
-                            3 -> navController.navigate("profile")
-                        }
+                        navigateBottomBar(
+                            index = index,
+                            navController = navController
+                        )
                     }
                 )
             }
@@ -907,5 +883,27 @@ fun MedicationApp(
                     bottom = 80.dp
                 )
         )
+    }
+}
+
+private fun navigateBottomBar(
+    index: Int,
+    navController: androidx.navigation.NavHostController
+) {
+    val route =
+        when (index) {
+            0 -> "home"
+            1 -> "medicine"
+            2 -> "history"
+            3 -> "profile"
+            else -> return
+        }
+
+    if (
+        navController.currentDestination?.route != route
+    ) {
+        navController.navigate(route) {
+            launchSingleTop = true
+        }
     }
 }
