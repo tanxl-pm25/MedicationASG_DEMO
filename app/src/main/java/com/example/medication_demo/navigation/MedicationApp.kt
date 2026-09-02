@@ -5,98 +5,104 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.compose.ui.platform.LocalContext
+import com.example.medication_demo.data.SupabaseClientProvider
+import com.example.medication_demo.history.MedicineHistoryDetailScreen
 import com.example.medication_demo.history.WeeklyHistoryScreen
 import com.example.medication_demo.medication.AddMedicineScreen
+import com.example.medication_demo.medication.MedicineCalendarScreen
 import com.example.medication_demo.medication.MedicineDetailsScreen
 import com.example.medication_demo.medication.MedicineListScreen
-import com.example.medication_demo.notification.NotificationHelper
-import com.example.medication_demo.data.SupabaseClientProvider
-import io.github.jan.supabase.auth.auth
-import io.github.jan.supabase.auth.status.SessionStatus
-import com.example.medication_demo.user.HomeScreen
-import com.example.medication_demo.user.SplashScreen
-import com.example.medication_demo.user.LoginScreen
-import com.example.medication_demo.user.CreateAccountScreen
-import com.example.medication_demo.user.ForgotPasswordScreen
-import com.example.medication_demo.user.ResetPasswordScreen
-import com.example.medication_demo.user.EmailVerificationScreen
-import com.example.medication_demo.user.GenderScreen
-import com.example.medication_demo.user.AgeScreen
-import com.example.medication_demo.user.ProfileScreen
-import com.example.medication_demo.user.SettingScreen
-import com.example.medication_demo.user.PersonalInfoScreen
-import com.example.medication_demo.viewmodel.UserViewModel
 import com.example.medication_demo.medication.MedicineScheduleScreen
-import com.example.medication_demo.medication.MedicineCalendarScreen
-import androidx.compose.runtime.produceState
+import com.example.medication_demo.notification.NotificationHelper
 import com.example.medication_demo.reminder.RefillReminderScreen
-import kotlinx.coroutines.delay
+import com.example.medication_demo.reminder.scheduleRefillReminder
+import com.example.medication_demo.reminder.showRefillNotification
+import com.example.medication_demo.user.AgeScreen
+import com.example.medication_demo.user.CreateAccountScreen
+import com.example.medication_demo.user.EmailVerificationScreen
+import com.example.medication_demo.user.ForgotPasswordScreen
+import com.example.medication_demo.user.GenderScreen
+import com.example.medication_demo.user.HomeScreen
+import com.example.medication_demo.user.LoginScreen
+import com.example.medication_demo.user.PersonalInfoScreen
+import com.example.medication_demo.user.ProfileScreen
+import com.example.medication_demo.user.ResetPasswordScreen
+import com.example.medication_demo.user.SettingScreen
+import com.example.medication_demo.user.SplashScreen
 import com.example.medication_demo.utils.getMalaysiaTime
-
-import androidx.compose.foundation.layout.Box
-import androidx.compose.runtime.Composable
-
 import com.example.medication_demo.viewmodel.MedicineListViewModel
 import com.example.medication_demo.viewmodel.MedicineViewModel
-
-import com.example.medication_demo.reminder.showRefillNotification
-import com.example.medication_demo.reminder.scheduleRefillReminder
-import com.example.medication_demo.history.MedicineHistoryDetailScreen
-import java.time.LocalDate
-import androidx.compose.ui.Modifier
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.unit.dp
+import com.example.medication_demo.viewmodel.UserViewModel
 import com.example.medication_demo.viewmodel.WeeklyHistoryViewModel
+import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.status.SessionStatus
+import java.time.LocalDate
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+
 @Composable
 fun MedicationApp(
-    pendingDeepLinkType: String?, onDeepLinkConsumed: () -> Unit,
+    pendingDeepLinkType: String?,
+    onDeepLinkConsumed: () -> Unit,
     onNotificationHandled: () -> Unit = {},
     notificationMedicineId: Int? = null
-    ) {
-    // 通知权限的请求器(Android 13以上才需要真的跳出来问)
+) {
+    // 通知权限
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
-        onResult = { /* 不管用户答应还是拒绝,都不需要额外处理 */ }
+        onResult = { }
     )
+
     val userVm: UserViewModel = viewModel()
+
     val currentUserName by userVm.userName.collectAsStateWithLifecycle()
     val currentUserEmail by userVm.userEmail.collectAsStateWithLifecycle()
     val currentUserGender by userVm.userGender.collectAsStateWithLifecycle()
     val currentUserAge by userVm.userAge.collectAsStateWithLifecycle()
+
     val latestDeepLinkType = rememberUpdatedState(pendingDeepLinkType)
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val navController = rememberNavController()
+
     val medicineVm: MedicineViewModel = viewModel()
     val lowStockMedicineId by medicineVm.lowStockMedicineId.collectAsStateWithLifecycle()
+
     val medicineListVm: MedicineListViewModel = viewModel()
     val medicines by medicineVm.medicines.collectAsStateWithLifecycle()
+
     val historyVm: WeeklyHistoryViewModel = viewModel()
     val takenRecords by medicineVm.takenRecords.collectAsStateWithLifecycle()
     val archivedMedicines by medicineVm.archivedMedicines.collectAsStateWithLifecycle()
     val rescheduledDoses by medicineVm.rescheduledDoses.collectAsStateWithLifecycle()
+
     val medicinesTotal =
         medicineListVm.getTodayTotalDoseCount(
             medicines = medicines,
@@ -105,6 +111,7 @@ fun MedicationApp(
             rescheduledDoses = rescheduledDoses,
             medicineVm = medicineVm
         )
+
     val medicinesTaken =
         medicineListVm.getTodayTakenCount(
             medicines = medicines,
@@ -113,6 +120,7 @@ fun MedicationApp(
             rescheduledDoses = rescheduledDoses,
             medicineVm = medicineVm
         )
+
     val refreshTime by produceState(
         initialValue = getMalaysiaTime()
     ) {
@@ -121,9 +129,13 @@ fun MedicationApp(
             delay(1000)
         }
     }
+
     val nextDose =
         remember(
-            medicines, takenRecords, rescheduledDoses, refreshTime
+            medicines,
+            takenRecords,
+            rescheduledDoses,
+            refreshTime
         ) {
             medicineListVm.getNextMedicineDose(
                 medicines = medicines,
@@ -131,39 +143,47 @@ fun MedicationApp(
                 rescheduledDoses = rescheduledDoses
             )
         }
+
     val nextMedicineDisplayName =
-        remember(nextDose,medicinesTotal) {
+        remember(nextDose, medicinesTotal) {
             medicineListVm.getNextMedicineDisplayName(
                 nextDose = nextDose,
                 todayTotalDoseCount = medicinesTotal
             )
         }
+
+    // Low stock notification
     LaunchedEffect(lowStockMedicineId) {
         val medicineId =
             lowStockMedicineId
                 ?: return@LaunchedEffect
+
         val medicine =
             medicines.find {
                 it.id == medicineId
             } ?: return@LaunchedEffect
+
         val remaining =
             medicineVm
                 .getRemainingQuantity(medicine)
                 .toInt()
+
         showRefillNotification(
             context = context,
             medicineId = medicine.id,
             medicineName = medicine.name,
             tabletsLeft = remaining
         )
+
         navController.navigate(
             "refillReminder/${medicine.id}"
         )
+
         medicineVm.clearLowStockEvent()
     }
-    LaunchedEffect(
-        notificationMedicineId
-    ) {
+
+    // Notification deep link
+    LaunchedEffect(notificationMedicineId) {
         val medicineId =
             notificationMedicineId
                 ?: return@LaunchedEffect
@@ -176,44 +196,68 @@ fun MedicationApp(
 
         onNotificationHandled()
     }
+
+    // Notification permission
     LaunchedEffect(Unit) {
         NotificationHelper.createNotificationChannel(context)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            val hasPermission = ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.POST_NOTIFICATIONS
-            ) == PackageManager.PERMISSION_GRANTED
+            val hasPermission =
+                ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) == PackageManager.PERMISSION_GRANTED
 
             if (!hasPermission) {
-                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                notificationPermissionLauncher.launch(
+                    Manifest.permission.POST_NOTIFICATIONS
+                )
             }
         }
     }
-    // 监听Supabase的登入状态 —— Google登入/密码重设都是浏览器跳转的,
-    // 没有明确的"onSuccess"时间点,要靠这个才知道什么时候该跳去哪个页面
+
+    // 监听 Supabase 登录状态
     LaunchedEffect(Unit) {
         SupabaseClientProvider.client.auth.sessionStatus.collect { status ->
+
             if (status is SessionStatus.Authenticated) {
-                val userId = SupabaseClientProvider.client.auth.currentUserOrNull()?.id
+
+                val userId =
+                    SupabaseClientProvider.client.auth.currentUserOrNull()?.id
+
                 if (userId != null) {
                     medicineVm.switchUser(userId)
                 }
+
                 if (latestDeepLinkType.value == "recovery") {
-                    // 是密码重设连结跳回来的,导去设新密码的页面
-                    navController.navigate("resetPassword") {
-                        popUpTo(0) { inclusive = true }
-                    }
                     onDeepLinkConsumed()
+
                 } else {
-                    val currentRoute = navController.currentBackStackEntry?.destination?.route
+
+                    val currentRoute =
+                        navController.currentBackStackEntry
+                            ?.destination
+                            ?.route
+
+                    // 注意：
+                    // gender 和 age 不放在这里，
+                    // 否则登录成功后会被直接跳到 home。
                     val authFlowRoutes = setOf(
-                        "splash", "login", "createAccount",
-                        "forgotPassword", "emailVerification", "gender", "age"
+                        "splash",
+                        "login",
+                        "createAccount",
+                        "forgotPassword",
+                        "emailVerification"
                     )
-                    if (currentRoute == null || currentRoute in authFlowRoutes) {
-                        navController.navigate("home") {
-                            popUpTo(0) { inclusive = true }
+
+                    if (
+                        currentRoute == null ||
+                        currentRoute in authFlowRoutes
+                    ) {
+                        navController.navigate("gender") {
+                            popUpTo(0) {
+                                inclusive = true
+                            }
                         }
                     }
                 }
@@ -224,11 +268,20 @@ fun MedicationApp(
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
+
         NavHost(
             navController = navController,
-            startDestination = "splash"
+            startDestination = if (pendingDeepLinkType == "recovery") {
+                "resetPassword"
+            } else {
+                "splash"
+            }
         ) {
+
+            // =========================
             // Splash Screen
+            // =========================
+
             composable("splash") {
                 SplashScreen(
                     onGetStartedClick = {
@@ -237,9 +290,14 @@ fun MedicationApp(
                 )
             }
 
+            // =========================
             // Login Screen
+            // =========================
+
             composable("login") {
-                val loginErrorMessage by userVm.errorMessage.collectAsStateWithLifecycle()
+
+                val loginErrorMessage by
+                userVm.errorMessage.collectAsStateWithLifecycle()
 
                 LaunchedEffect(Unit) {
                     userVm.clearErrorMessage()
@@ -247,12 +305,17 @@ fun MedicationApp(
 
                 LoginScreen(
                     errorMessage = loginErrorMessage,
+
                     onLoginClick = { email, password ->
+
                         userVm.login(
                             email = email,
                             password = password,
+
                             onSuccess = {
-                                navController.navigate("home") {
+
+                                // ⭐ Login 成功后先去 Gender
+                                navController.navigate("gender") {
                                     popUpTo("splash") {
                                         inclusive = true
                                     }
@@ -260,22 +323,32 @@ fun MedicationApp(
                             }
                         )
                     },
+
                     onForgotPasswordClick = {
                         navController.navigate("forgotPassword")
                     },
+
                     onGoogleLoginClick = {
                         userVm.loginWithGoogle()
                     },
+
                     onSignUpClick = {
                         navController.navigate("createAccount")
                     }
                 )
             }
 
+            // =========================
             // Create Account Screen
+            // =========================
+
             composable("createAccount") {
-                val signUpErrorMessage by userVm.errorMessage.collectAsStateWithLifecycle()
-                val isSignUpLoading by userVm.isLoading.collectAsStateWithLifecycle()
+
+                val signUpErrorMessage by
+                userVm.errorMessage.collectAsStateWithLifecycle()
+
+                val isSignUpLoading by
+                userVm.isLoading.collectAsStateWithLifecycle()
 
                 LaunchedEffect(Unit) {
                     userVm.clearErrorMessage()
@@ -284,36 +357,55 @@ fun MedicationApp(
                 CreateAccountScreen(
                     errorMessage = signUpErrorMessage,
                     isLoading = isSignUpLoading,
+
                     onBackClick = {
                         navController.popBackStack()
                     },
+
                     onSignUpClick = { name, email, password, _ ->
+
                         userVm.signUp(
                             name = name,
                             email = email,
                             password = password,
+
                             onSuccess = {
-                                NotificationHelper.showVerificationSentNotification(
-                                    context = context,
-                                    email = email
+
+                                NotificationHelper
+                                    .showVerificationSentNotification(
+                                        context = context,
+                                        email = email
+                                    )
+
+                                navController.navigate(
+                                    "emailVerification"
                                 )
-                                navController.navigate("emailVerification")
                             }
                         )
                     },
+
                     onGoogleClick = {
                         userVm.loginWithGoogle()
                     },
+
                     onLoginClick = {
                         navController.popBackStack()
                     }
                 )
             }
 
-            // Forgot Password Screen
+            // =========================
+            // Forgot Password
+            // =========================
+
             composable("forgotPassword") {
-                val forgotPasswordErrorMessage by userVm.errorMessage.collectAsStateWithLifecycle()
-                var isResetEmailSent by remember { mutableStateOf(false) }
+
+                val forgotPasswordErrorMessage by
+                userVm.errorMessage
+                    .collectAsStateWithLifecycle()
+
+                var isResetEmailSent by
+                remember { mutableStateOf(false) }
 
                 LaunchedEffect(Unit) {
                     userVm.clearErrorMessage()
@@ -322,24 +414,36 @@ fun MedicationApp(
                 ForgotPasswordScreen(
                     errorMessage = forgotPasswordErrorMessage,
                     isEmailSent = isResetEmailSent,
+
                     onSendResetLinkClick = { email ->
+
                         userVm.sendPasswordResetEmail(
                             email = email,
+
                             onSuccess = {
                                 isResetEmailSent = true
                             }
                         )
                     },
+
                     onBackToLoginClick = {
                         navController.popBackStack()
                     }
                 )
             }
 
-            // Reset Password Screen (用户点了email连结跳回app之后设新密码)
+            // =========================
+            // Reset Password
+            // =========================
+
             composable("resetPassword") {
-                val resetPasswordErrorMessage by userVm.errorMessage.collectAsStateWithLifecycle()
-                var isResetSuccess by remember { mutableStateOf(false) }
+
+                val resetPasswordErrorMessage by
+                userVm.errorMessage
+                    .collectAsStateWithLifecycle()
+
+                var isResetSuccess by
+                remember { mutableStateOf(false) }
 
                 LaunchedEffect(Unit) {
                     userVm.clearErrorMessage()
@@ -348,104 +452,164 @@ fun MedicationApp(
                 ResetPasswordScreen(
                     errorMessage = resetPasswordErrorMessage,
                     isSuccess = isResetSuccess,
+
                     onResetPasswordClick = { newPassword ->
+
                         userVm.updatePassword(
                             newPassword = newPassword,
+
                             onSuccess = {
                                 isResetSuccess = true
                             }
                         )
                     },
+
                     onBackToLoginClick = {
+
                         navController.navigate("login") {
-                            popUpTo(0) { inclusive = true }
+                            popUpTo(0) {
+                                inclusive = true
+                            }
                         }
                     }
                 )
             }
 
-            // Email Verification Screen
+            // =========================
+            // Email Verification
+            // =========================
+
             composable("emailVerification") {
-                val verifyErrorMessage by userVm.errorMessage.collectAsStateWithLifecycle()
+
+                val verifyErrorMessage by
+                userVm.errorMessage
+                    .collectAsStateWithLifecycle()
 
                 LaunchedEffect(Unit) {
                     userVm.clearErrorMessage()
                 }
 
                 EmailVerificationScreen(
-                    email = currentUserEmail.ifBlank { "example@gmail.com" },
+                    email = currentUserEmail.ifBlank {
+                        "example@gmail.com"
+                    },
+
                     errorMessage = verifyErrorMessage,
+
                     onVerifyClick = { code ->
+
                         userVm.verifyEmail(
                             email = currentUserEmail,
                             code = code,
+
                             onSuccess = {
                                 navController.navigate("gender")
                             }
                         )
                     },
+
                     onResendClick = {
-                        userVm.resendVerificationCode(currentUserEmail)
+                        userVm.resendVerificationCode(
+                            currentUserEmail
+                        )
                     },
+
                     onBackClick = {
                         navController.popBackStack()
                     }
                 )
             }
 
-            // Onboarding - Gender
+            // =========================
+            // Gender Screen
+            // =========================
+
             composable("gender") {
+
                 GenderScreen(
                     onNextClick = { gender ->
+
                         userVm.onGenderSelected(gender)
+
                         navController.navigate("age")
                     }
                 )
             }
 
-            // Onboarding - Age
+            // =========================
+            // Age Screen
+            // =========================
+
             composable("age") {
+
                 AgeScreen(
+
                     onBackClick = {
                         navController.popBackStack()
                     },
+
                     onNextClick = { age ->
+
                         userVm.onAgeSelected(age)
+
                         navController.navigate("home") {
-                            popUpTo("splash") { inclusive = true }
+                            popUpTo("splash") {
+                                inclusive = true
+                            }
                         }
                     }
                 )
             }
 
+            // =========================
             // Profile Screen
+            // =========================
+
             composable("profile") {
+
                 ProfileScreen(
-                    name = currentUserName.ifBlank { "User" },
-                    email = currentUserEmail.ifBlank { "--" },
+                    name = currentUserName.ifBlank {
+                        currentUserName
+                    },
+
+                    email = currentUserEmail.ifBlank {
+                        "--"
+                    },
+
                     onPersonalInfoClick = {
                         navController.navigate("personalInfo")
                     },
+
                     onEmergencyContactsClick = {
-                        // TODO: Emergency Contacts screen还没做
+                        // TODO
                     },
+
                     onRemindersClick = {
-                        // TODO: Reminders设置还没做
+                        // TODO
                     },
+
                     onPreferencesClick = {
                         navController.navigate("settings")
                     },
+
                     onHelpSupportClick = {
-                        // TODO: Help & Support还没做
+                        // TODO
                     },
+
                     onLogoutClick = {
+
                         userVm.logout()
                         medicineVm.switchUser("guest")
+
                         navController.navigate("login") {
-                            popUpTo(0) { inclusive = true }
+                            popUpTo(0) {
+                                inclusive = true
+                            }
                         }
                     },
+
                     onBottomNavSelected = { index ->
+
                         navigateBottomBar(
                             index = index,
                             navController = navController
@@ -454,9 +618,12 @@ fun MedicationApp(
                 )
             }
 
+            // =========================
             // Settings Screen
-            composable("settings")
-            {
+            // =========================
+
+            composable("settings") {
+
                 SettingScreen(
                     onBackClick = {
                         navController.popBackStack()
@@ -464,42 +631,75 @@ fun MedicationApp(
                 )
             }
 
-            // Personal Info Screen
+            // =========================
+            // Personal Info
+            // =========================
+
             composable("personalInfo") {
+
                 PersonalInfoScreen(
-                    name = currentUserName.ifBlank { "User" },
-                    email = currentUserEmail.ifBlank { "--" },
+
+                    name = currentUserName.ifBlank {
+                        "User"
+                    },
+
+                    email = currentUserEmail.ifBlank {
+                        "--"
+                    },
+
                     gender = currentUserGender,
                     age = currentUserAge,
+
                     onBackClick = {
                         navController.popBackStack()
                     },
+
                     onPhotoClick = {
-                        // TODO: 之后接换头像功能
+                        // TODO
                     },
+
                     onNameClick = {
-                        // TODO: 之后接改username功能
+                        // TODO
                     },
+
                     onEmailClick = {
-                        // TODO: 之后接改email功能
+                        // TODO
                     },
+
                     onGenderChange = { gender ->
                         userVm.updateGender(gender)
                     },
+
                     onAgeChange = { age ->
                         userVm.updateAge(age)
                     }
                 )
             }
 
+            // =========================
             // Home Screen
+            // =========================
+
             composable("home") {
+
                 HomeScreen(
-                    username = "Sarah",
-                    nextMedicineName = nextMedicineDisplayName,
-                    nextMedicineDose = nextDose?.dosage,
-                    nextMedicineTime = nextDose?.reminderTime,
-                    nextMedicineStatus = nextDose?.status,
+
+                    username = currentUserName.ifBlank {
+                        "User"
+                    },
+
+                    nextMedicineName =
+                        nextMedicineDisplayName,
+
+                    nextMedicineDose =
+                        nextDose?.dosage,
+
+                    nextMedicineTime =
+                        nextDose?.reminderTime,
+
+                    nextMedicineStatus =
+                        nextDose?.status,
+
                     medicinesTaken =
                         if (medicinesTotal == 0) {
                             null
@@ -508,29 +708,51 @@ fun MedicationApp(
                         },
 
                     medicinesTotal = medicinesTotal,
+
                     onMedicinesClick = {
-                        navController.navigate("medicineSchedule")
+                        navController.navigate(
+                            "medicineSchedule"
+                        )
                     },
+
                     onMarkAsTakenClick = {
+
                         if (nextDose != null) {
+
                             medicineVm.markDoseAsTaken(
-                                medicineId = nextDose.medicineId,
-                                doseIndex = nextDose.doseIndex,
-                                reminderTime = nextDose.originalTime
+                                medicineId =
+                                    nextDose.medicineId,
+
+                                doseIndex =
+                                    nextDose.doseIndex,
+
+                                reminderTime =
+                                    nextDose.originalTime
                             )
                         }
                     },
+
                     onRescheduleConfirm = { newTime ->
+
                         if (nextDose != null) {
+
                             medicineVm.rescheduleDose(
-                                medicineId = nextDose.medicineId,
-                                doseIndex = nextDose.doseIndex,
-                                originalTime = nextDose.originalTime,
+                                medicineId =
+                                    nextDose.medicineId,
+
+                                doseIndex =
+                                    nextDose.doseIndex,
+
+                                originalTime =
+                                    nextDose.originalTime,
+
                                 newTime = newTime
                             )
                         }
                     },
+
                     onBottomNavSelected = { index ->
+
                         navigateBottomBar(
                             index = index,
                             navController = navController
@@ -539,20 +761,29 @@ fun MedicationApp(
                 )
             }
 
-            // Medicine List Screen
+            // =========================
+            // Medicine List
+            // =========================
+
             composable("medicine") {
+
                 MedicineListScreen(
                     medicineVm = medicineVm,
                     listVm = medicineListVm,
+
                     onAddMedicineClick = {
                         navController.navigate("addMedicine")
                     },
+
                     onMedicineClick = { medicineId ->
+
                         navController.navigate(
                             "medicineDetails/$medicineId"
                         )
                     },
+
                     onBottomNavSelected = { index ->
+
                         navigateBottomBar(
                             index = index,
                             navController = navController
@@ -561,16 +792,22 @@ fun MedicationApp(
                 )
             }
 
+            // =========================
             // Weekly History
+            // =========================
+
             composable("history") {
 
                 WeeklyHistoryScreen(
                     historyVm = historyVm,
                     medicineVm = medicineVm,
                     medicineListVm = medicineListVm,
-                    onMedicineClick = { medicineId,
-                                        startDate,
-                                        endDate ->
+
+                    onMedicineClick = {
+                            medicineId,
+                            startDate,
+                            endDate ->
+
                         navController.navigate(
                             "medicineHistory/" +
                                     "$medicineId/" +
@@ -578,7 +815,9 @@ fun MedicationApp(
                                     "$endDate"
                         )
                     },
+
                     onBottomNavSelected = { index ->
+
                         navigateBottomBar(
                             index = index,
                             navController = navController
@@ -587,37 +826,51 @@ fun MedicationApp(
                 )
             }
 
+            // =========================
             // Medicine Schedule
+            // =========================
+
             composable("medicineSchedule") {
+
                 MedicineScheduleScreen(
                     medicineVm = medicineVm,
                     medicineListVm = medicineListVm,
+
                     onBackClick = {
                         navController.popBackStack()
                     },
 
                     onViewCalendarClick = {
-                        navController.navigate("medicineCalendar")
+                        navController.navigate(
+                            "medicineCalendar"
+                        )
                     }
                 )
             }
 
+            // =========================
             // Calendar
+            // =========================
+
             composable("medicineCalendar") {
+
                 MedicineCalendarScreen(
                     medicineVm = medicineVm,
                     medicineListVm = medicineListVm,
+
                     onBackClick = {
                         navController.popBackStack()
                     }
                 )
             }
 
-            // Reminder Refill
+            // =========================
+            // Refill Reminder
+            // =========================
+
             composable(
                 route = "refillReminder/{medicineId}"
-            )
-            { backStackEntry ->
+            ) { backStackEntry ->
 
                 val medicineId =
                     backStackEntry.arguments
@@ -630,39 +883,66 @@ fun MedicationApp(
                     }
 
                 if (medicine != null) {
+
                     val remaining =
                         medicineVm
                             .getRemainingQuantity(medicine)
                             .toInt()
+
                     RefillReminderScreen(
-                        medicineName = medicine.name,
-                        tabletsLeft = remaining,
-                        presetImageRes = medicine.presetImageRes,
-                        galleryImageUri = medicine.galleryImageUri,
+
+                        medicineName =
+                            medicine.name,
+
+                        tabletsLeft =
+                            remaining,
+
+                        presetImageRes =
+                            medicine.presetImageRes,
+
+                        galleryImageUri =
+                            medicine.galleryImageUri,
+
                         onRefillConfirm = { refillQuantity ->
+
                             medicineVm.refillMedicine(
                                 medicineId = medicine.id,
                                 refillQuantity = refillQuantity
                             )
-                            val newRemaining = medicineVm.getRemainingQuantity(medicine)
+
+                            val newRemaining =
+                                medicineVm
+                                    .getRemainingQuantity(medicine)
+
                             val remainingText =
                                 if (newRemaining % 1.0 == 0.0) {
-                                    newRemaining.toInt().toString()
+                                    newRemaining
+                                        .toInt()
+                                        .toString()
                                 } else {
                                     newRemaining.toString()
                                 }
+
                             navController.popBackStack()
+
                             scope.launch {
+
                                 snackbarHostState
                                     .currentSnackbarData
                                     ?.dismiss()
+
                                 snackbarHostState.showSnackbar(
-                                    message = "Refill successful. Remaining quantity: $remainingText",
-                                    duration = SnackbarDuration.Short
+                                    message =
+                                        "Refill successful. Remaining quantity: $remainingText",
+
+                                    duration =
+                                        SnackbarDuration.Short
                                 )
                             }
                         },
+
                         onRemindAgainConfirm = { minutes ->
+
                             scheduleRefillReminder(
                                 context = context,
                                 medicineId = medicine.id,
@@ -670,39 +950,44 @@ fun MedicationApp(
                                 tabletsLeft = remaining,
                                 delayMinutes = minutes
                             )
-                            //showReminderScheduledNotification(
-                            //context = context,
-                            //minutes = minutes
-                            //)
+
                             navController.popBackStack()
                         }
                     )
                 }
             }
 
+            // =========================
             // Add Medicine
+            // =========================
+
             composable("addMedicine") {
+
                 AddMedicineScreen(
                     isEditMode = false,
                     vm = medicineVm,
 
                     onBackClick = {
+
                         medicineVm.resetAddMedicineForm()
                         navController.popBackStack()
                     },
 
                     onSaveClick = {
+
                         medicineVm.resetAddMedicineForm()
                         navController.popBackStack()
                     }
                 )
             }
 
+            // =========================
             // Medicine Details
+            // =========================
+
             composable(
                 route = "medicineDetails/{medicineId}"
-            )
-            { backStackEntry ->
+            ) { backStackEntry ->
 
                 val medicineId =
                     backStackEntry.arguments
@@ -715,32 +1000,46 @@ fun MedicationApp(
                     }
 
                 if (medicine != null) {
+
                     val remainingQuantity =
                         medicineVm.getRemainingQuantity(
                             medicine
                         )
+
                     MedicineDetailsScreen(
+
                         medicine = medicine,
-                        remainingQuantity = remainingQuantity,
+
+                        remainingQuantity =
+                            remainingQuantity,
+
                         onBackClick = {
                             navController.popBackStack()
                         },
+
                         onEditClick = {
+
                             medicineVm.loadMedicineForEdit(
                                 medicine
                             )
+
                             navController.navigate(
                                 "editMedicine/${medicine.id}"
                             )
                         },
+
                         onTakeNow = {
+
                             val success =
-                                medicineVm.markAsNeededMedicineTaken(
-                                    medicineId = medicine.id
-                                )
+                                medicineVm
+                                    .markAsNeededMedicineTaken(
+                                        medicineId = medicine.id
+                                    )
 
                             if (!success) {
+
                                 scope.launch {
+
                                     snackbarHostState
                                         .currentSnackbarData
                                         ?.dismiss()
@@ -748,27 +1047,45 @@ fun MedicationApp(
                                     snackbarHostState.showSnackbar(
                                         message =
                                             "This medicine was already taken within the last minute.",
-                                        duration = SnackbarDuration.Short
+
+                                        duration =
+                                            SnackbarDuration.Short
                                     )
                                 }
                             }
+
                             navController.popBackStack()
                         },
+
                         onDeleteClick = {
-                            val medicineName = medicine.name
-                            medicineVm.deleteMedicine(medicine.id)
+
+                            val medicineName =
+                                medicine.name
+
+                            medicineVm.deleteMedicine(
+                                medicine.id
+                            )
+
                             navController.popBackStack()
+
                             scope.launch {
+
                                 snackbarHostState
                                     .currentSnackbarData
                                     ?.dismiss()
+
                                 snackbarHostState.showSnackbar(
-                                    message = "$medicineName was deleted successfully.",
-                                    duration = SnackbarDuration.Short
+                                    message =
+                                        "$medicineName was deleted successfully.",
+
+                                    duration =
+                                        SnackbarDuration.Short
                                 )
                             }
                         },
+
                         onReminderChanged = { enabled ->
+
                             medicineVm.updateReminderEnabled(
                                 id = medicine.id,
                                 enabled = enabled
@@ -778,11 +1095,13 @@ fun MedicationApp(
                 }
             }
 
+            // =========================
             // Edit Medicine
+            // =========================
+
             composable(
                 route = "editMedicine/{medicineId}"
-            )
-            { backStackEntry ->
+            ) { backStackEntry ->
 
                 val medicineId =
                     backStackEntry.arguments
@@ -793,26 +1112,33 @@ fun MedicationApp(
                     isEditMode = true,
                     medicineId = medicineId,
                     vm = medicineVm,
+
                     onBackClick = {
+
                         medicineVm.resetAddMedicineForm()
                         navController.popBackStack()
                     },
+
                     onSaveClick = {
+
                         medicineVm.resetAddMedicineForm()
                         navController.popBackStack()
                     }
                 )
             }
 
+            // =========================
             // History Details
+            // =========================
+
             composable(
                 route =
                     "medicineHistory/" +
                             "{medicineId}/" +
                             "{startDate}/" +
                             "{endDate}"
-            )
-            { backStackEntry ->
+            ) { backStackEntry ->
+
                 val medicineId =
                     backStackEntry.arguments
                         ?.getString("medicineId")
@@ -831,12 +1157,16 @@ fun MedicationApp(
                         ?.let {
                             LocalDate.parse(it)
                         }
+
                 val activeMedicine =
                     medicines.find {
                         it.id == medicineId
                     }
 
-                val archivedMedicines by medicineVm.archivedMedicines.collectAsStateWithLifecycle()
+                val archivedMedicines by
+                medicineVm.archivedMedicines
+                    .collectAsStateWithLifecycle()
+
                 val archivedMedicine =
                     archivedMedicines.find {
                         it.medicine.id == medicineId
@@ -851,6 +1181,7 @@ fun MedicationApp(
                     startDate != null &&
                     endDate != null
                 ) {
+
                     val dailyHistory =
                         medicineListVm
                             .getDailyHistoryForRange(
@@ -864,8 +1195,13 @@ fun MedicationApp(
                             )
 
                     MedicineHistoryDetailScreen(
-                        medicineName = medicine.name,
-                        dailyHistory = dailyHistory,
+
+                        medicineName =
+                            medicine.name,
+
+                        dailyHistory =
+                            dailyHistory,
+
                         onBackClick = {
                             navController.popBackStack()
                         }
@@ -873,6 +1209,8 @@ fun MedicationApp(
                 }
             }
         }
+
+        // Snackbar
         SnackbarHost(
             hostState = snackbarHostState,
             modifier = Modifier
