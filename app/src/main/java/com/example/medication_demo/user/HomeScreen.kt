@@ -55,7 +55,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.TextUnit
-import coil.size.Size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import com.example.medication_demo.components.MedicationTimePickerDialog
@@ -113,6 +114,7 @@ fun HomeScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .padding(20.dp)
+                .verticalScroll(rememberScrollState())
         ) {
             // Top
             Row(
@@ -348,8 +350,8 @@ fun HomeScreen(
                     modifier = Modifier.weight(1f),
                     icon = Icons.Filled.BarChart,
                     title = "Monthly Statistics",
-                    valueBold = monthlyStatText ?: "No record found",
-                    fontSize = 15.sp,
+                    valueBold = monthlyStatText ?:"No record found",
+                    fontSize = 8.sp,
                     valueRest = "",
                 )
             }
@@ -417,6 +419,7 @@ private fun OverviewCard(
 ) {
     Card(
         modifier = modifier
+            .height(130.dp)
             .clickable {
                 onClick()
             },
@@ -491,25 +494,6 @@ private fun OverviewCard(
 @Composable
 private fun HomeScreenPreview() {
     Medication_DemoTheme {
-        HomeScreen(username = "Sarah")
-    }
-}
-
-@Preview(showBackground = true, showSystemUi = true, name = "With data")
-@Composable
-private fun HomeScreenFilledPreview() {
-    Medication_DemoTheme {
-        HomeScreen(
-            username = "Sarah",
-            nextMedicineName = "Vitamin D3",
-            nextMedicineDose = "1 Tablet",
-            nextMedicineTime = "08:00 AM",
-            medicinesTaken = "3",
-            medicinesTotal = 3,
-            upcomingAppointments = "1",
-            waterGlasses = "4",
-            monthlyStatText = "Good job! \uD83C\uDF89",
-            hasUnreadNotofication = true
-        )
+        HomeScreen(username = "")
     }
 }
