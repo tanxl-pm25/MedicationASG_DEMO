@@ -65,6 +65,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
+import com.example.medication_demo.reminder.createRefillNotificationChannel
 import com.example.medication_demo.viewmodel.WeeklyHistoryViewModel
 import kotlinx.coroutines.launch
 @Composable
@@ -179,6 +180,7 @@ fun MedicationApp(
     LaunchedEffect(Unit) {
         NotificationHelper.createNotificationChannel(context)
 
+        createRefillNotificationChannel(context)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val hasPermission = ContextCompat.checkSelfPermission(
                 context,
