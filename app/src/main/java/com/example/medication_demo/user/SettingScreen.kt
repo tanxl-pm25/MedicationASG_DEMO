@@ -130,7 +130,7 @@ fun SettingScreen(
                     SettingAccountRow(
                         icon = {
                             Image(
-                                painter = painterResource(id = R.drawable.age_cake_pic),
+                                painter = painterResource(id = R.drawable.facebook),
                                 contentDescription = null,
                                 modifier = Modifier.size(22.dp)
                             )

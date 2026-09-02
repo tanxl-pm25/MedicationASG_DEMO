@@ -277,7 +277,7 @@ fun LoginScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ){
                     Image(
-                        painter = painterResource(id = R.drawable.age_cake_pic),
+                        painter = painterResource(id = R.drawable.facebook),
                         contentDescription = null,
                         modifier = Modifier.height(20.dp)
                     )
