@@ -153,12 +153,6 @@ fun ProfileScreen(
                     )
                     ProfileDivider()
                     ProfileOptionRow(
-                        icon = Icons.Filled.NotificationsNone,
-                        label = "Reminders",
-                        onClick = onRemindersClick
-                    )
-                    ProfileDivider()
-                    ProfileOptionRow(
                         icon = Icons.Filled.Settings,
                         label = "Settings",
                         onClick = onPreferencesClick
