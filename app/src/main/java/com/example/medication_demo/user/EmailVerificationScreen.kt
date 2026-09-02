@@ -1,7 +1,11 @@
 package com.example.medication_demo.user
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -12,7 +16,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.ClickableText
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
@@ -23,6 +29,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -33,8 +41,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -44,21 +54,26 @@ import com.example.medication_demo.ui.theme.Medication_DemoTheme
 import kotlinx.coroutines.delay
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 
 private val VerifyGreen = Color(0xFF159447)
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EmailVerificationScreen(
     email: String = "example@gmail.com",
+    errorMessage: String? = null,
     onVerifyClick: (code: String) -> Unit = {},
     onResendClick: () -> Unit = {},
     onBackClick: () -> Unit = {}
 ) {
-    var digits by remember { mutableStateOf(List(6) { "" }) }
-    val focusRequesters = remember { List(6){ FocusRequester() } }
+    var otpValue by remember { mutableStateOf("") }
+    val hiddenFieldFocusRequester = remember { FocusRequester() }
+    var isFieldFocused by remember { mutableStateOf(false) }
+    val hasError = errorMessage != null
 
     // time countdown
     var secondsLeft by remember { mutableIntStateOf(60) }
@@ -71,20 +86,28 @@ fun EmailVerificationScreen(
         }
     }
 
-    Scaffold(containerColor = Color.White) { innerPadding ->
+    Scaffold(
+        containerColor = Color.White,
+        topBar = {
+            TopAppBar(
+                title = {},
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back"
+                        )
+                    }
+                }
+            )
+        }
+    ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
                 .padding(24.dp)
         ) {
-            IconButton(onClick = onBackClick) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back"
-                )
-            }
-
             Spacer(modifier = Modifier.height(50.dp))
 
             Column(
@@ -116,30 +139,72 @@ fun EmailVerificationScreen(
 
                 Spacer(modifier = Modifier.height(40.dp))
 
-                // 6 Box
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    digits.forEachIndexed { index, digit ->
-                        OutlinedTextField(
-                            value = digit,
-                            onValueChange = { newValue ->
-                                if (newValue.length <= 1) {
-                                    digits = digits.toMutableList().also { it[index] = newValue }
-
-                                    if (newValue.isNotEmpty() && index < 5){
-                                        focusRequesters[index + 1].requestFocus()
-                                    }
-                                }
-                            },
-                            modifier = Modifier
-                                .width(48.dp)
-                                .height(56.dp)
-                                .focusRequester(focusRequesters[index]),
-                            singleLine = true,
-                            textStyle = MaterialTheme.typography.titleLarge.copy(textAlign = TextAlign.Center)
-                        )
+                // 6 Box(1个隐形输入框接收全部输入,6个格子只负责显示,手指摸不到真正的输入框)
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null
+                            ) { hiddenFieldFocusRequester.requestFocus() },
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        for (index in 0 until 6) {
+                            val digit = otpValue.getOrNull(index)?.toString() ?: ""
+                            val isActiveBox = isFieldFocused && index == otpValue.length
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(56.dp)
+                                    .border(
+                                        width = 1.dp,
+                                        color = when {
+                                            hasError -> MaterialTheme.colorScheme.error
+                                            isActiveBox -> VerifyGreen
+                                            else -> Color(0xFFBDBDBD)
+                                        },
+                                        shape = RoundedCornerShape(8.dp)
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = digit,
+                                    style = MaterialTheme.typography.titleLarge,
+                                    textAlign = TextAlign.Center,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
                     }
+
+                    // 真正接收输入的隐形输入框,手指看不到、摸不到
+                    BasicTextField(
+                        value = otpValue,
+                        onValueChange = { newValue ->
+                            if (newValue.length <= 6 && newValue.all { it.isDigit() }) {
+                                otpValue = newValue
+                            }
+                        },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        textStyle = MaterialTheme.typography.titleLarge.copy(color = Color.Transparent),
+                        cursorBrush = SolidColor(Color.Transparent),
+                        modifier = Modifier
+                            .size(1.dp)
+                            .focusRequester(hiddenFieldFocusRequester)
+                            .onFocusChanged { isFieldFocused = it.isFocused }
+                    )
+                }
+
+                if (hasError) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = errorMessage ?: "",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        textAlign = TextAlign.Center
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(35.dp))
@@ -202,7 +267,7 @@ fun EmailVerificationScreen(
             Spacer(modifier = Modifier.weight(1f))
 
             Button(
-                onClick = { onVerifyClick(digits.joinToString("")) },
+                onClick = { onVerifyClick(otpValue) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(64.dp)

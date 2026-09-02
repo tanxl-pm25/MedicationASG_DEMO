@@ -39,6 +39,9 @@ android {
 }
 
 dependencies {
+    implementation("androidx.credentials:credentials:1.3.0")
+    implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
     implementation("io.github.jan-tennert.supabase:postgrest-kt")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
     implementation("androidx.work:work-runtime-ktx:2.11.2")

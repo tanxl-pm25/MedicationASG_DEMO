@@ -377,7 +377,7 @@ private fun PersonalInfoScreenPreview() {
             gender = "Female",
             age = currentAge,
             onAgeChange = {
-                newAge ->
+                    newAge ->
                 currentAge = newAge.toString()
             }
         )

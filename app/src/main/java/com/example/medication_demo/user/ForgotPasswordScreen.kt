@@ -1,6 +1,5 @@
 package com.example.medication_demo.user
 
-
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -8,8 +7,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
@@ -35,25 +37,35 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.util.Patterns
 import com.example.medication_demo.R
 import com.example.medication_demo.ui.theme.Medication_DemoTheme
 
 private val ForgotGreen = Color(0xFF159447)
 
+private fun isValidForgotEmail(email: String): Boolean {
+    return Patterns.EMAIL_ADDRESS.matcher(email).matches()
+}
+
 @Composable
 fun ForgotPasswordScreen(
+    errorMessage: String? = null,
+    isEmailSent: Boolean = false,
     onSendResetLinkClick: (email: String) -> Unit = {},
     onBackToLoginClick: () -> Unit = {}
 ) {
     var email by remember { mutableStateOf("") }
     var showValidation by remember { mutableStateOf(false) }
+    val emailHasError = showValidation && (email.isBlank() || !isValidForgotEmail(email))
 
     Scaffold(containerColor = Color.White) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(24.dp),
+                .padding(24.dp)
+                .imePadding()
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -95,6 +107,25 @@ fun ForgotPasswordScreen(
                     )
                 },
                 isError = showValidation && email.isBlank(),
+                supportingText = {
+                    if (emailHasError) {
+                        Text(
+                            text = if (email.isBlank()) {
+                                "Email cannot be empty"
+                            } else {
+                                "Please enter a valid email address"
+                            }
+                        )
+                    } else if (errorMessage != null) {
+                        Text(errorMessage)
+                    } else if (isEmailSent) {
+                        Text(
+                            text = "Reset link sent! Please check your inbox.",
+                            color = ForgotGreen
+                        )
+                    }
+                },
+
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -127,7 +158,7 @@ fun ForgotPasswordScreen(
                     text = "Back to Login",
                     fontWeight = FontWeight.Bold,
                     color = ForgotGreen
-                    )
+                )
             }
         }
     }
