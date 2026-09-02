@@ -531,7 +531,6 @@ fun MedicationApp(
                             0 -> {
                                 // Already on home
                             }
-
                             1 -> navController.navigate("medicine")
                             2 -> navController.navigate("history")
                             3 -> navController.navigate("profile")
