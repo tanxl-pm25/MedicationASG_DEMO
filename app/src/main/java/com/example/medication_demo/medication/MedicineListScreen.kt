@@ -208,7 +208,8 @@ private fun MedicineTopBar() {
         ) {
             Icon(
                 imageVector = Icons.Default.NotificationsNone,
-                contentDescription = "Notifications"
+                contentDescription = "Notifications",
+                modifier = Modifier.size(24.dp)
             )
         }
     }

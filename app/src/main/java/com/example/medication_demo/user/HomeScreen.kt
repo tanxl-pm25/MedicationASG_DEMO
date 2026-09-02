@@ -155,7 +155,7 @@ fun HomeScreen(
                         Icon(
                             imageVector = Icons.Filled.NotificationsNone,
                             contentDescription = "Notifications",
-                            modifier = Modifier.size(22.dp)
+                            modifier = Modifier.size(24.dp)
                         )
                     }
                     if (hasUnreadNotofication){
@@ -194,7 +194,7 @@ fun HomeScreen(
                     Text(
                         text = nextMedicineName ?: "--",
                         color = Color.White,
-                        fontSize = 24.sp,
+                        fontSize = 22.sp,
                         fontWeight = FontWeight.Bold
                     )
 
