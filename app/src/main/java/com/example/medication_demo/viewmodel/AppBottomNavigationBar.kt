@@ -5,6 +5,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PersonOutline
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -52,7 +53,7 @@ fun AppBottomNavigationBar(
 
         BottomItem(
             label = "Profile",
-            icon = Icons.Default.Person
+            icon = Icons.Default.PersonOutline
         )
     )
 
