@@ -31,12 +31,12 @@ import java.time.LocalDate
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
-import com.example.medication_demo.utils.getMalaysiaDate
 import com.example.medication_demo.viewmodel.WeeklyHistoryViewModel
 import kotlinx.coroutines.launch
 @Composable
@@ -54,18 +54,23 @@ fun MedicationApp(
     val medicines by medicineVm.medicines.collectAsStateWithLifecycle()
     val historyVm: WeeklyHistoryViewModel = viewModel()
     val takenRecords by medicineVm.takenRecords.collectAsStateWithLifecycle()
+    val archivedMedicines by medicineVm.archivedMedicines.collectAsStateWithLifecycle()
     val rescheduledDoses by medicineVm.rescheduledDoses.collectAsStateWithLifecycle()
     val medicinesTotal =
         medicineListVm.getTodayTotalDoseCount(
             medicines = medicines,
+            archivedMedicines = archivedMedicines,
             takenRecords = takenRecords,
-            rescheduledDoses = rescheduledDoses
+            rescheduledDoses = rescheduledDoses,
+            medicineVm = medicineVm
         )
     val medicinesTaken =
         medicineListVm.getTodayTakenCount(
             medicines = medicines,
+            archivedMedicines = archivedMedicines,
             takenRecords = takenRecords,
-            rescheduledDoses = rescheduledDoses
+            rescheduledDoses = rescheduledDoses,
+            medicineVm = medicineVm
         )
     val refreshTime by produceState(
         initialValue = getMalaysiaTime()
@@ -86,12 +91,10 @@ fun MedicationApp(
             )
         }
     val nextMedicineDisplayName =
-        remember(medicines, nextDose, takenRecords, rescheduledDoses) {
+        remember(nextDose,medicinesTotal) {
             medicineListVm.getNextMedicineDisplayName(
-                medicines = medicines,
                 nextDose = nextDose,
-                takenRecords = takenRecords,
-                rescheduledDoses = rescheduledDoses
+                todayTotalDoseCount = medicinesTotal
             )
         }
     LaunchedEffect(lowStockMedicineId) {
@@ -337,7 +340,8 @@ fun MedicationApp(
                                     .currentSnackbarData
                                     ?.dismiss()
                                 snackbarHostState.showSnackbar(
-                                    message = "Refill successful. Remaining quantity: $remainingText"
+                                    message = "Refill successful. Remaining quantity: $remainingText",
+                                    duration = SnackbarDuration.Short
                                 )
                             }
                         },
@@ -425,7 +429,8 @@ fun MedicationApp(
 
                                     snackbarHostState.showSnackbar(
                                         message =
-                                            "This medicine was already taken within the last minute."
+                                            "This medicine was already taken within the last minute.",
+                                        duration = SnackbarDuration.Short
                                     )
                                 }
                             }
@@ -440,7 +445,8 @@ fun MedicationApp(
                                     .currentSnackbarData
                                     ?.dismiss()
                                 snackbarHostState.showSnackbar(
-                                    message = "$medicineName was deleted successfully."
+                                    message = "$medicineName was deleted successfully.",
+                                    duration = SnackbarDuration.Short
                                 )
                             }
                         },

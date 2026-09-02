@@ -47,10 +47,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.medication_demo.model.Medicine
 import com.example.medication_demo.viewmodel.MedicineViewModel
 import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import com.example.medication_demo.viewmodel.AppBottomNavigationBar
 import com.example.medication_demo.viewmodel.MedicineListViewModel
