@@ -48,29 +48,11 @@ import com.example.medication_demo.utils.getMalaysiaTime
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
-import com.example.medication_demo.history.WeeklyHistoryScreen
-import com.example.medication_demo.medication.AddMedicineScreen
-import com.example.medication_demo.medication.MedicineDetailsScreen
-import com.example.medication_demo.medication.MedicineListScreen
-import com.example.medication_demo.user.HomeScreen
+
 import com.example.medication_demo.viewmodel.MedicineListViewModel
 import com.example.medication_demo.viewmodel.MedicineViewModel
-import com.example.medication_demo.medication.MedicineScheduleScreen
-import com.example.medication_demo.medication.MedicineCalendarScreen
-import androidx.compose.runtime.produceState
-import androidx.compose.ui.platform.LocalContext
-import com.example.medication_demo.reminder.RefillReminderScreen
-import kotlinx.coroutines.delay
-import com.example.medication_demo.utils.getMalaysiaTime
+
 import com.example.medication_demo.reminder.showRefillNotification
-import androidx.compose.runtime.LaunchedEffect
 import com.example.medication_demo.reminder.scheduleRefillReminder
 import com.example.medication_demo.history.MedicineHistoryDetailScreen
 import java.time.LocalDate
@@ -552,9 +534,7 @@ fun MedicationApp(
 
                             1 -> navController.navigate("medicine")
                             2 -> navController.navigate("history")
-                            3 -> {
-                                // Profile later
-                            }
+                            3 -> navController.navigate("profile")
                         }
                     }
                 )
@@ -626,9 +606,7 @@ fun MedicationApp(
                                 // Already on History
                             }
 
-                            3 -> {
-                                // Profile later
-                            }
+                            3 -> navController.navigate("profile")
                         }
                     }
                 )

@@ -3,31 +3,16 @@ package com.example.medication_demo
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
+
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.medication_demo.history.WeeklyHistoryScreen
-import com.example.medication_demo.medication.AddMedicineScreen
-import com.example.medication_demo.medication.MedicineCalendarScreen
-import com.example.medication_demo.medication.MedicineDetailsScreen
-import com.example.medication_demo.medication.MedicineListScreen
-import com.example.medication_demo.medication.MedicineScheduleScreen
+
 import com.example.medication_demo.data.SupabaseClientProvider
-import com.example.medication_demo.reminder.RefillReminderScreen
 import com.example.medication_demo.ui.theme.Medication_DemoTheme
-import com.example.medication_demo.viewmodel.MedicineListViewModel
-import com.example.medication_demo.viewmodel.MedicineViewModel
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
+
 import com.example.medication_demo.navigation.MedicationApp
 import io.github.jan.supabase.auth.handleDeeplinks
 
@@ -35,14 +20,9 @@ import io.github.jan.supabase.auth.handleDeeplinks
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Surface
-import androidx.compose.runtime.mutableStateOf
+
 import androidx.compose.ui.Modifier
-import com.example.medication_demo.navigation.MedicationApp
-import com.example.medication_demo.ui.theme.Medication_DemoTheme
+
 
 class MainActivity : ComponentActivity() {
     // 记录这次deep link是不是"密码重设"类型的连结
