@@ -40,7 +40,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -58,6 +60,13 @@ import com.example.medication_demo.model.MedicineHistoryUi
 import com.example.medication_demo.utils.getMalaysiaDate
 import com.example.medication_demo.model.HistoryMedicineSource
 import com.example.medication_demo.utils.isDoseBeforeMedicineDeletion
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
+import com.example.medication_demo.components.InfoGuideDialog
+import com.example.medication_demo.R
+
 
 private val HistoryGreen = Color(0xFF159447)
 private val HistoryRed = Color(0xFFE53935)
@@ -79,13 +88,8 @@ fun WeeklyHistoryScreen(
     medicineVm: MedicineViewModel = viewModel(),
     medicineListVm: MedicineListViewModel = viewModel()
 ) {
-    val dateFormatter = remember {
-        DateTimeFormatter.ofPattern(
-            "dd MMM yyyy",
-            Locale.ENGLISH
-        )
-    }
-
+    var showMoreMenu by remember { mutableStateOf(false) }
+    var showHelpDialog by remember { mutableStateOf(false) }
     val selectedStartDate by historyVm.selectedStartDate.collectAsStateWithLifecycle()
     val selectedEndDate by historyVm.selectedEndDate.collectAsStateWithLifecycle()
     val showDateRangePicker by historyVm.showDateRangePicker.collectAsStateWithLifecycle()
@@ -94,6 +98,12 @@ fun WeeklyHistoryScreen(
     val takenRecords by medicineVm.takenRecords.collectAsStateWithLifecycle()
     val rescheduledDoses by medicineVm.rescheduledDoses.collectAsStateWithLifecycle()
     val archivedMedicines by medicineVm.archivedMedicines.collectAsStateWithLifecycle()
+    val dateFormatter = remember {
+        DateTimeFormatter.ofPattern(
+            "dd MMM yyyy",
+            Locale.ENGLISH
+        )
+    }
     val historySources =
         medicines.map { medicine ->
             HistoryMedicineSource(
@@ -238,12 +248,12 @@ fun WeeklyHistoryScreen(
                 title = "Weekly History",
                 rightIcon = Icons.Default.MoreVert,
                 rightIconDescription = "More options",
-                onRightIconClick = onMoreClick,
-                modifier = Modifier.padding(
-                    start = 5.dp
-                ),
-                titleStartPadding = 5.dp
+                onRightIconClick = {
+                    showHelpDialog = true
+                },
+                titleStartPadding = 10.dp
             )
+
             Spacer(modifier = Modifier.height(4.dp))
 
             WeeklyDateRangeSelector(
@@ -281,6 +291,38 @@ fun WeeklyHistoryScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
         }
+    }
+    if (showHelpDialog) {
+
+        InfoGuideDialog(
+            title = "Weekly History Help",
+            imageRes = R.drawable.weeklyhistory,
+            description =
+                buildAnnotatedString {
+                    append("Select a ")
+                    withStyle(
+                        SpanStyle(
+                            color = Color(0xFF009688),
+                            fontWeight = FontWeight.Bold
+                        )
+                    ) {
+                        append("\"7 - day date range\"")
+                    }
+                    append(" to review your")
+                    withStyle(
+                        SpanStyle(
+                            color = Color(0xFF009688),
+                            fontWeight = FontWeight.Bold
+                        )
+                    ) {
+                        append("medication history")
+                    }
+                    append("You can check taken and missed doses and tap a medicine to view more details.")
+                },
+            onDismiss = {
+                showHelpDialog = false
+            }
+        )
     }
 
     if (showDateRangePicker) {

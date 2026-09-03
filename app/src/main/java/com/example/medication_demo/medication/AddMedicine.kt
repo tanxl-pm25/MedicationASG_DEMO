@@ -91,6 +91,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import com.example.medication_demo.ui.AppTopBar
+import com.example.medication_demo.components.InfoGuideDialog
 
 private val EditGreen = Color(0xFF148A32)
 private val EditRed = Color(0xFFFF3B30)
@@ -520,31 +521,34 @@ fun AddMedicineScreen(
         }
     }
     if (showHelpDialog) {
-
-        AlertDialog(
-            onDismissRequest = {
-                showHelpDialog = false
-            },
-
-            title = {
-                Text("Medicine Help")
-            },
-
-            text = {
-                Text(
-                    "Enter your medicine information, dosage, " +
-                            "frequency and reminder settings."
+        InfoGuideDialog(
+            title = "Medicine Help",
+            description = buildAnnotatedString {
+                append(
+                    "Enter your "
                 )
-            },
-
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showHelpDialog = false
-                    }
+                withStyle(
+                    SpanStyle(
+                        color = Color(0xFF009688),
+                        fontWeight = FontWeight.Bold
+                    )
                 ) {
-                    Text("Got it")
+                    append("medicine information, dosage, frequency")
                 }
+                append(" and ")
+                withStyle(
+                    SpanStyle(
+                        color = Color(0xFF009688),
+                        fontWeight = FontWeight.Bold
+                    )
+                ) {
+                    append("reminder settings")
+                }
+                append(".")
+            },
+            imageRes = null,
+            onDismiss = {
+                showHelpDialog = false
             }
         )
     }
@@ -688,75 +692,35 @@ fun AddMedicineScreen(
             }
         )
     }
+
     if (showAsNeededGuide) {
-        AsNeededGuideDialog(
-            onDismiss = {
-                showAsNeededGuide = false
-            }
-        )
-    }
-}
-
-@Composable
-private fun AsNeededGuideDialog(
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-
-        title = {
-            Text(
-                text = "How to take your medicine",
-                style = MaterialTheme.typography.titleMedium
-            )
-        },
-
-        text = {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-
-                Image(
-                    painter = painterResource(
-                        id = R.drawable.medication_reminder_android
-                    ),
-                    contentDescription = "Take Now guide",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 300.dp),
-                    contentScale = ContentScale.Fit
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Text(
-                    text = buildAnnotatedString {
+            InfoGuideDialog(
+                title = "How to take your medicine",
+                imageRes = R.drawable.medication_reminder_android,
+                imageContentDescription = "Take Now guide",
+                description =
+                    buildAnnotatedString {
                         append("For ")
                         withStyle(
-                            style = SpanStyle(
+                            SpanStyle(
                                 color = Color(0xFF009688),
                                 fontWeight = FontWeight.Bold
                             )
                         ) {
                             append("\"As needed\"")
                         }
-                        append(
-                            " medicine, you can record a dose anytime by tapping "
-                        )
+                        append(" medicine, you can record a dose anytime by tapping ")
                         withStyle(
-                            style = SpanStyle(
+                            SpanStyle(
                                 color = Color(0xFF009688),
                                 fontWeight = FontWeight.Bold
                             )
                         ) {
                             append("Take Now")
                         }
-                        append(
-                            " on the "
-                        )
+                        append(" on the ")
                         withStyle(
-                            style = SpanStyle(
+                            SpanStyle(
                                 color = Color(0xFF009688),
                                 fontWeight = FontWeight.Bold
                             )
@@ -765,23 +729,14 @@ private fun AsNeededGuideDialog(
                         }
                         append(".")
                     },
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
-        },
 
-        confirmButton = {
-            Button(
-                onClick = onDismiss,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = EditGreen
-                )
-            ) {
-                Text("Got it")
-            }
-        }
-    )
+                onDismiss = {
+                    showAsNeededGuide = false
+                }
+            )
+    }
 }
+
 @Composable
 private fun MedicineImageSelector(
     presetImageRes: Int?,

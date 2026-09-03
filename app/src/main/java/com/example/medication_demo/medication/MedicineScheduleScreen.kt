@@ -50,6 +50,8 @@ import java.util.Locale
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.buildAnnotatedString
+import com.example.medication_demo.components.InfoGuideDialog
 import com.example.medication_demo.ui.AppTopBar
 import kotlinx.coroutines.delay
 import com.example.medication_demo.utils.getMalaysiaTime
@@ -233,24 +235,20 @@ fun MedicineScheduleScreen(
         }
     }
     if (showHelpDialog) {
-        AlertDialog(
-            onDismissRequest = {
-                showHelpDialog = false
-            },
-            title = { Text("Schedule Help")
+        InfoGuideDialog(
+            title = "Schedule Help",
+
+            description = buildAnnotatedString {
+                append(
+                    "View your daily medication schedule here. " +
+                            "You can check which medicines are upcoming, taken, or missed."
+                )
             },
 
-            text = {
-                Text("You can view your daily schedule at here, ")
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showHelpDialog = false
-                    }
-                ) {
-                    Text("Got it")
-                }
+            imageRes = null,
+
+            onDismiss = {
+                showHelpDialog = false
             }
         )
     }

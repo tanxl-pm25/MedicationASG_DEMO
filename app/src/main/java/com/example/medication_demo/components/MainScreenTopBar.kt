@@ -34,10 +34,14 @@ fun MainScreenTopBar(
     ) {
         Text(
             text = title,
-            modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            fontSize = 22.sp
+            modifier = Modifier
+                .weight(1f)
+                .padding(
+                    start = titleStartPadding
+                ),
+            style = MaterialTheme.typography.headlineSmall,
+            fontSize = 22.sp,
+            fontWeight = FontWeight.Bold
         )
 
         MainScreenActionIcon(
