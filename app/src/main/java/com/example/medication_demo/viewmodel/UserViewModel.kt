@@ -27,13 +27,22 @@ class UserViewModel : ViewModel() {
     private val _userAge = MutableStateFlow("")
     val userAge: StateFlow<String> = _userAge.asStateFlow()
 
-    // 之后接Supabase login/signup时可以用这个显示loading圈
+    // 用来判断这一次 Login 是否是刚刚注册的新账号
+    private val _isNewUser = MutableStateFlow(false)
+    val isNewUser: StateFlow<Boolean> = _isNewUser.asStateFlow()
+
+    // Loading
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
-    // 之后接Supabase login/signup时可以用这个显示错误信息
+    // Error message
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
+
+
+    // =========================
+    // Login
+    // =========================
 
     fun login(
         email: String,
@@ -43,20 +52,30 @@ class UserViewModel : ViewModel() {
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null
+
             try {
                 SupabaseClientProvider.client.auth.signInWith(Email) {
                     this.email = email
                     this.password = password
                 }
+
                 _userEmail.value = email
+
                 onSuccess()
+
             } catch (e: Exception) {
-                _errorMessage.value = "Login failed. Please check your password."
+                _errorMessage.value =
+                    "Login failed. Please check your email and password."
             } finally {
                 _isLoading.value = false
             }
         }
     }
+
+
+    // =========================
+    // Sign Up
+    // =========================
 
     fun signUp(
         name: String,
@@ -67,47 +86,93 @@ class UserViewModel : ViewModel() {
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null
+
             try {
-                val result = SupabaseClientProvider.client.auth.signUpWith(Email) {
-                    this.email = email
-                    this.password = password
-                }
+                val result =
+                    SupabaseClientProvider.client.auth.signUpWith(Email) {
+                        this.email = email
+                        this.password = password
+                    }
 
                 if (result?.identities.isNullOrEmpty()) {
-                    _errorMessage.value = "This email is already registered. Please login instead."
+
+                    _errorMessage.value =
+                        "This email is already registered. Please login instead."
+
                 } else {
+
                     _userName.value = name
                     _userEmail.value = email
+
+                    // 新注册的账号
+                    _isNewUser.value = true
+
                     onSuccess()
                 }
+
             } catch (e: Exception) {
-                Log.e("SignUp", "signUp error: ${e.message}", e)
-                _errorMessage.value = if (
-                    e.message?.contains("already registered", ignoreCase = true) == true ||
-                    e.message?.contains("already exists", ignoreCase = true) == true ||
-                    e.message?.contains("user_already_exists", ignoreCase = true) == true
-                ) {
-                    "This email is already registered. Please login instead."
-                } else {
-                    "Sign up failed. Please try again."
-                }
+
+                Log.e(
+                    "SignUp",
+                    "signUp error: ${e.message}",
+                    e
+                )
+
+                _errorMessage.value =
+                    if (
+                        e.message?.contains(
+                            "already registered",
+                            ignoreCase = true
+                        ) == true ||
+                        e.message?.contains(
+                            "already exists",
+                            ignoreCase = true
+                        ) == true ||
+                        e.message?.contains(
+                            "user_already_exists",
+                            ignoreCase = true
+                        ) == true
+                    ) {
+                        "This email is already registered. Please login instead."
+                    } else {
+                        "Sign up failed. Please try again."
+                    }
             } finally {
                 _isLoading.value = false
             }
         }
     }
 
+
+    // =========================
+    // Google Login
+    // =========================
+
     fun loginWithGoogle() {
         viewModelScope.launch {
             _errorMessage.value = null
+
             try {
                 SupabaseClientProvider.client.auth.signInWith(Google)
+
             } catch (e: Exception) {
-                Log.e("GoogleLogin", "google login error: ${e.message}", e)
-                _errorMessage.value = "Google sign-in failed. Please try again."
+
+                Log.e(
+                    "GoogleLogin",
+                    "google login error: ${e.message}",
+                    e
+                )
+
+                _errorMessage.value =
+                    "Google sign-in failed. Please try again."
             }
         }
     }
+
+
+    // =========================
+    // Forgot Password
+    // =========================
 
     fun sendPasswordResetEmail(
         email: String,
@@ -116,17 +181,35 @@ class UserViewModel : ViewModel() {
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null
+
             try {
-                SupabaseClientProvider.client.auth.resetPasswordForEmail(email)
+
+                SupabaseClientProvider.client.auth
+                    .resetPasswordForEmail(email)
+
                 onSuccess()
+
             } catch (e: Exception) {
-                Log.e("ForgotPassword", "reset password error: ${e.message}", e)
-                _errorMessage.value = "Failed to send reset link. Please try again."
+
+                Log.e(
+                    "ForgotPassword",
+                    "reset password error: ${e.message}",
+                    e
+                )
+
+                _errorMessage.value =
+                    "Failed to send reset link. Please try again."
+
             } finally {
                 _isLoading.value = false
             }
         }
     }
+
+
+    // =========================
+    // Reset Password
+    // =========================
 
     fun updatePassword(
         newPassword: String,
@@ -135,19 +218,36 @@ class UserViewModel : ViewModel() {
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null
+
             try {
+
                 SupabaseClientProvider.client.auth.updateUser {
                     password = newPassword
                 }
+
                 onSuccess()
+
             } catch (e: Exception) {
-                Log.e("ResetPassword", "update password error: ${e.message}", e)
-                _errorMessage.value = "Failed to update password. Please try again."
+
+                Log.e(
+                    "ResetPassword",
+                    "update password error: ${e.message}",
+                    e
+                )
+
+                _errorMessage.value =
+                    "Failed to update password. Please try again."
+
             } finally {
                 _isLoading.value = false
             }
         }
     }
+
+
+    // =========================
+    // Email Verification
+    // =========================
 
     fun verifyEmail(
         email: String,
@@ -157,34 +257,61 @@ class UserViewModel : ViewModel() {
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null
+
             try {
-                SupabaseClientProvider.client.auth.verifyEmailOtp(
-                    type = OtpType.Email.SIGNUP,
-                    email = email,
-                    token = code
-                )
+
+                SupabaseClientProvider.client.auth
+                    .verifyEmailOtp(
+                        type = OtpType.Email.SIGNUP,
+                        email = email,
+                        token = code
+                    )
+
                 onSuccess()
+
             } catch (e: Exception) {
-                Log.e("VerifyEmail", "verify error: ${e.message}", e)
-                _errorMessage.value = "Invalid or expired code. Please try again."
+
+                Log.e(
+                    "VerifyEmail",
+                    "verify error: ${e.message}",
+                    e
+                )
+
+                _errorMessage.value =
+                    "Invalid or expired code. Please try again."
+
             } finally {
                 _isLoading.value = false
             }
         }
     }
 
+
     fun resendVerificationCode(email: String) {
         viewModelScope.launch {
             try {
-                SupabaseClientProvider.client.auth.resendEmail(
-                    type = OtpType.Email.SIGNUP,
-                    email = email
-                )
+
+                SupabaseClientProvider.client.auth
+                    .resendEmail(
+                        type = OtpType.Email.SIGNUP,
+                        email = email
+                    )
+
             } catch (e: Exception) {
-                Log.e("ResendCode", "resend error: ${e.message}", e)
+
+                Log.e(
+                    "ResendCode",
+                    "resend error: ${e.message}",
+                    e
+                )
             }
         }
     }
+
+
+    // =========================
+    // Gender & Age
+    // =========================
 
     fun onGenderSelected(gender: String) {
         _userGender.value = gender
@@ -192,6 +319,10 @@ class UserViewModel : ViewModel() {
 
     fun onAgeSelected(age: Int) {
         _userAge.value = age.toString()
+
+        // Gender + Age 完成后，
+        // 这个账号以后就不再属于 New User
+        _isNewUser.value = false
     }
 
     fun updateGender(gender: String) {
@@ -202,22 +333,46 @@ class UserViewModel : ViewModel() {
         _userAge.value = age.toString()
     }
 
+
+    // =========================
+    // Error
+    // =========================
+
     fun clearErrorMessage() {
         _errorMessage.value = null
     }
 
+
+    // =========================
+    // Logout
+    // =========================
+
     fun logout() {
         viewModelScope.launch {
             try {
+
                 SupabaseClientProvider.client.auth.signOut()
+
             } catch (e: Exception) {
-                Log.e("Logout", "sign out error: ${e.message}", e)
+
+                Log.e(
+                    "Logout",
+                    "sign out error: ${e.message}",
+                    e
+                )
             }
         }
+
         _userName.value = ""
         _userEmail.value = ""
         _userGender.value = ""
         _userAge.value = ""
+
+        // 注意：
+        // Logout 不代表这个账号变成 New User。
+        // 所以这里不要把 _isNewUser 改成 true。
+        _isNewUser.value = false
+
         _errorMessage.value = null
     }
 }

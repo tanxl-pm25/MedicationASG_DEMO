@@ -50,12 +50,15 @@ import androidx.compose.foundation.clickable
 import androidx.compose.material3.OutlinedButton
 import com.example.medication_demo.model.DoseStatus
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.TextUnit
-import coil.size.Size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import com.example.medication_demo.components.MainScreenActionIcon
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import com.example.medication_demo.components.MedicationTimePickerDialog
@@ -117,6 +120,7 @@ fun HomeScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .padding(20.dp)
+                .verticalScroll(rememberScrollState())
         ) {
             // Top
             Row(
@@ -149,30 +153,12 @@ fun HomeScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                Box{
-                    IconButton(
-                        onClick = onNotificationClick,
-                        modifier = Modifier.size(40.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.NotificationsNone,
-                            contentDescription = "Notifications",
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
-                    if (hasUnreadNotofication){
-                        Box(
-                            modifier = Modifier
-                                .size(9.dp)
-                                .background(
-                                    color = Color.Red,
-                                    shape = CircleShape
-                                )
-                                .align(Alignment.TopEnd)
-                                .offset(x = (-20).dp, y = 20.dp)
-                        )
-                    }
-                }
+                MainScreenActionIcon(
+                    icon = Icons.Filled.NotificationsNone,
+                    contentDescription = "Notifications",
+                    onClick = onNotificationClick,
+                    showBadge = hasUnreadNotofication
+                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -196,7 +182,7 @@ fun HomeScreen(
                     Text(
                         text = nextMedicineName ?: "--",
                         color = Color.White,
-                        fontSize = 24.sp,
+                        fontSize = 22.sp,
                         fontWeight = FontWeight.Bold
                     )
 
@@ -243,6 +229,10 @@ fun HomeScreen(
                                     onClick = onMarkAsTakenClick,
                                     modifier = Modifier.weight(1f),
                                     shape = RoundedCornerShape(10.dp),
+                                    contentPadding = PaddingValues(
+                                        horizontal = 8.dp,
+                                        vertical = 10.dp
+                                    ),
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = Color.White,
                                         contentColor = HomeGreen
@@ -250,7 +240,10 @@ fun HomeScreen(
                                 ) {
                                     Text(
                                         text = "Mark as Taken",
-                                        fontWeight = FontWeight.Bold
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.sp,
+                                        maxLines = 1,
+                                        softWrap = false
                                     )
                                 }
                                 OutlinedButton(
@@ -259,6 +252,10 @@ fun HomeScreen(
                                     },
                                     modifier = Modifier.weight(1f),
                                     shape = RoundedCornerShape(10.dp),
+                                    contentPadding = PaddingValues(
+                                        horizontal = 8.dp,
+                                        vertical = 10.dp
+                                    ),
                                     border = BorderStroke(
                                         width = 1.dp,
                                         color = Color.White
@@ -270,7 +267,10 @@ fun HomeScreen(
                                 ) {
                                     Text(
                                         text = "Reschedule",
-                                        fontWeight = FontWeight.Bold
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.sp,
+                                        maxLines = 1,
+                                        softWrap = false
                                     )
                                 }
                             }
@@ -364,8 +364,8 @@ fun HomeScreen(
                     modifier = Modifier.weight(1f),
                     icon = Icons.Filled.BarChart,
                     title = "Monthly Statistics",
-                    valueBold = monthlyStatText ?: "No record found",
-                    fontSize = 15.sp,
+                    valueBold = monthlyStatText ?:"No record found",
+                    fontSize = 8.sp,
                     valueRest = "",
                     onClick = onMonthlyStatisticsClick
                 )
@@ -434,6 +434,7 @@ private fun OverviewCard(
 ) {
     Card(
         modifier = modifier
+            .height(130.dp)
             .clickable {
                 onClick()
             },
@@ -508,25 +509,6 @@ private fun OverviewCard(
 @Composable
 private fun HomeScreenPreview() {
     Medication_DemoTheme {
-        HomeScreen(username = "Sarah")
-    }
-}
-
-@Preview(showBackground = true, showSystemUi = true, name = "With data")
-@Composable
-private fun HomeScreenFilledPreview() {
-    Medication_DemoTheme {
-        HomeScreen(
-            username = "Sarah",
-            nextMedicineName = "Vitamin D3",
-            nextMedicineDose = "1 Tablet",
-            nextMedicineTime = "08:00 AM",
-            medicinesTaken = "3",
-            medicinesTotal = 3,
-            upcomingAppointments = "1",
-            waterGlasses = "4",
-            monthlyStatText = "Good job! \uD83C\uDF89",
-            hasUnreadNotofication = true
-        )
+        HomeScreen(username = "")
     }
 }

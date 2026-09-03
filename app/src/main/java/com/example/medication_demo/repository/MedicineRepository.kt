@@ -62,9 +62,14 @@ class MedicineRepository {
                 .from("medicines")
                 .insert(insertModel)
             true
-        } catch (_: Exception) {
-            false
-        }
+        } catch (e: Exception) {
+        android.util.Log.e(
+            "MedicineRepository",
+            "Failed to add medicine to Supabase",
+            e
+        )
+        false
+    }
     }
     suspend fun updateMedicine(
         medicine: Medicine

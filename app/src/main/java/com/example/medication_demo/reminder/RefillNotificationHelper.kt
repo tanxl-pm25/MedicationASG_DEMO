@@ -18,16 +18,36 @@ private const val REFILL_CHANNEL_ID = "refill_reminder_channel"
 fun createRefillNotificationChannel(
     context: Context
 ) {
+
+    val soundUri =
+        android.media.RingtoneManager
+            .getDefaultUri(
+                android.media.RingtoneManager.TYPE_NOTIFICATION
+            )
+
+    val audioAttributes =
+        android.media.AudioAttributes.Builder()
+            .setUsage(
+                android.media.AudioAttributes.USAGE_NOTIFICATION
+            )
+            .build()
+
     val channel =
         NotificationChannel(
             REFILL_CHANNEL_ID,
             "Refill Reminders",
             NotificationManager.IMPORTANCE_HIGH
         ).apply {
+
             description =
                 "Notifications for low medicine quantity and refill reminders"
 
             enableVibration(true)
+
+            setSound(
+                soundUri,
+                audioAttributes
+            )
         }
 
     val manager =
@@ -35,7 +55,9 @@ fun createRefillNotificationChannel(
             Context.NOTIFICATION_SERVICE
         ) as NotificationManager
 
-    manager.createNotificationChannel(channel)
+    manager.createNotificationChannel(
+        channel
+    )
 }
 
 
