@@ -20,14 +20,20 @@ import com.example.medication_demo.storage.MedicineLocalStorage
 import androidx.lifecycle.viewModelScope
 import com.example.medication_demo.repository.MedicineRepository
 import kotlinx.coroutines.launch
-import com.example.medication_demo.data.SupabaseClientProvider
+import com.example.medication_demo.reminder.cancelMedicineReminders
 import com.example.medication_demo.utils.parseMedicineDate
-import io.github.jan.supabase.auth.auth
+import com.example.medication_demo.reminder.scheduleMedicineDose
+import com.example.medication_demo.reminder.findNextScheduledDose
+import com.example.medication_demo.storage.CurrentUserStorage
+import com.example.medication_demo.reminder.scheduleMedicineAlarm
+import com.example.medication_demo.utils.parseMedicineTime
+import com.example.medication_demo.reminder.cancelRefillReminder
 
 class MedicineViewModel(
     application: Application
 ) : AndroidViewModel(application) {
 
+    private var currentUserId = "guest"
     private var localStorage =
         MedicineLocalStorage(
             context = application,
@@ -71,6 +77,15 @@ class MedicineViewModel(
     private val _frequencyDraft = MutableStateFlow("Once a day")
     val frequencyDraft: StateFlow<String> = _frequencyDraft.asStateFlow()
 
+    private val _repeatReminderEnabled = MutableStateFlow(false)
+    val repeatReminderEnabled = _repeatReminderEnabled.asStateFlow()
+
+    private val _repeatIntervalMinutes = MutableStateFlow("")
+    val repeatIntervalMinutes = _repeatIntervalMinutes.asStateFlow()
+
+    private val _repeatCount = MutableStateFlow(3)
+    val repeatCount = _repeatCount.asStateFlow()
+
     // Is it using Custom Frequency
     private val _isCustomFrequency = MutableStateFlow(false)
     val isCustomFrequency: StateFlow<Boolean> = _isCustomFrequency.asStateFlow()
@@ -99,15 +114,7 @@ class MedicineViewModel(
     private val _refillReminderEnabled = MutableStateFlow(false)
     val refillReminderEnabled: StateFlow<Boolean> = _refillReminderEnabled.asStateFlow()
 
-    private val _reminderTimes =
-        MutableStateFlow(
-            listOf(
-                ReminderTimeUi(
-                    time = "12:00 AM",
-                    minutes = ""
-                )
-            )
-        )
+    private val _reminderTimes = MutableStateFlow(listOf(ReminderTimeUi(time = "12:00 AM")))
     val reminderTimes: StateFlow<List<ReminderTimeUi>> = _reminderTimes.asStateFlow()
 
     private val _requiredReminderTimeCount = MutableStateFlow(1)
@@ -132,6 +139,9 @@ class MedicineViewModel(
     private val _reminderTimeError = MutableStateFlow<String?>(null)
     val reminderTimeError: StateFlow<String?> = _reminderTimeError.asStateFlow()
 
+    private val _repeatIntervalError = MutableStateFlow<String?>(null)
+    val repeatIntervalError = _repeatIntervalError.asStateFlow()
+
     private val _presetImageRes = MutableStateFlow<Int?>(null)
     val presetImageRes: StateFlow<Int?> = _presetImageRes.asStateFlow()
 
@@ -144,6 +154,8 @@ class MedicineViewModel(
     private val _lowStockMedicineId = MutableStateFlow<Int?>(null)
     val lowStockMedicineId: StateFlow<Int?> = _lowStockMedicineId.asStateFlow()
 
+    private val _insufficientStockMedicineId = MutableStateFlow<Int?>(null)
+    val insufficientStockMedicineId: StateFlow<Int?> = _insufficientStockMedicineId.asStateFlow()
     private fun saveScheduleSnapshot(
         medicine: Medicine,
         effectiveDate: LocalDate
@@ -174,13 +186,47 @@ class MedicineViewModel(
                 } + snapshot
         localStorage.saveScheduleSnapshots(_scheduleSnapshots.value)
     }
+
     fun rescheduleDose(
         medicineId: Int,
         doseIndex: Int,
         originalTime: String,
         newTime: String
     ) {
-        val today = getMalaysiaDate()
+        val today =
+            getMalaysiaDate()
+
+        val medicine =
+            _medicines.value.find {
+                it.id == medicineId
+            } ?: return
+
+        val newLocalTime =
+            parseMedicineTime(
+                newTime
+            ) ?: return
+
+        val newDateTime =
+            today.atTime(
+                newLocalTime
+            )
+
+        val nowDateTime =
+            getMalaysiaDate()
+                .atTime(
+                    getMalaysiaTime()
+                )
+
+        // Do not schedule to a time that has already passed.
+        if (
+            !newDateTime.isAfter(
+                nowDateTime
+            )
+        ) {
+            return
+        }
+
+        // Save rescheduled dose for UI / History.
         _rescheduledDoses.value =
             _rescheduledDoses.value
                 .filterNot { dose ->
@@ -195,7 +241,35 @@ class MedicineViewModel(
                         originalTime = originalTime,
                         newTime = newTime
                     )
-        localStorage.saveRescheduledDoses(_rescheduledDoses.value)
+
+        localStorage.saveRescheduledDoses(
+            _rescheduledDoses.value
+        )
+
+        // Cancel the current original alarm and repeat reminders.
+        cancelMedicineReminders(
+            context = getApplication(),
+            userId = currentUserId,
+            medicineId = medicineId
+        )
+
+        // Schedule this dose at the new time.
+        scheduleMedicineAlarm(
+            context = getApplication(),
+            userId = currentUserId,
+            medicineId = medicine.id,
+            medicineName = medicine.name,
+            doseIndex = doseIndex,
+            doseDate = today,
+            scheduledTime = newTime,
+            scheduledLocalTime = newLocalTime,
+            repeatReminderEnabled =
+                medicine.repeatReminderEnabled,
+            repeatIntervalMinutes =
+                medicine.repeatIntervalMinutes,
+            repeatCount =
+                medicine.repeatCount
+        )
     }
 
     fun markDoseAsTaken(
@@ -285,9 +359,15 @@ class MedicineViewModel(
         val newRemaining =
             (currentRemaining - dosage)
                 .coerceAtLeast(0.0)
-
         _remainingQuantities.value += (medicineId to newRemaining)
         localStorage.saveRemainingQuantities(_remainingQuantities.value)
+
+        if (
+            newRemaining < dosage
+        ) {
+            _insufficientStockMedicineId.value =
+                medicine.id
+        }
         checkRefillReminder(
             medicine = medicine,
             previousRemaining = currentRemaining,
@@ -310,6 +390,10 @@ class MedicineViewModel(
         if (previousRemaining > threshold && newRemaining <= threshold) {
             _lowStockMedicineId.value = medicine.id
         }
+    }
+
+    fun clearInsufficientStockEvent() {
+        _insufficientStockMedicineId.value = null
     }
 
     fun clearLowStockEvent() {
@@ -504,8 +588,7 @@ class MedicineViewModel(
         while (current.size < required) {
             current.add(
                 ReminderTimeUi(
-                    time = "12:00 AM",
-                    minutes = "5"
+                    time = "12:00 AM"
                 )
             )
         }
@@ -647,6 +730,31 @@ class MedicineViewModel(
             hasError = true
         }
 
+        if (_repeatReminderEnabled.value) {
+            val interval = _repeatIntervalMinutes.value.toIntOrNull()
+            _repeatIntervalError.value =
+                when {
+                    _repeatIntervalMinutes.value.isBlank() ->
+                        "Please enter the repeat interval."
+
+                    interval == null || interval <= 0 ->
+                        "Repeat interval must be at least 1 minute."
+
+                    interval > 120 ->
+                        "Repeat interval cannot exceed 120 minutes."
+
+                    else ->
+                        null
+                }
+
+        } else {
+            _repeatIntervalError.value = null
+        }
+
+        if (_repeatIntervalError.value != null) {
+            hasError = true
+        }
+
         return !hasError
     }
 
@@ -712,7 +820,10 @@ class MedicineViewModel(
                         startDate = _startDate.value,
                         notes = _notes.value,
                         presetImageRes = _presetImageRes.value,
-                        galleryImageUri = _galleryImageUri.value
+                        galleryImageUri = _galleryImageUri.value,
+                        repeatReminderEnabled = _repeatReminderEnabled.value,
+                        repeatIntervalMinutes = _repeatIntervalMinutes.value.toIntOrNull() ?: medicine.repeatIntervalMinutes,
+                        repeatCount = _repeatCount.value,
                     )
                 } else {
                     medicine
@@ -731,8 +842,18 @@ class MedicineViewModel(
                 medicine = updatedMedicine,
                 effectiveDate = getMalaysiaDate()
             )
+            cancelMedicineReminders(
+                context = getApplication(),
+                userId = currentUserId,
+                medicineId = updatedMedicine.id
+            )
+            scheduleNextMedicineDose(
+                updatedMedicine
+            )
             viewModelScope.launch {
-                medicineRepository.updateMedicine(updatedMedicine)
+                medicineRepository.updateMedicine(
+                    updatedMedicine
+                )
             }
         }
 
@@ -795,7 +916,10 @@ class MedicineViewModel(
             startDate = _startDate.value,
             notes = _notes.value,
             presetImageRes = _presetImageRes.value,
-            galleryImageUri = _galleryImageUri.value
+            galleryImageUri = _galleryImageUri.value,
+            repeatReminderEnabled = _repeatReminderEnabled.value,
+            repeatIntervalMinutes = _repeatIntervalMinutes.value.toIntOrNull() ?: 15,
+            repeatCount = _repeatCount.value
         )
 
         _medicines.value += newMedicine
@@ -811,19 +935,32 @@ class MedicineViewModel(
             parseMedicineDate(
                 newMedicine.startDate
             ) ?: getMalaysiaDate()
-
         saveScheduleSnapshot(
             medicine = newMedicine,
             effectiveDate = medicineStartDate
         )
+        scheduleNextMedicineDose(newMedicine)
         return true
     }
 
     fun deleteMedicine(id: Int) {
+
         val medicineToDelete =
             _medicines.value.find { medicine ->
                 medicine.id == id
             } ?: return
+
+        // Cancel all pending medicine reminders first
+        cancelMedicineReminders(
+            context = getApplication(),
+            userId = currentUserId,
+            medicineId = id
+        )
+        cancelRefillReminder(
+            context = getApplication(),
+            medicineId = id
+        )
+
         // Keep a copy for History
         val archivedMedicine =
             ArchivedMedicine(
@@ -831,27 +968,87 @@ class MedicineViewModel(
                 deletedDate = getMalaysiaDate(),
                 deletedTime = getMalaysiaTime()
             )
+
         _archivedMedicines.value =
             _archivedMedicines.value
                 .filterNot { archived ->
                     archived.medicine.id == id
                 } + archivedMedicine
-        localStorage.saveArchivedMedicines(_archivedMedicines.value)
+
+        localStorage.saveArchivedMedicines(
+            _archivedMedicines.value
+        )
+
         // Remove from current active medicine list
         _medicines.value =
             _medicines.value.filter { medicine ->
                 medicine.id != id
             }
-        localStorage.saveMedicines(_medicines.value)
+
+        localStorage.saveMedicines(
+            _medicines.value
+        )
+
         // Current stock is no longer needed
         _remainingQuantities.value -= id
-        localStorage.saveRemainingQuantities(_remainingQuantities.value)
-        viewModelScope.launch { medicineRepository.deleteMedicine(id) }
 
-        // Clear low stock event if this medicine happens to be the current event
+        localStorage.saveRemainingQuantities(
+            _remainingQuantities.value
+        )
+
+        viewModelScope.launch {
+            medicineRepository.deleteMedicine(id)
+        }
+
+        // Clear low stock event if this medicine
+        // happens to be the current event
         if (_lowStockMedicineId.value == id) {
             _lowStockMedicineId.value = null
         }
+    }
+
+    private fun scheduleNextMedicineDose(
+        medicine: Medicine
+    ) {
+        if (!medicine.reminderEnabled) {
+            return
+        }
+
+        val nowDateTime =
+            getMalaysiaDate()
+                .atTime(
+                    getMalaysiaTime()
+                )
+
+        val nextDose =
+            findNextScheduledDose(
+                medicine = medicine,
+                afterDateTime = nowDateTime.minusSeconds(1)
+            ) ?: return
+        val scheduledDateTime =
+            nextDose.doseDate
+                .atTime(
+                    nextDose.scheduledLocalTime
+                )
+
+        val delayMillis =
+            java.time.Duration
+                .between(
+                    nowDateTime,
+                    scheduledDateTime
+                )
+                .toMillis()
+                .coerceAtLeast(0L)
+
+        scheduleMedicineDose(
+            context = getApplication(),
+            userId = currentUserId,
+            medicine = medicine,
+            doseIndex = nextDose.doseIndex,
+            doseDate = nextDose.doseDate,
+            scheduledTime = nextDose.scheduledTime,
+            delayMillis = delayMillis
+        )
     }
 
     fun addReminderTime() {
@@ -859,8 +1056,7 @@ class MedicineViewModel(
             return
         }
         _reminderTimes.value += ReminderTimeUi(
-            time = "12:00 AM",
-            minutes = ""
+            time = "12:00 AM"
         )
         _reminderTimeError.value = null
     }
@@ -871,58 +1067,59 @@ class MedicineViewModel(
 
         _reminderTimeError.value = null
 
-
-        // ==============================
-        // Reminder interval
-        // ==============================
-
-        _reminderTimes.value = _reminderTimes.value.map { reminder ->
-            if (reminder.reminderOptionsEnabled) {
-                val minutesValue = reminder.minutes.toIntOrNull()
-                val error = when {
-                    reminder.minutes.isBlank() -> "Please enter the reminder interval."
-                    minutesValue == null || minutesValue <= 0 -> "Reminder interval must be greater than 0."
-                    else -> null
-                }
-                if (error != null) {
-                    isValid = false
-                }
-                reminder.copy(minutesError = error)
-            } else {
-                reminder.copy(minutesError = null)
-            }
-        }
-
         // Number of reminder times
-        val required = _requiredReminderTimeCount.value
+        val required =
+            _requiredReminderTimeCount.value
+
         if (required == 0) {
-            return isValid
+            return true
         }
-        val actual = _reminderTimes.value.size
+
+        val actual =
+            _reminderTimes.value.size
+
         if (actual != required) {
-            _reminderTimeError.value = when (_frequency.value) {
-                "Once a day" ->
-                    "Once a day requires exactly 1 reminder time."
-                "Twice a day" ->
-                    "Twice a day requires exactly 2 reminder times."
-                "3 times a day" ->
-                    "3 times a day requires exactly 3 reminder times."
-                "Once a week" ->
-                    "Once a week requires exactly 1 reminder time."
-                else -> "${_frequency.value} requires exactly 1 reminder time."
-            }
+
+            _reminderTimeError.value =
+                when (_frequency.value) {
+
+                    "Once a day" ->
+                        "Once a day requires exactly 1 reminder time."
+
+                    "Twice a day" ->
+                        "Twice a day requires exactly 2 reminder times."
+
+                    "3 times a day" ->
+                        "3 times a day requires exactly 3 reminder times."
+
+                    "Once a week" ->
+                        "Once a week requires exactly 1 reminder time."
+
+                    else ->
+                        "${_frequency.value} requires exactly 1 reminder time."
+                }
+
             isValid = false
         }
 
         // Duplicate time
-        val times = _reminderTimes.value.map { it.time }
-        if (times.size != times.distinct().size) {
-            _reminderTimeError.value = "Reminder times cannot be the same."
+        val times =
+            _reminderTimes.value.map {
+                it.time
+            }
+
+        if (
+            times.size !=
+            times.distinct().size
+        ) {
+            _reminderTimeError.value =
+                "Reminder times cannot be the same."
+
             isValid = false
         }
+
         return isValid
     }
-
     fun removeReminderTime(index: Int) {
         if (_reminderTimes.value.size <= 1) {
             return
@@ -980,37 +1177,6 @@ class MedicineViewModel(
         }
     }
 
-    fun updateReminderMinutes(
-        index: Int,
-        newMinutes: String
-    ) {
-        _reminderTimes.value =
-            _reminderTimes.value.mapIndexed { currentIndex, reminder ->
-                if (currentIndex == index) {
-                    val minutesValue = newMinutes.toIntOrNull()
-                    val isValid = newMinutes.isNotBlank() && minutesValue != null && minutesValue > 0
-                    reminder.copy(
-                        minutes = newMinutes,
-                        minutesError =
-                            if (isValid) {
-                                null
-                            } else reminder.minutesError
-                    )
-                } else reminder
-            }
-    }
-
-    fun toggleReminderOptions(index: Int) {
-        _reminderTimes.value = _reminderTimes.value.mapIndexed { currentIndex, reminder ->
-            if (currentIndex == index) {
-                reminder.copy(
-                    reminderOptionsEnabled = !reminder.reminderOptionsEnabled,
-                    minutesError = null
-                )
-            } else reminder
-        }
-    }
-
     fun loadMedicineForEdit(medicine: Medicine) {
         _medicineName.value = medicine.name
         _quantity.value = getRemainingQuantityText(medicine)
@@ -1025,6 +1191,14 @@ class MedicineViewModel(
         _notes.value = medicine.notes
         _presetImageRes.value = medicine.presetImageRes
         _galleryImageUri.value = medicine.galleryImageUri
+        _repeatReminderEnabled.value = medicine.repeatReminderEnabled
+        _repeatIntervalMinutes.value =
+            if (medicine.repeatReminderEnabled) {
+                medicine.repeatIntervalMinutes.toString()
+            } else {
+                ""
+            }
+        _repeatCount.value = medicine.repeatCount
 
         _requiredReminderTimeCount.value =
             getRequiredTimeCount(medicine.frequency)
@@ -1077,14 +1251,16 @@ class MedicineViewModel(
         _requiredReminderTimeCount.value = 1
         _reminderTimes.value = listOf(
             ReminderTimeUi(
-                time = "12:00 AM",
-                minutes = ""
+                time = "12:00 AM"
             )
         )
         _startDate.value = getMalaysiaDate().format(dateFormatter)
         _notes.value = ""
         _presetImageRes.value = null
         _galleryImageUri.value = null
+        _repeatReminderEnabled.value = false
+        _repeatIntervalMinutes.value = ""
+        _repeatCount.value = 3
 
         // Clear field errors
         _medicineNameError.value = null
@@ -1092,6 +1268,7 @@ class MedicineViewModel(
         _dosageAmountError.value = null
         _refillQuantityError.value = null
         _reminderTimeError.value = null
+        _repeatIntervalError.value = null
     }
 
     fun onPresetImageSelected(imageRes: Int) {
@@ -1143,6 +1320,11 @@ class MedicineViewModel(
     }
 
     fun switchUser(userId: String) {
+        CurrentUserStorage.saveUserId(
+            context = getApplication(),
+            userId = userId
+        )
+        currentUserId = userId
         localStorage =
             MedicineLocalStorage(
                 context = getApplication(),
@@ -1156,6 +1338,11 @@ class MedicineViewModel(
         _takenRecords.value = localStorage.loadTakenRecords()
         _lowStockMedicineId.value = null
         resetAddMedicineForm()
+        _medicines.value.forEach { medicine ->
+            scheduleNextMedicineDose(
+                medicine
+            )
+        }
         syncMedicinesFromCloud()
     }
 
@@ -1165,49 +1352,73 @@ class MedicineViewModel(
                 val cloudMedicines =
                     medicineRepository.getMedicines()
 
-                if (cloudMedicines.isNotEmpty()) {
+                // Keep the old local medicines first,
+                // so their existing reminders can be canceled.
+                val oldMedicines =
+                    _medicines.value
 
-                    val uniqueCloudMedicines =
-                        cloudMedicines.distinctBy {
-                            it.id
-                        }
-
-                    _medicines.value = uniqueCloudMedicines
-
-                    localStorage.saveMedicines(
-                        _medicines.value
-                    )
-
-                    // If cloud medicine is first time on this phone,
-                    // initialise its local remaining quantity.
-                    val updatedQuantities =
-                        _remainingQuantities.value
-                            .toMutableMap()
-
-                    uniqueCloudMedicines.forEach { medicine ->
-
-                        if (
-                            !updatedQuantities.containsKey(
-                                medicine.id
-                            )
-                        ) {
-                            updatedQuantities[
-                                medicine.id
-                            ] =
-                                medicine.quantity
-                                    .toDoubleOrNull()
-                                    ?: 0.0
-                        }
+                val uniqueCloudMedicines =
+                    cloudMedicines.distinctBy {
+                        it.id
                     }
 
-                    _remainingQuantities.value =
-                        updatedQuantities
+                // Cancel reminders based on the old local data.
+                oldMedicines.forEach { medicine ->
 
-                    localStorage.saveRemainingQuantities(
-                        _remainingQuantities.value
+                    cancelMedicineReminders(
+                        context = getApplication(),
+                        userId = currentUserId,
+                        medicineId = medicine.id
                     )
                 }
 
+                // Replace local medicines with latest cloud data.
+                _medicines.value = uniqueCloudMedicines
+                localStorage.saveMedicines(_medicines.value
+                )
+
+                // If cloud medicine is first time on this phone,
+                // initialize its local remaining quantity.
+                val validMedicineIds =
+                    uniqueCloudMedicines
+                        .map { it.id }
+                        .toSet()
+
+                val updatedQuantities =
+                    _remainingQuantities.value
+                        .filterKeys { medicineId ->
+                            medicineId in validMedicineIds
+                        }
+                        .toMutableMap()
+
+                uniqueCloudMedicines.forEach { medicine ->
+
+                    if (
+                        !updatedQuantities.containsKey(
+                            medicine.id
+                        )
+                    ) {
+                        updatedQuantities[
+                            medicine.id
+                        ] =
+                            medicine.quantity
+                                .toDoubleOrNull()
+                                ?: 0.0
+                    }
+                }
+
+                _remainingQuantities.value = updatedQuantities
+                localStorage.saveRemainingQuantities(_remainingQuantities.value
+                )
+
+                // Schedule reminders again using
+                // the latest medicine data from cloud.
+                _medicines.value.forEach { medicine ->
+
+                    scheduleNextMedicineDose(
+                        medicine
+                    )
+                }
             } catch (e: Exception) {
                 android.util.Log.e(
                     "MedicineViewModel",
@@ -1216,5 +1427,62 @@ class MedicineViewModel(
                 )
             }
         }
+    }
+    fun onRepeatReminderEnabledChange(
+        enabled: Boolean
+    ) {
+        _repeatReminderEnabled.value = enabled
+    }
+
+    fun onRepeatIntervalChange(
+        value: String
+    ) {
+        if (
+            value.isEmpty() ||
+            value.all { it.isDigit() }
+        ) {
+            _repeatIntervalMinutes.value = value
+            _repeatIntervalError.value = null
+        }
+    }
+
+    fun onRepeatCountChange(
+        count: Int
+    ) {
+        _repeatCount.value = count
+    }
+
+    fun prepareForLogout() {
+
+        val userId =
+            CurrentUserStorage
+                .getUserId(
+                    getApplication()
+                )
+                ?: return
+
+        _medicines.value.forEach { medicine ->
+
+            cancelMedicineReminders(
+                context = getApplication(),
+                userId = userId,
+                medicineId = medicine.id
+            )
+        }
+
+        CurrentUserStorage.clearUserId(
+            context = getApplication()
+        )
+
+        _medicines.value = emptyList()
+        _archivedMedicines.value = emptyList()
+        _remainingQuantities.value = emptyMap()
+        _takenRecords.value = emptyList()
+        _rescheduledDoses.value = emptyList()
+        _scheduleSnapshots.value = emptyList()
+        _lowStockMedicineId.value = null
+        _insufficientStockMedicineId.value = null
+
+        currentUserId = "guest"
     }
 }

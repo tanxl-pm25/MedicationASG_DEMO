@@ -44,7 +44,17 @@ data class MedicineCloudModel(
     val presetImageRes: Int? = null,
 
     @SerialName("gallery_image_uri")
-    val galleryImageUri: String? = null
+    val galleryImageUri: String? = null,
+
+    @SerialName("repeat_reminder_enabled")
+    val repeatReminderEnabled: Boolean = false,
+
+    @SerialName("repeat_interval_minutes")
+    val repeatIntervalMinutes: Int = 15,
+
+    @SerialName("repeat_count")
+    val repeatCount: Int = 3
+
 )
 
 fun MedicineCloudModel.toMedicine(): Medicine {
@@ -62,6 +72,9 @@ fun MedicineCloudModel.toMedicine(): Medicine {
         notes = notes,
         reminderEnabled = reminderEnabled,
         presetImageRes = presetImageRes,
-        galleryImageUri = galleryImageUri
+        galleryImageUri = galleryImageUri,
+        repeatReminderEnabled = repeatReminderEnabled,
+        repeatIntervalMinutes = repeatIntervalMinutes,
+        repeatCount = repeatCount
     )
 }

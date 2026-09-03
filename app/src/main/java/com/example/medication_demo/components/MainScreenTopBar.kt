@@ -17,11 +17,9 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun MainScreenTopBar(
     title: String,
-    rightIcon: ImageVector,
-    rightIconDescription: String,
-    onRightIconClick: () -> Unit,
     modifier: Modifier = Modifier,
-    titleStartPadding: Dp = 0.dp
+    titleStartPadding: Dp = 0.dp,
+    rightContent: @Composable () -> Unit
 ) {
     Row(
         modifier = modifier
@@ -36,18 +34,12 @@ fun MainScreenTopBar(
             text = title,
             modifier = Modifier
                 .weight(1f)
-                .padding(
-                    start = titleStartPadding
-                ),
+                .padding(start = titleStartPadding),
             style = MaterialTheme.typography.headlineSmall,
             fontSize = 22.sp,
             fontWeight = FontWeight.Bold
         )
 
-        MainScreenActionIcon(
-            icon = rightIcon,
-            contentDescription = rightIconDescription,
-            onClick = onRightIconClick
-        )
+        rightContent()
     }
 }

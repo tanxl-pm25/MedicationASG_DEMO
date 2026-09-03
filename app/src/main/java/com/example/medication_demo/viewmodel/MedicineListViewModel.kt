@@ -391,7 +391,7 @@ class MedicineListViewModel : ViewModel() {
                     ).mapIndexedNotNull { doseIndex, originalTime ->
                         val doseStatus =
                             getDoseStatus(
-                                medicineId = medicine.id,
+                                medicine = medicine,
                                 doseIndex = doseIndex,
                                 reminderTimeText = originalTime,
                                 date = today,
@@ -697,7 +697,7 @@ class MedicineListViewModel : ViewModel() {
     }
 
     fun getDoseStatus(
-        medicineId: Int,
+        medicine: Medicine,
         doseIndex: Int,
         reminderTimeText: String,
         date: LocalDate,
@@ -707,7 +707,7 @@ class MedicineListViewModel : ViewModel() {
 
         val isTaken =
             takenRecords.any { record ->
-                record.medicineId == medicineId &&
+                record.medicineId == medicine.id &&
                         record.date == date &&
                         record.doseIndex == doseIndex
             }
@@ -717,6 +717,7 @@ class MedicineListViewModel : ViewModel() {
         }
 
         val today = getMalaysiaDate()
+
         if (date.isBefore(today)) {
             return DoseStatus.MISSING
         }
@@ -727,7 +728,7 @@ class MedicineListViewModel : ViewModel() {
 
         val effectiveTimeText =
             getEffectiveReminderTime(
-                medicineId = medicineId,
+                medicineId = medicine.id,
                 doseIndex = doseIndex,
                 originalTime = reminderTimeText,
                 date = date,
@@ -739,25 +740,48 @@ class MedicineListViewModel : ViewModel() {
                 effectiveTimeText
             ) ?: return DoseStatus.UPCOMING
 
-        val currentTime = getMalaysiaTime()
-
         val currentMinute =
-            currentTime
+            getMalaysiaTime()
                 .withSecond(0)
                 .withNano(0)
 
-        return when {
-            currentMinute.isBefore(reminderTime) -> {
-                DoseStatus.UPCOMING
+        // Reminder time has not arrived yet
+        if (currentMinute.isBefore(reminderTime)) {
+            return DoseStatus.UPCOMING
+        }
+
+        // Repeat Reminder is enabled
+        if (
+            medicine.repeatReminderEnabled &&
+            medicine.repeatIntervalMinutes > 0 &&
+            medicine.repeatCount > 0
+        ) {
+
+            val repeatWindowMinutes =
+                medicine.repeatIntervalMinutes.toLong() *
+                        medicine.repeatCount.toLong()
+
+            val missingDeadline =
+                reminderTime.plusMinutes(
+                    repeatWindowMinutes
+                )
+
+            // Keep the dose in progress until the final repeat reminder finishes
+            if (!currentMinute.isAfter(missingDeadline)) {
+                return DoseStatus.IN_PROGRESS
             }
 
-            currentMinute == reminderTime -> {
-                DoseStatus.IN_PROGRESS
-            }
+            return DoseStatus.MISSING
+        }
 
-            else -> {
-                DoseStatus.MISSING
-            }
+        // Repeat Reminder is OFF:
+        // keep your original behaviour
+        return if (
+            currentMinute == reminderTime
+        ) {
+            DoseStatus.IN_PROGRESS
+        } else {
+            DoseStatus.MISSING
         }
     }
 
@@ -933,7 +957,7 @@ class MedicineListViewModel : ViewModel() {
 
             val doseStatus =
                 getDoseStatus(
-                    medicineId = medicine.id,
+                    medicine = medicine,
                     doseIndex = doseIndex,
                     reminderTimeText = originalTime,
                     date = date,

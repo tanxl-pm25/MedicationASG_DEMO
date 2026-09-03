@@ -82,6 +82,7 @@ import coil.compose.AsyncImage
 import com.example.medication_demo.utils.getMalaysiaDate
 import com.example.medication_demo.components.MedicationTimePickerDialog
 import android.Manifest
+import android.app.AlarmManager
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.compose.ui.platform.LocalContext
@@ -92,6 +93,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import com.example.medication_demo.ui.AppTopBar
 import com.example.medication_demo.components.InfoGuideDialog
+import android.content.Context
+import androidx.compose.material.icons.outlined.Repeat
+import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import com.example.medication_demo.reminder.openExactAlarmSettings
 
 private val EditGreen = Color(0xFF148A32)
 private val EditRed = Color(0xFFFF3B30)
@@ -129,8 +136,12 @@ fun AddMedicineScreen(
     val refillQuantityError by vm.refillQuantityError.collectAsStateWithLifecycle()
     val customFrequencyError by vm.customFrequencyError.collectAsStateWithLifecycle()
     val reminderTimeError by vm.reminderTimeError.collectAsStateWithLifecycle()
+    val repeatIntervalError by vm.repeatIntervalError.collectAsStateWithLifecycle()
     val presetImageRes by vm.presetImageRes.collectAsStateWithLifecycle()
     val galleryImageUri by vm.galleryImageUri.collectAsStateWithLifecycle()
+    val repeatReminderEnabled by vm.repeatReminderEnabled.collectAsStateWithLifecycle()
+    val repeatIntervalMinutes by vm.repeatIntervalMinutes.collectAsStateWithLifecycle()
+    val repeatCount by vm.repeatCount.collectAsStateWithLifecycle()
     val galleryLauncher =
         rememberLauncherForActivityResult(
             contract = ActivityResultContracts.GetContent()
@@ -154,6 +165,21 @@ fun AddMedicineScreen(
     var showPresetImages by remember { mutableStateOf(false) }
     var showAsNeededGuide by remember { mutableStateOf(false) }
     var showHelpDialog by remember { mutableStateOf(false) }
+    var showExactAlarmDialog by remember { mutableStateOf(false) }
+    val checkExactAlarmPermission = {
+        val alarmManager =
+            context.getSystemService(
+                Context.ALARM_SERVICE
+            ) as AlarmManager
+
+        val allowed = Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms()
+
+        if (!allowed) {
+            showExactAlarmDialog = true
+        }
+
+        allowed
+    }
     Scaffold(
         containerColor = EditBackground,
         topBar = {
@@ -403,26 +429,18 @@ fun AddMedicineScreen(
                 reminderTimes.forEachIndexed { index, reminder ->
                     ReminderTimeRow(
                         time = reminder.time,
-                        minutes = reminder.minutes,
-                        reminderOptionsEnabled = reminder.reminderOptionsEnabled,
-                        minutesError = reminder.minutesError,
                         onTimeChange = { newTime ->
                             vm.updateReminderTime(
                                 index = index,
                                 newTime = newTime
                             )
                         },
-                        onMinutesChange = { newMinutes ->
-                            vm.updateReminderMinutes(
-                                index = index,
-                                newMinutes = newMinutes
-                            )
-                        },
-                        onReminderOptionsClick = { vm.toggleReminderOptions(index) },
-                        onRemoveClick = { vm.removeReminderTime(index) }
+                        onRemoveClick = {
+                            vm.removeReminderTime(index)
+                        }
                     )
                     if (index != reminderTimes.lastIndex) {
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(15.dp))
                         HorizontalDivider(color = EditBorder)
                         Spacer(modifier = Modifier.height(8.dp))
                     }
@@ -455,9 +473,235 @@ fun AddMedicineScreen(
                         color = EditRed
                     )
                 }
-                Spacer(modifier = Modifier.height(4.dp))
+
+                Spacer(modifier = Modifier.height(12.dp))
                 HorizontalDivider(color = EditBorder)
                 Spacer(modifier = Modifier.height(14.dp))
+
+                // Repeat Reminder
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text = "Repeat Reminder",
+                            style = MaterialTheme.typography.titleSmall
+                        )
+
+                        Spacer(modifier = Modifier.height(3.dp))
+
+                        Text(
+                            text = "\"Remind again if the dose hasn't been taken\"",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = EditGrey
+                        )
+                    }
+
+                    RefillReminderSwitch(
+                        checked = repeatReminderEnabled,
+                        onCheckedChange = {
+                            vm.onRepeatReminderEnabledChange(it)
+                        }
+                    )
+                }
+
+                if (repeatReminderEnabled) {
+
+                    Spacer(
+                        modifier = Modifier.height(14.dp)
+                    )
+
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color(0xFFF7FAF8)
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp)
+                        ) {
+
+                            // Repeat interval
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+
+                                Column(
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Outlined.Schedule,
+                                            contentDescription = null,
+                                            tint = EditGreen,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+
+                                        Spacer(
+                                            modifier = Modifier.width(8.dp)
+                                        )
+
+                                        Text(
+                                            text = "Remind every",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    }
+
+                                    Text(
+                                        text = "Interval between reminders",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = EditGrey
+                                    )
+                                }
+
+                                NumberInputField(
+                                    value = repeatIntervalMinutes,
+                                    onValueChange = {
+                                        vm.onRepeatIntervalChange(it)
+                                    },
+                                    placeholder = "E.g. 15",
+                                    isError = repeatIntervalError != null,
+                                    modifier = Modifier
+                                        .width(80.dp)
+                                        .height(52.dp)
+                                )
+
+                                Spacer(
+                                    modifier = Modifier.width(12.dp)
+                                )
+
+                                Text(
+                                    text = "minutes",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = EditGrey
+                                )
+                            }
+
+                            if (repeatIntervalError != null) {
+
+                                Spacer(
+                                    modifier = Modifier.height(4.dp)
+                                )
+
+                                Text(
+                                    text = repeatIntervalError!!,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = EditRed
+                                )
+                            }
+
+                            Spacer(
+                                modifier = Modifier.height(14.dp)
+                            )
+
+                            HorizontalDivider(
+                                color = EditBorder
+                            )
+
+                            Spacer(
+                                modifier = Modifier.height(14.dp)
+                            )
+
+                            // Repeat count
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+
+                                Column(
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Outlined.Repeat,
+                                            contentDescription = null,
+                                            tint = EditGreen,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+
+                                        Spacer(
+                                            modifier = Modifier.width(8.dp)
+                                        )
+
+                                        Text(
+                                            text = "Repeat times",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    }
+
+                                    Text(
+                                        text = "Maximum number of reminders",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = EditGrey
+                                    )
+                                }
+
+                                DropdownLikeBox(
+                                    value = repeatCount.toString(),
+                                    options = listOf(
+                                        "1",
+                                        "2",
+                                        "3",
+                                        "4",
+                                        "5"
+                                    ),
+                                    onValueSelected = { selected ->
+                                        vm.onRepeatCountChange(
+                                            selected.toIntOrNull() ?: 3
+                                        )
+                                    },
+                                    modifier = Modifier
+                                        .width(72.dp)
+                                        .height(52.dp)
+                                )
+
+                                Spacer(
+                                    modifier = Modifier.width(12.dp)
+                                )
+
+                                Text(
+                                    text = "times",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = EditGrey
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(
+                        modifier = Modifier.height(10.dp)
+                    )
+
+                    Text(
+                        text =
+                            "If a dose is not taken, you will be reminded " +
+                                    "every ${repeatIntervalMinutes.ifBlank { "..." }} " +
+                                    "minutes, up to $repeatCount " +
+                                    if (repeatCount == 1) {
+                                        "time."
+                                    } else {
+                                        "times."
+                                    },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = EditGrey
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(15.dp))
+                HorizontalDivider(color = EditBorder)
+                Spacer(modifier = Modifier.height(15.dp))
             }
 
             DateField(
@@ -478,7 +722,7 @@ fun AddMedicineScreen(
                 minLines = 3
             )
 
-            Spacer(modifier = Modifier.height(22.dp))
+            Spacer(modifier = Modifier.height(18.dp))
 
             HorizontalDivider(color = EditBorder)
 
@@ -486,14 +730,16 @@ fun AddMedicineScreen(
 
             Button(
                 onClick = {
+                    val allowed = checkExactAlarmPermission()
+                    if (!allowed) {
+                        return@Button
+                    }
                     val success =
                         if (isEditMode && medicineId != null) {
                             vm.updateMedicine(
                                 id = medicineId
                             )
-                        } else {
-                            vm.addMedicine()
-                        }
+                        } else { vm.addMedicine() }
                     if (success) {
                         onSaveClick()
                     }
@@ -520,6 +766,48 @@ fun AddMedicineScreen(
             Spacer(modifier = Modifier.height(32.dp))
         }
     }
+    if (showExactAlarmDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showExactAlarmDialog = false
+            },
+            title = {
+                Text(
+                    text = "Allow precise reminders",
+                    style = MaterialTheme.typography.titleMedium
+                )
+            },
+            text = {
+                Text(
+                    "To make sure your medicine reminders " +
+                            "arrive on time, allow this app to " +
+                            "set alarms and reminders."
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showExactAlarmDialog = false
+                        openExactAlarmSettings(
+                            context
+                        )
+                    }
+                ) {
+                    Text("Allow")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showExactAlarmDialog = false
+                    }
+                ) {
+                    Text("Not now")
+                }
+            }
+        )
+    }
+
     if (showHelpDialog) {
         InfoGuideDialog(
             title = "Medicine Help",
@@ -1206,12 +1494,7 @@ private fun DropdownLikeBox(
 @Composable
 private fun ReminderTimeRow(
     time: String,
-    minutes: String,
-    minutesError: String? = null,
-    reminderOptionsEnabled: Boolean,
     onTimeChange: (String) -> Unit,
-    onMinutesChange: (String) -> Unit,
-    onReminderOptionsClick: () -> Unit,
     onRemoveClick: () -> Unit
 ) {
     var showTimePicker by remember { mutableStateOf(false) }
@@ -1241,6 +1524,7 @@ private fun ReminderTimeRow(
                     style = MaterialTheme.typography.bodySmall,
                     color = EditGrey
                 )
+                Spacer(modifier = Modifier.width(10.dp))
             }
 
             Icon(
@@ -1273,67 +1557,7 @@ private fun ReminderTimeRow(
                 )
             }
         }
-        //Reminder Options
-        TextButton(
-            onClick = onReminderOptionsClick,
-            contentPadding = PaddingValues(
-                horizontal = 0.dp,
-                vertical = 0.dp
-            )
-        ) {
-            Text(
-                text = if (reminderOptionsEnabled) {
-                    "- Hide reminder options"
-                } else {
-                    "+ Reminder options"
-                },
-                style = MaterialTheme.typography.bodyMedium,
-                color = EditGreen
-            )
-        }
 
-        if (reminderOptionsEnabled) {
-            Column(
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-
-                    Text(
-                        text = "Remind every",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = EditGrey
-                    )
-
-                    Spacer(modifier = Modifier.width(8.dp))
-                    NumberInputField(
-                        value = minutes,
-                        onValueChange = onMinutesChange,
-                        placeholder = "E.g. 10",
-                        isError = minutesError != null,
-                        modifier = Modifier.width(80.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    Text(
-                        text = "minutes",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = EditGrey
-                    )
-                }
-            }
-        }
-
-        if (minutesError != null) {
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = minutesError,
-                style = MaterialTheme.typography.bodySmall,
-                color = EditRed
-            )
-        }
         // ==============================
         // Time Picker
         // ==============================

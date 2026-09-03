@@ -50,6 +50,7 @@ import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.remember
+import com.example.medication_demo.components.MainScreenActionIcon
 import com.example.medication_demo.components.MainScreenTopBar
 import com.example.medication_demo.viewmodel.AppBottomNavigationBar
 import com.example.medication_demo.viewmodel.MedicineListViewModel
@@ -100,15 +101,16 @@ fun MedicineListScreen(
         ) {
             MainScreenTopBar(
                 title = "All Medicines",
-                rightIcon = Icons.Default.NotificationsNone,
-                rightIconDescription = "Notifications",
-                onRightIconClick = {
-                    // Notification page later
-                },
-                modifier = Modifier.padding(
-                    start = 5.dp
-                ),
-                titleStartPadding = 5.dp
+                titleStartPadding = 10.dp,
+                rightContent = {
+                    MainScreenActionIcon(
+                        icon = Icons.Default.NotificationsNone,
+                        contentDescription = "Notifications",
+                        onClick = {
+                            // Notification page later
+                        }
+                    )
+                }
             )
 
             Spacer(modifier = Modifier.height(8.dp))

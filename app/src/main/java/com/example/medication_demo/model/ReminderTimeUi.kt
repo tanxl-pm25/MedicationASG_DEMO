@@ -4,8 +4,5 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class ReminderTimeUi(
-    val time: String,
-    val minutes: String,
-    val reminderOptionsEnabled: Boolean = false,
-    val minutesError: String? = null
+    val time: String
 )

@@ -47,11 +47,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.medication_demo.components.InfoGuideDialog
 import com.example.medication_demo.ui.theme.Medication_DemoTheme
 import com.example.medication_demo.viewmodel.MedicineListViewModel
 import com.example.medication_demo.viewmodel.MedicineViewModel
@@ -65,6 +70,7 @@ import com.example.medication_demo.model.CalendarDayUi
 import com.example.medication_demo.model.DoseStatus
 import com.example.medication_demo.utils.getMalaysiaDate
 import com.example.medication_demo.ui.AppTopBar
+import com.example.medication_demo.R
 
 private val CalendarGreen = Color(0xFF159447)
 private val CalendarLightGreen = Color(0xFFE8F7ED)
@@ -218,30 +224,32 @@ fun MedicineCalendarScreen(
         }
     }
     if (showHelpDialog) {
-
-        AlertDialog(
-            onDismissRequest = {
-                showHelpDialog = false
-            },
-
-            title = {
-                Text("Medicine Help")
-            },
-
-            text = {
-                Text(
-                    "You can select the day you want to track your record."
-                )
-            },
-
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showHelpDialog = false
-                    }
+        InfoGuideDialog(
+            title = "History Help",
+            description = buildAnnotatedString {
+                append("Select a ")
+                withStyle(
+                    SpanStyle(
+                        color = Color(0xFF009688),
+                        fontWeight = FontWeight.Bold
+                    )
                 ) {
-                    Text("Got it")
+                    append("date")
                 }
+                append(" to view and track your " )
+                withStyle(
+                    SpanStyle(
+                        color = Color(0xFF009688),
+                        fontWeight = FontWeight.Bold
+                    )
+                ) {
+                    append("medication records")
+                }
+                append( " for that day.")
+            },
+            imageRes = R.drawable.calendar,
+            onDismiss = {
+                showHelpDialog = false
             }
         )
     }

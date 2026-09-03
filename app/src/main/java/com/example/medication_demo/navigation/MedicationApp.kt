@@ -45,13 +45,10 @@ import androidx.compose.runtime.produceState
 import com.example.medication_demo.reminder.RefillReminderScreen
 import kotlinx.coroutines.delay
 import com.example.medication_demo.utils.getMalaysiaTime
-
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
-
 import com.example.medication_demo.viewmodel.MedicineListViewModel
 import com.example.medication_demo.viewmodel.MedicineViewModel
-
 import com.example.medication_demo.reminder.showRefillNotification
 import com.example.medication_demo.reminder.scheduleRefillReminder
 import com.example.medication_demo.history.MedicineHistoryDetailScreen
@@ -65,15 +62,20 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
+import com.example.medication_demo.reminder.createMedicineNotificationChannel
 import com.example.medication_demo.reminder.createRefillNotificationChannel
 import com.example.medication_demo.viewmodel.WeeklyHistoryViewModel
 import kotlinx.coroutines.launch
+
 @Composable
 fun MedicationApp(
-    pendingDeepLinkType: String?, onDeepLinkConsumed: () -> Unit,
+    pendingDeepLinkType: String?,
+    onDeepLinkConsumed: () -> Unit,
     onNotificationHandled: () -> Unit = {},
-    notificationMedicineId: Int? = null
-    ) {
+    notificationMedicineId: Int? = null,
+    navigateToHomeFromNotification: Boolean = false,
+    onHomeNavigationHandled: () -> Unit = {}
+) {
     // 通知权限的请求器(Android 13以上才需要真的跳出来问)
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
@@ -85,13 +87,13 @@ fun MedicationApp(
     val currentUserGender by userVm.userGender.collectAsStateWithLifecycle()
     val currentUserAge by userVm.userAge.collectAsStateWithLifecycle()
     val latestDeepLinkType = rememberUpdatedState(pendingDeepLinkType)
-
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val navController = rememberNavController()
     val medicineVm: MedicineViewModel = viewModel()
     val lowStockMedicineId by medicineVm.lowStockMedicineId.collectAsStateWithLifecycle()
+    val insufficientStockMedicineId by medicineVm.insufficientStockMedicineId.collectAsStateWithLifecycle()
     val medicineListVm: MedicineListViewModel = viewModel()
     val medicines by medicineVm.medicines.collectAsStateWithLifecycle()
     val historyVm: WeeklyHistoryViewModel = viewModel()
@@ -139,6 +141,21 @@ fun MedicationApp(
                 todayTotalDoseCount = medicinesTotal
             )
         }
+    LaunchedEffect(
+        navigateToHomeFromNotification
+    ) {
+        if (navigateToHomeFromNotification) {
+            navController.navigate(
+                "home"
+            ) {
+                popUpTo("home") {
+                    inclusive = false
+                }
+                launchSingleTop = true
+            }
+            onHomeNavigationHandled()
+        }
+    }
     LaunchedEffect(lowStockMedicineId) {
         val medicineId =
             lowStockMedicineId
@@ -163,6 +180,25 @@ fun MedicationApp(
         medicineVm.clearLowStockEvent()
     }
     LaunchedEffect(
+        insufficientStockMedicineId
+    ) {
+        val medicineId =
+            insufficientStockMedicineId
+                ?: return@LaunchedEffect
+        val medicine =
+            medicines.find {
+                it.id == medicineId
+            }
+        if (medicine != null) {
+            snackbarHostState.showSnackbar(
+                message =
+                    "${medicine.name} stock is insufficient for the next dose. Please restock."
+            )
+        }
+
+        medicineVm.clearInsufficientStockEvent()
+    }
+    LaunchedEffect(
         notificationMedicineId
     ) {
         val medicineId =
@@ -181,6 +217,7 @@ fun MedicationApp(
         NotificationHelper.createNotificationChannel(context)
 
         createRefillNotificationChannel(context)
+        createMedicineNotificationChannel(context)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val hasPermission = ContextCompat.checkSelfPermission(
                 context,
@@ -254,6 +291,13 @@ fun MedicationApp(
                             email = email,
                             password = password,
                             onSuccess = {
+                                val userId =
+                                    SupabaseClientProvider.client.auth
+                                        .currentUserOrNull()
+                                        ?.id
+                                if (userId != null) {
+                                    medicineVm.switchUser(userId)
+                                }
                                 navController.navigate("home") {
                                     popUpTo("splash") {
                                         inclusive = true
@@ -441,10 +485,12 @@ fun MedicationApp(
                         // TODO: Help & Support还没做
                     },
                     onLogoutClick = {
+                        medicineVm.prepareForLogout()
                         userVm.logout()
-                        medicineVm.switchUser("guest")
                         navController.navigate("login") {
-                            popUpTo(0) { inclusive = true }
+                            popUpTo(0) {
+                                inclusive = true
+                            }
                         }
                     },
                     onBottomNavSelected = { index ->

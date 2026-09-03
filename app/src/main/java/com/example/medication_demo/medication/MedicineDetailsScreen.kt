@@ -642,23 +642,38 @@ private fun ReminderSection(
                     color = DetailDivider
                 )
 
-                val enabledRepeats =
-                    medicine.reminderTimes
-                        .filter {
-                            it.reminderOptionsEnabled && it.minutes.isNotBlank()
-                        }.map { it.minutes }.distinct()
+                if (medicine.repeatReminderEnabled) {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        color = DetailDivider
+                    )
 
-                val repeatEveryText =
-                    when {
-                        enabledRepeats.isEmpty() -> "-"
-                        enabledRepeats.size == 1 -> "${enabledRepeats.first()} minutes"
-                        else ->
-                            enabledRepeats.joinToString(", ") { "$it minutes" }
-                    }
-                ReminderInformationRow(
-                    title = "Repeat Every",
-                    value = repeatEveryText
-                )
+                    ReminderInformationRow(
+                        title = "Remind Every",
+                        value =
+                            "${medicine.repeatIntervalMinutes} " +
+                                    if (medicine.repeatIntervalMinutes == 1) {
+                                        "minute"
+                                    } else {
+                                        "minutes"
+                                    }
+                    )
+
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        color = DetailDivider
+                    )
+
+                    ReminderInformationRow(
+                        title = "Repeat Times",
+                        value =
+                            if (medicine.repeatCount == 1) {
+                                "1 time"
+                            } else {
+                                "${medicine.repeatCount} times"
+                            }
+                    )
+                }
             }
         }
     }
@@ -716,12 +731,10 @@ private fun MedicineDetailsScreenPreview() {
             frequency = "Twice a day",
             reminderTimes = listOf(
                 ReminderTimeUi(
-                    time = "10:00 AM",
-                    minutes = ""
+                    time = "10:00 AM"
                 ),
                 ReminderTimeUi(
-                    time = "08:00 PM",
-                    minutes = ""
+                    time = "08:00 PM"
                 )
             ),
             startDate = "10 May 2025",

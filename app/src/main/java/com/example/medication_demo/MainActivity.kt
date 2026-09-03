@@ -28,7 +28,7 @@ class MainActivity : ComponentActivity() {
     // 记录这次deep link是不是"密码重设"类型的连结
     private var pendingDeepLinkType by mutableStateOf<String?>(null)
     private val refillMedicineId = mutableStateOf<Int?>(null)
-
+    private val navigateToHome = mutableStateOf(false)
     override fun onCreate(
         savedInstanceState: Bundle?
     ) {
@@ -36,7 +36,11 @@ class MainActivity : ComponentActivity() {
 
         enableEdgeToEdge()
         handleIncomingIntent(intent)
-
+        navigateToHome.value =
+            intent.getBooleanExtra(
+                "navigateToHome",
+                false
+            )
         // If app is opened by tapping the notification
         refillMedicineId.value =
             intent
@@ -60,7 +64,10 @@ class MainActivity : ComponentActivity() {
                         notificationMedicineId = refillMedicineId.value,
                         onNotificationHandled = {
                             refillMedicineId.value = null
-                        }
+                        },
+                        navigateToHomeFromNotification = navigateToHome.value,
+                        onHomeNavigationHandled = { navigateToHome.value = false
+                        },
                     )
                 }
             }
@@ -76,7 +83,14 @@ class MainActivity : ComponentActivity() {
 
         handleIncomingIntent(intent)
         setIntent(intent)
-
+        if (
+            intent.getBooleanExtra(
+                "navigateToHome",
+                false
+            )
+        ) {
+            navigateToHome.value = true
+        }
         val medicineId =
             intent.getIntExtra(
                 "refillMedicineId",

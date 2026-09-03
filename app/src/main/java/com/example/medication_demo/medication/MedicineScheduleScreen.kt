@@ -20,7 +20,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -28,7 +27,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -50,11 +48,16 @@ import java.util.Locale
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import com.example.medication_demo.components.InfoGuideDialog
 import com.example.medication_demo.ui.AppTopBar
 import kotlinx.coroutines.delay
 import com.example.medication_demo.utils.getMalaysiaTime
+import com.example.medication_demo.R
+
 
 private val ScheduleGreen = Color(0xFF159447)
 private val ScheduleRed = Color(0xFFE53935)
@@ -236,17 +239,19 @@ fun MedicineScheduleScreen(
     }
     if (showHelpDialog) {
         InfoGuideDialog(
-            title = "Schedule Help",
-
+            title = "Medication Schedule Help",
             description = buildAnnotatedString {
-                append(
-                    "View your daily medication schedule here. " +
-                            "You can check which medicines are upcoming, taken, or missed."
-                )
+                append("View your daily medication schedule here. You can check which medicines are ")
+                withStyle(
+                    SpanStyle(
+                        color = Color(0xFF009688),
+                        fontWeight = FontWeight.Bold
+                    )
+                ) {
+                    append("upcoming, taken, or missed. ")
+                }
             },
-
-            imageRes = null,
-
+            imageRes = R.drawable.schedule,
             onDismiss = {
                 showHelpDialog = false
             }

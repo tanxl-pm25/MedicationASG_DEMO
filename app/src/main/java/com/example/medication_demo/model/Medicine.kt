@@ -17,5 +17,8 @@ data class Medicine(
     val notes: String,
     val reminderEnabled: Boolean = true,
     val presetImageRes: Int? = null,
-    val galleryImageUri: String? = null
+    val galleryImageUri: String? = null,
+    val repeatReminderEnabled: Boolean = false,
+    val repeatIntervalMinutes: Int = 15,
+    val repeatCount: Int = 3
 )

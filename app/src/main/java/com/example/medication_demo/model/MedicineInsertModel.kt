@@ -41,5 +41,14 @@ data class MedicineInsertModel(
     val presetImageRes: Int? = null,
 
     @SerialName("gallery_image_uri")
-    val galleryImageUri: String? = null
+    val galleryImageUri: String? = null,
+
+    @SerialName("repeat_reminder_enabled")
+    val repeatReminderEnabled: Boolean,
+
+    @SerialName("repeat_interval_minutes")
+    val repeatIntervalMinutes: Int,
+
+    @SerialName("repeat_count")
+    val repeatCount: Int
 )
