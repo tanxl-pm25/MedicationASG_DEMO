@@ -72,13 +72,7 @@ import com.example.medication_demo.utils.getMalaysiaDate
 import com.example.medication_demo.ui.AppTopBar
 import com.example.medication_demo.R
 
-private val CalendarGreen = Color(0xFF159447)
-private val CalendarLightGreen = Color(0xFFE8F7ED)
-private val CalendarRed = Color(0xFFE53935)
 private val CalendarOrange = Color(0xFFF59E0B)
-private val CalendarGrey = Color(0xFF6B7280)
-private val CalendarLightGrey = Color(0xFFF4F5F6)
-private val CalendarDivider = Color(0xFFE5E7EB)
 
 @Composable
 fun MedicineCalendarScreen(
@@ -109,7 +103,7 @@ fun MedicineCalendarScreen(
     val totalCount = selectedDateMedicines.size
     var showHelpDialog by remember { mutableStateOf(false) }
     Scaffold(
-        containerColor = Color.White,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             AppTopBar(
                 title = "Medication Calendar",
@@ -172,7 +166,9 @@ fun MedicineCalendarScreen(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            HorizontalDivider(color = CalendarDivider)
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant
+            )
 
             Spacer(modifier = Modifier.height(18.dp))
 
@@ -204,7 +200,7 @@ fun MedicineCalendarScreen(
                     text = "No medication scheduled",
                     modifier = Modifier.align(Alignment.CenterHorizontally),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = CalendarGrey
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
             } else {
@@ -272,7 +268,7 @@ private fun MonthSelector(
             Icon(
                 imageVector = Icons.Default.ChevronLeft,
                 contentDescription = "Previous month",
-                tint = CalendarGreen
+                tint = MaterialTheme.colorScheme.primary
             )
         }
 
@@ -290,7 +286,7 @@ private fun MonthSelector(
             Icon(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = "Next month",
-                tint = CalendarGreen
+                tint = MaterialTheme.colorScheme.primary
             )
         }
     }
@@ -316,7 +312,7 @@ private fun WeekdayHeader() {
                 text = day,
                 modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.labelMedium,
-                color = CalendarGrey,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
             )
         }
@@ -383,7 +379,7 @@ private fun CalendarDayCell(
             .clip(CircleShape)
             .background(
                 color = when {
-                    isSelected -> CalendarGreen
+                    isSelected -> MaterialTheme.colorScheme.primary
                     else -> Color.Transparent
                 }
             )
@@ -398,9 +394,9 @@ private fun CalendarDayCell(
                 text = date.dayOfMonth.toString(),
                 style = MaterialTheme.typography.bodyMedium,
                 color = if (isSelected) {
-                    Color.White
+                    MaterialTheme.colorScheme.onPrimary
                 } else {
-                    Color.Black
+                    MaterialTheme.colorScheme.onBackground
                 }
             )
 
@@ -412,9 +408,9 @@ private fun CalendarDayCell(
                         .size(5.dp)
                         .background(
                             color = when (calendarDay.status) {
-                                DoseStatus.TAKEN -> CalendarGreen
-                                DoseStatus.IN_PROGRESS -> CalendarGreen
-                                DoseStatus.MISSING -> CalendarRed
+                                DoseStatus.TAKEN -> MaterialTheme.colorScheme.primary
+                                DoseStatus.IN_PROGRESS -> MaterialTheme.colorScheme.primary
+                                DoseStatus.MISSING -> MaterialTheme.colorScheme.error
                                 DoseStatus.UPCOMING -> CalendarOrange
                             },
                             shape = CircleShape
@@ -433,7 +429,7 @@ private fun SelectedDateHeader(
         Text(
             text = "Selected Date",
             style = MaterialTheme.typography.bodySmall,
-            color = CalendarGrey
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         Spacer(modifier = Modifier.height(4.dp))
@@ -462,7 +458,7 @@ private fun ProgressCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(
-            containerColor = CalendarLightGreen
+            containerColor = MaterialTheme.colorScheme.primaryContainer
         ),
         elevation = CardDefaults.cardElevation(
             defaultElevation = 0.dp
@@ -484,22 +480,20 @@ private fun ProgressCard(
                 Text(
                     text = "$taken / $total Taken",
                     style = MaterialTheme.typography.labelLarge,
-                    color = CalendarGreen
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
 
             Spacer(modifier = Modifier.height(12.dp))
 
             LinearProgressIndicator(
-                progress = {
-                    progress
-                },
+                progress = { progress },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(8.dp)
                     .clip(RoundedCornerShape(10.dp)),
-                color = CalendarGreen,
-                trackColor = Color.White
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.surface
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -507,7 +501,7 @@ private fun ProgressCard(
             Text(
                 text = "${(progress * 100).toInt()}% completed",
                 style = MaterialTheme.typography.bodySmall,
-                color = CalendarGrey
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -521,7 +515,7 @@ private fun CalendarMedicineCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(
-            containerColor = CalendarLightGrey
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
         ),
         elevation = CardDefaults.cardElevation(
             defaultElevation = 0.dp
@@ -545,7 +539,7 @@ private fun CalendarMedicineCard(
                     Icon(
                         imageVector = Icons.Default.CheckCircle,
                         contentDescription = "Taken",
-                        tint = CalendarGreen,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(26.dp)
                     )
                 }
@@ -554,7 +548,7 @@ private fun CalendarMedicineCard(
                     Icon(
                         imageVector = Icons.Default.Schedule,
                         contentDescription = "In Progress",
-                        tint = CalendarGreen,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(35.dp)
                     )
                 }
@@ -563,7 +557,7 @@ private fun CalendarMedicineCard(
                     Icon(
                         imageVector = Icons.Default.Warning,
                         contentDescription = "Missing",
-                        tint = CalendarRed,
+                        tint = MaterialTheme.colorScheme.error,
                         modifier = Modifier.size(26.dp)
                     )
                 }
@@ -594,7 +588,7 @@ private fun CalendarMedicineCard(
                 Text(
                     text = medicine.dosage,
                     style = MaterialTheme.typography.bodySmall,
-                    color = CalendarGrey
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
@@ -602,9 +596,9 @@ private fun CalendarMedicineCard(
                 text = medicine.status.displayText,
                 style = MaterialTheme.typography.labelMedium,
                 color = when (medicine.status) {
-                    DoseStatus.TAKEN -> CalendarGreen
-                    DoseStatus.IN_PROGRESS -> CalendarGreen
-                    DoseStatus.MISSING -> CalendarRed
+                    DoseStatus.TAKEN -> MaterialTheme.colorScheme.primary
+                    DoseStatus.IN_PROGRESS -> MaterialTheme.colorScheme.primary
+                    DoseStatus.MISSING -> MaterialTheme.colorScheme.error
                     DoseStatus.UPCOMING -> CalendarOrange
                 }
             )
