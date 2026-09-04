@@ -3,6 +3,7 @@ package com.example.medication_demo.ui
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -23,6 +24,7 @@ import androidx.compose.ui.unit.sp
 fun AppTopBar(
     title: String,
     onBackClick: (() -> Unit)? = null,
+    onCalendarClick: (() -> Unit)? = null,
     showMoreMenu: Boolean = false,
     onHelpClick: (() -> Unit)? = null
 ) {
@@ -56,6 +58,17 @@ fun AppTopBar(
         },
 
         actions = {
+            if (onCalendarClick != null) {
+                IconButton(
+                    onClick = onCalendarClick
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.CalendarMonth,
+                        contentDescription = "Select date"
+                    )
+                }
+            }
+
             if (showMoreMenu) {
 
                 IconButton(

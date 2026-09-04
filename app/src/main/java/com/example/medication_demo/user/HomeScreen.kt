@@ -348,14 +348,14 @@ fun HomeScreen(
                     valueBold =
                         if (waterGoal > 0) {
                             waterGlasses
-                        } else {
-                            "Set your"
+                        }else{
+                            ""
                         },
                     valueRest =
                         if (waterGoal > 0) {
                             " / $waterGoal Glasses"
                         } else {
-                            " daily goal"
+                            " Set your daily goal"
                         },
                     fontSize = 13.sp,
                     onClick = onWaterIntakeClick
@@ -364,9 +364,15 @@ fun HomeScreen(
                     modifier = Modifier.weight(1f),
                     icon = Icons.Filled.BarChart,
                     title = "Monthly Statistics",
-                    valueBold = monthlyStatText ?:"No record found",
+                    valueBold = monthlyStatText ?: "",
+
+                    valueRest =
+                        if (monthlyStatText != null) {
+                            "%"
+                        } else {
+                            "No record found"
+                        },
                     fontSize = 8.sp,
-                    valueRest = "",
                     onClick = onMonthlyStatisticsClick
                 )
             }

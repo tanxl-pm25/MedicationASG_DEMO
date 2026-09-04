@@ -1,5 +1,7 @@
 package com.example.medication_demo.waterIntake
 
+
+import androidx.compose.material.icons.outlined.CalendarMonth
 import java.time.Instant
 import java.time.ZoneOffset
 import androidx.compose.foundation.lazy.LazyRow
@@ -17,8 +19,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ArrowBack
-import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Remove
 import androidx.compose.material3.*
@@ -35,6 +35,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.medication_demo.ui.AppTopBar
 import com.example.medication_demo.utils.getMalaysiaDate
 import kotlin.math.min
 
@@ -72,297 +73,266 @@ fun WaterIntakeScreen(
         }
 
 
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White)
-            .statusBarsPadding()
-            .navigationBarsPadding()
-            .padding(horizontal = 24.dp)
-    ) {
-
-
-        // TOP BAR
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 42.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-
-            // Back button
-            Icon(
-                imageVector = Icons.Outlined.ArrowBack,
-                contentDescription = "Back",
-                tint = Color(0xFF132957),
-                modifier = Modifier
-                    .size(30.dp)
-                    .clickable {
-                        onBack()
-                    }
-            )
-
-            // Title
-            Text(
-                text = "Water Intake",
-                fontSize = 23.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF132957),
-                textAlign = TextAlign.Center,
-                modifier = Modifier.weight(1f)
-            )
-
-            // Calendar
-            Icon(
-                imageVector = Icons.Outlined.CalendarMonth,
-                contentDescription = "Calendar",
-                tint = Color(0xFF132957),
-                modifier = Modifier
-                    .size(30.dp)
-                    .clickable {
-                        showDatePicker = true
-                    }
+    Scaffold(
+        containerColor = Color.White,
+        topBar = {
+            AppTopBar(
+                title = "Water Intake",
+                onBackClick = onBack,
+                onCalendarClick = {
+                    showDatePicker = true
+                }
             )
         }
-
-
-        // DATE
-        Row(
+    ) { innerPadding ->
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 38.dp),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(horizontal = 24.dp)
         ) {
+            // DATE
 
-            Text(
-                text = selectedDateText,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF132957)
-            )
-
-            Spacer(modifier = Modifier.width(14.dp))
-        }
-
-
-        if (isBeforeWaterStarted) {
-            Spacer(modifier = Modifier.height(70.dp))
-            WaterBeforeStartState()
-            Spacer(modifier = Modifier.weight(1f))
-
-        } else if (uiState.dailyGoal == 0)  {
-
-            Spacer(modifier = Modifier.height(70.dp))
-
-            EmptyWaterGoalState(
-                onSetGoalClick = {
-                    showEditGoalDialog = true
-                }
-            )
-
-            Spacer(modifier = Modifier.weight(1f))
-
-        } else {
-            // PROGRESS SECTION
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 24.dp)
-                    .height(260.dp),
-                contentAlignment = Alignment.Center
-            ) {
-
-                WaterProgressCircle(
-                    progress = uiState.progress,
-                    glasses = uiState.glasses,
-                    goal = uiState.dailyGoal
-                )
-
-
-                // MINUS BUTTON
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.CenterStart)
-                        .offset(x = (-8).dp)
-                        .size(50.dp)
-                        .background(
-                            Color.White,
-                            CircleShape
-                        )
-                        .clickable {
-                            viewModel.removeGlass()
-
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                Color.Transparent,
-                                CircleShape
-                            )
-                    )
-
-                    Icon(
-                        imageVector = Icons.Outlined.Remove,
-                        contentDescription = "Remove glass",
-                        tint = Color(0xFF132957),
-                        modifier = Modifier.size(35.dp)
-                    )
-                }
-
-
-                // PLUS BUTTON
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.CenterEnd)
-                        .offset(x = 8.dp)
-                        .size(50.dp)
-                        .clickable {
-                            viewModel.addGlass()
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-
-                    Icon(
-                        imageVector = Icons.Outlined.Add,
-                        contentDescription = "Add glass",
-                        tint = Color(0xFF132957),
-                        modifier = Modifier.size(30.dp)
-                    )
-                }
-            }
-
-
-            // MESSAGE
-            Text(
-                text = uiState.message,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF132957),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 0.dp),
-                textAlign = TextAlign.Center
-            )
-
-            // GLASSES
-            LazyRow(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 40.dp),
-                contentPadding = PaddingValues(
-                    horizontal = 12.dp
-                ),
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-
-                items(uiState.dailyGoal) { index ->
-
-                    WaterGlass(
-                        filled = index < uiState.glasses
-                    )
-                }
-            }
-
-            // DAILY GOAL CARD
+            // DATE
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 90.dp)
-                    .height(130.dp)
-                    .background(
-                        color = Color(0xFFFCFCFC),
-                        shape = RoundedCornerShape(20.dp)
-                    )
-                    .padding(
-                        horizontal = 24.dp,
-                        vertical = 22.dp
-                    ),
+                    .padding(top = 38.dp),
+                horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
 
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
+                Text(
+                    text = selectedDateText,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF132957)
+                )
 
-                    Text(
-                        text = "Daily Goal",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF132957)
-                    )
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    Text(
-                        text =
-                            if (uiState.dailyGoal == 0) {
-                                "No goal set"
-                            } else {
-                                "${uiState.dailyGoal} Glasses"
-                            },
-                        fontSize = 18.sp,
-                        color = Color(0xFF30456D)
-                    )
-                }
+                Spacer(modifier = Modifier.width(14.dp))
+            }
 
 
-                // EDIT GOAL
+
+
+            if (isBeforeWaterStarted) {
+                Spacer(modifier = Modifier.height(70.dp))
+                WaterBeforeStartState()
+                Spacer(modifier = Modifier.weight(1f))
+
+            } else if (uiState.dailyGoal == 0) {
+
+                Spacer(modifier = Modifier.height(70.dp))
+
+                EmptyWaterGoalState(
+                    onSetGoalClick = {
+                        showEditGoalDialog = true
+                    }
+                )
+
+                Spacer(modifier = Modifier.weight(1f))
+
+            } else {
+                // PROGRESS SECTION
                 Box(
                     modifier = Modifier
-                        .width(130.dp)
-                        .height(58.dp)
-                        .background(
-                            color = Color.White,
-                            shape = RoundedCornerShape(16.dp)
-                        )
-                        .clickable(
-                            enabled = canEditGoal
-                        ) {
-                            showEditGoalDialog = true
-                        },
+                        .fillMaxWidth()
+                        .padding(top = 24.dp)
+                        .height(260.dp),
                     contentAlignment = Alignment.Center
                 ) {
 
-                    Text(
-                        text =
-                            if (!canEditGoal) {
-                                "Today only"
-                            } else if (uiState.dailyGoal == 0) {
-                                "Set Goal"
-                            } else {
-                                "Edit Goal"
-                            },
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF159447)
+                    WaterProgressCircle(
+                        progress = uiState.progress,
+                        glasses = uiState.glasses,
+                        goal = uiState.dailyGoal
                     )
+
+
+                    // MINUS BUTTON
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.CenterStart)
+                            .offset(x = (-8).dp)
+                            .size(50.dp)
+                            .background(
+                                Color.White,
+                                CircleShape
+                            )
+                            .clickable {
+                                viewModel.removeGlass()
+
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(
+                                    Color.Transparent,
+                                    CircleShape
+                                )
+                        )
+
+                        Icon(
+                            imageVector = Icons.Outlined.Remove,
+                            contentDescription = "Remove glass",
+                            tint = Color(0xFF132957),
+                            modifier = Modifier.size(35.dp)
+                        )
+                    }
+
+
+                    // PLUS BUTTON
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.CenterEnd)
+                            .offset(x = 8.dp)
+                            .size(50.dp)
+                            .clickable {
+                                viewModel.addGlass()
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+
+                        Icon(
+                            imageVector = Icons.Outlined.Add,
+                            contentDescription = "Add glass",
+                            tint = Color(0xFF132957),
+                            modifier = Modifier.size(30.dp)
+                        )
+                    }
+                }
+
+
+                // MESSAGE
+                Text(
+                    text = uiState.message,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFF132957),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 0.dp),
+                    textAlign = TextAlign.Center
+                )
+
+                // GLASSES
+                LazyRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 40.dp),
+                    contentPadding = PaddingValues(
+                        horizontal = 12.dp
+                    ),
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+
+                    items(uiState.dailyGoal) { index ->
+
+                        WaterGlass(
+                            filled = index < uiState.glasses
+                        )
+                    }
+                }
+
+                // DAILY GOAL CARD
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 90.dp)
+                        .height(130.dp)
+                        .background(
+                            color = Color(0xFFFCFCFC),
+                            shape = RoundedCornerShape(20.dp)
+                        )
+                        .padding(
+                            horizontal = 24.dp,
+                            vertical = 22.dp
+                        ),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
+
+                        Text(
+                            text = "Daily Goal",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF132957)
+                        )
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        Text(
+                            text =
+                                if (uiState.dailyGoal == 0) {
+                                    "No goal set"
+                                } else {
+                                    "${uiState.dailyGoal} Glasses"
+                                },
+                            fontSize = 18.sp,
+                            color = Color(0xFF30456D)
+                        )
+                    }
+
+
+                    // EDIT GOAL
+                    Box(
+                        modifier = Modifier
+                            .width(130.dp)
+                            .height(58.dp)
+                            .background(
+                                color = Color.White,
+                                shape = RoundedCornerShape(16.dp)
+                            )
+                            .clickable(
+                                enabled = canEditGoal
+                            ) {
+                                showEditGoalDialog = true
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+
+                        Text(
+                            text =
+                                if (!canEditGoal) {
+                                    "Today only"
+                                } else if (uiState.dailyGoal == 0) {
+                                    "Set Goal"
+                                } else {
+                                    "Edit Goal"
+                                },
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF159447)
+                        )
+                    }
                 }
             }
-        }
-        //Edit Goal Dialog
-        if (showEditGoalDialog) {
+            //Edit Goal Dialog
+            if (showEditGoalDialog) {
 
-            EditWaterGoalDialog(
-                currentGoal = uiState.dailyGoal,
+                EditWaterGoalDialog(
+                    currentGoal = uiState.dailyGoal,
 
-                onDismiss = {
-                    showEditGoalDialog = false
-                },
+                    onDismiss = {
+                        showEditGoalDialog = false
+                    },
 
-                onConfirm = { newGoal ->
-                    viewModel.updateGoal(newGoal)
-                    showEditGoalDialog = false
-                }
-            )
+                    onConfirm = { newGoal ->
+                        viewModel.updateGoal(newGoal)
+                        showEditGoalDialog = false
+                    }
+                )
+            }
         }
     }
+
     if (showDatePicker) {
         val selectableDates = remember {
             object : SelectableDates {

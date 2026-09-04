@@ -1,5 +1,10 @@
 package com.example.medication_demo.repository
 
+import com.example.medication_demo.reminder.AppointmentReminderScheduler
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import com.example.medication_demo.storage.CurrentUserStorage
 import android.content.Context
 import com.example.medication_demo.model.AppointmentStatus
@@ -15,9 +20,9 @@ object AppointmentRepository {
     private const val PREFERENCES_NAME = "appointment_preferences"
     private const val KEY_APPOINTMENTS = "saved_appointments"
 
-    private val json = Json {
-        ignoreUnknownKeys = true
-    }
+    private val json = Json { ignoreUnknownKeys = true }
+    private val cloudRepository = AppointmentCloudRepository()
+    private val cloudScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private lateinit var preferences: android.content.SharedPreferences
     private var currentUserId: String? = null
@@ -57,6 +62,7 @@ object AppointmentRepository {
         )
 
         _appointments.value = loadAppointments()
+        syncAppointmentsFromCloud(context)
     }
 
     fun getAppointmentById(
@@ -79,6 +85,8 @@ object AppointmentRepository {
         saveAppointments(
             _appointments.value + appointment
         )
+
+        syncUpsert(appointment)
     }
 
     fun updateAppointment(
@@ -93,6 +101,8 @@ object AppointmentRepository {
                 }
             }
         )
+
+        syncUpsert(updatedAppointment)
     }
 
     fun deleteAppointment(
@@ -103,6 +113,12 @@ object AppointmentRepository {
                 it.id != appointmentId
             }
         )
+
+        cloudScope.launch {
+            cloudRepository.deleteAppointment(
+                appointmentId
+            )
+        }
     }
 
     fun markGoing(
@@ -200,5 +216,48 @@ object AppointmentRepository {
                 json.encodeToString(updatedAppointments)
             )
             .apply()
+    }
+
+    private fun syncUpsert(
+        appointment: AppointmentUi
+    ) {
+        cloudScope.launch {
+            cloudRepository.upsertAppointment(
+                appointment
+            )
+        }
+    }
+
+    private fun syncAppointmentsFromCloud(
+        context: Context
+    ) {
+        cloudScope.launch {
+            _appointments.value.forEach { appointment ->
+                cloudRepository.upsertAppointment(
+                    appointment
+                )
+            }
+
+            val cloudAppointments =
+                cloudRepository.getAppointments()
+
+            if (cloudAppointments.isEmpty()) {
+                return@launch
+            }
+
+            saveAppointments(cloudAppointments)
+
+            cloudAppointments
+                .filter { appointment ->
+                    appointment.status ==
+                            AppointmentStatus.UPCOMING
+                }
+                .forEach { appointment ->
+                    AppointmentReminderScheduler.schedule(
+                        context = context,
+                        appointment = appointment
+                    )
+                }
+        }
     }
 }

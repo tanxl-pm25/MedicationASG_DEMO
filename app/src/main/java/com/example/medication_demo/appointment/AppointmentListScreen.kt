@@ -1,5 +1,9 @@
 package com.example.medication_demo.appointment
 
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.example.medication_demo.ui.AppTopBar
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
@@ -27,7 +31,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -36,6 +39,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.NotificationsNone
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -46,6 +50,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -72,10 +77,12 @@ fun AppointmentListScreen(
 ) {
 
     val uiState by viewModel.uiState.collectAsState()
+    var showHelpDialog by remember {
+        mutableStateOf(false)
+    }
     Scaffold(
         modifier = Modifier
             .fillMaxSize()
-            .statusBarsPadding()
             .navigationBarsPadding(),
 
         containerColor = MaterialTheme.colorScheme.background,
@@ -129,10 +136,41 @@ fun AppointmentListScreen(
                 .padding(horizontal = 20.dp)
         ) {
 
-            AppointmentTopBar(
+            AppTopBar(
+                title = "Appointments",
                 onBackClick = onBackClick,
-                onNotificationClick = onNotificationClick,
+                showMoreMenu = true,
+                onHelpClick = {
+                    showHelpDialog = true
+                }
             )
+
+            if (showHelpDialog) {
+                AlertDialog(
+                    onDismissRequest = {
+                        showHelpDialog = false
+                    },
+                    title = {
+                        Text("Appointments Help")
+                    },
+                    text = {
+                        Text(
+                            "Add an appointment using the button below. " +
+                                    "Tap an appointment to view, edit, " +
+                                    "reschedule, or delete it."
+                        )
+                    },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                showHelpDialog = false
+                            }
+                        ) {
+                            Text("Got it")
+                        }
+                    }
+                )
+            }
 
             Spacer(
                 modifier = Modifier.height(26.dp)
@@ -255,6 +293,8 @@ fun AppointmentListScreen(
         }
     }
 }
+
+fun mutableStateOf(bool: Boolean) {}
 
 
 @Composable

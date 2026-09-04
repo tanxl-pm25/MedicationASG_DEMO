@@ -29,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.medication_demo.ui.AppTopBar
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -57,41 +58,15 @@ fun MonthlyStatisticsScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White)
-            .statusBarsPadding()
             .navigationBarsPadding()
             .padding(horizontal = 20.dp)
     ) {
 
         // TOP BAR
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 14.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-
-            Icon(
-                imageVector = Icons.Default.ArrowBack,
-                contentDescription = "Back",
-                tint = Color(0xFF555555),
-                modifier = Modifier
-                    .size(24.dp)
-                    .clickable {
-                        onBack()
-                    }
-            )
-
-            Text(
-                text = "Monthly Statistics",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF222222),
-                modifier = Modifier.weight(1f),
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.size(25.dp))
-        }
+        AppTopBar(
+            title = "Monthly Statistics",
+            onBackClick = onBack
+        )
 
         Spacer(modifier = Modifier.height(14.dp))
 

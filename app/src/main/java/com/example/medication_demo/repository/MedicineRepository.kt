@@ -10,6 +10,7 @@ import com.example.medication_demo.model.MedicineInsertModel
 
 class MedicineRepository {
     private val supabase = SupabaseClientProvider.client
+
     suspend fun getMedicines(): List<Medicine> {
 
         val userId =
