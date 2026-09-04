@@ -31,13 +31,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -48,11 +48,6 @@ import coil.compose.AsyncImage
 import com.example.medication_demo.model.NewsArticle
 import com.example.medication_demo.ui.AppTopBar
 import com.example.medication_demo.viewmodel.NewsViewModel
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-
-private val NewsGreen = Color(0xFF159447)
-private val NewsLightGreen = Color(0xFFE8F7ED)
-private val NewsGrey = Color(0xFF6B7280)
 
 @Composable
 fun NewsScreen(
@@ -70,7 +65,7 @@ fun NewsScreen(
     }
 
     Scaffold(
-        containerColor = Color.White,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             AppTopBar(
                 title = "Health News",
@@ -100,7 +95,6 @@ fun NewsScreen(
             }
 
             else -> {
-
                 PullToRefreshBox(
                     isRefreshing = isLoading,
                     onRefresh = {
@@ -110,60 +104,41 @@ fun NewsScreen(
                         .fillMaxSize()
                         .padding(innerPadding)
                 ) {
-
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(
                             horizontal = 16.dp,
                             vertical = 14.dp
                         ),
-                        verticalArrangement =
-                            Arrangement.spacedBy(14.dp)
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
-
-                        if (
-                            isLoading &&
-                            news.isNotEmpty()
-                        ) {
+                        if (isLoading && news.isNotEmpty()) {
                             item {
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(
-                                            vertical = 8.dp
-                                        ),
-                                    horizontalArrangement =
-                                        Arrangement.Center
+                                        .padding(vertical = 8.dp),
+                                    horizontalArrangement = Arrangement.Center
                                 ) {
                                     Text(
                                         text = "Updating news...",
-                                        style =
-                                            MaterialTheme
-                                                .typography
-                                                .bodySmall,
-                                        color = NewsGrey
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                             }
                         }
 
                         items(news) { article ->
-
                             NewsCard(
                                 article = article,
                                 onClick = {
-
-                                    val intent =
-                                        Intent(
-                                            Intent.ACTION_VIEW,
-                                            Uri.parse(
-                                                article.articleUrl
-                                            )
-                                        )
-
-                                    context.startActivity(
-                                        intent
+                                    val intent = Intent(
+                                        Intent.ACTION_VIEW,
+                                        Uri.parse(article.articleUrl)
                                     )
+
+                                    context.startActivity(intent)
                                 }
                             )
                         }
@@ -174,17 +149,10 @@ fun NewsScreen(
                         ) {
                             item {
                                 Text(
-                                    text =
-                                        "Unable to refresh news right now.",
-                                    style =
-                                        MaterialTheme
-                                            .typography
-                                            .bodySmall,
-                                    color = NewsGrey,
-                                    modifier =
-                                        Modifier.padding(
-                                            vertical = 8.dp
-                                        )
+                                    text = "Unable to refresh news right now.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(vertical = 8.dp)
                                 )
                             }
                         }
@@ -208,17 +176,14 @@ private fun NewsCard(
             },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color.White
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(
             defaultElevation = 2.dp
         )
     ) {
-
         Column {
-
             if (!article.imageUrl.isNullOrBlank()) {
-
                 AsyncImage(
                     model = article.imageUrl,
                     contentDescription = article.title,
@@ -227,26 +192,23 @@ private fun NewsCard(
                         .fillMaxWidth()
                         .height(180.dp)
                 )
-
             } else {
-
                 NewsImagePlaceholder()
             }
 
             Column(
                 modifier = Modifier.padding(16.dp)
             ) {
-
                 Text(
                     text = article.title,
                     style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 3,
                     overflow = TextOverflow.Ellipsis
                 )
 
                 if (!article.description.isNullOrBlank()) {
-
                     Spacer(
                         modifier = Modifier.height(8.dp)
                     )
@@ -254,7 +216,7 @@ private fun NewsCard(
                     Text(
                         text = article.description,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = NewsGrey,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 3,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -268,24 +230,20 @@ private fun NewsCard(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-
                     Text(
-                        text =
-                            article.sourceName
-                                ?: "Health News",
+                        text = article.sourceName ?: "Health News",
                         style = MaterialTheme.typography.labelMedium,
-                        color = NewsGreen,
+                        color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.weight(1f)
                     )
 
                     Row(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-
                         Text(
                             text = "Open article",
                             style = MaterialTheme.typography.labelMedium,
-                            color = NewsGreen
+                            color = MaterialTheme.colorScheme.primary
                         )
 
                         Spacer(
@@ -293,9 +251,10 @@ private fun NewsCard(
                         )
 
                         Icon(
-                            imageVector = Icons.AutoMirrored.Outlined.OpenInNew,
+                            imageVector =
+                                Icons.AutoMirrored.Outlined.OpenInNew,
                             contentDescription = null,
-                            tint = NewsGreen,
+                            tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(16.dp)
                         )
                     }
@@ -307,25 +266,24 @@ private fun NewsCard(
 
 @Composable
 private fun NewsImagePlaceholder() {
-
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(180.dp)
             .background(
-                color = NewsLightGreen
+                color = MaterialTheme.colorScheme.primary.copy(
+                    alpha = 0.14f
+                )
             ),
         contentAlignment = Alignment.Center
     ) {
-
         Column(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
             Icon(
                 imageVector = Icons.AutoMirrored.Outlined.Article,
                 contentDescription = null,
-                tint = NewsGreen,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(42.dp)
             )
 
@@ -336,7 +294,7 @@ private fun NewsImagePlaceholder() {
             Text(
                 text = "Health News",
                 style = MaterialTheme.typography.bodyMedium,
-                color = NewsGreen
+                color = MaterialTheme.colorScheme.primary
             )
         }
     }
@@ -346,15 +304,13 @@ private fun NewsImagePlaceholder() {
 private fun NewsLoadingScreen(
     modifier: Modifier = Modifier
 ) {
-
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-
         CircularProgressIndicator(
-            color = NewsGreen
+            color = MaterialTheme.colorScheme.primary
         )
 
         Spacer(
@@ -364,7 +320,7 @@ private fun NewsLoadingScreen(
         Text(
             text = "Loading latest health news...",
             style = MaterialTheme.typography.bodyMedium,
-            color = NewsGrey
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
@@ -374,17 +330,15 @@ private fun NewsErrorScreen(
     modifier: Modifier = Modifier,
     onRetry: () -> Unit
 ) {
-
     Column(
         modifier = modifier.padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-
         Icon(
             imageVector = Icons.AutoMirrored.Outlined.Article,
             contentDescription = null,
-            tint = NewsGreen,
+            tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(48.dp)
         )
 
@@ -395,6 +349,7 @@ private fun NewsErrorScreen(
         Text(
             text = "Unable to load news",
             style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onBackground,
             fontWeight = FontWeight.Bold
         )
 
@@ -403,10 +358,9 @@ private fun NewsErrorScreen(
         )
 
         Text(
-            text =
-                "Please check your internet connection and try again.",
+            text = "Please check your internet connection and try again.",
             style = MaterialTheme.typography.bodyMedium,
-            color = NewsGrey
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         Spacer(
@@ -416,10 +370,10 @@ private fun NewsErrorScreen(
         Button(
             onClick = onRetry,
             colors = ButtonDefaults.buttonColors(
-                containerColor = NewsGreen
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
             )
         ) {
-
             Icon(
                 imageVector = Icons.Outlined.Refresh,
                 contentDescription = null
