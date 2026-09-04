@@ -107,9 +107,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.platform.LocalConfiguration
 import android.content.res.Configuration
 
-private val EditGreen = Color(0xFF148A32)
-private val EditRed = Color(0xFFFF3B30)
-
 @Composable
 fun AddMedicineScreen(
     isEditMode: Boolean = true,
@@ -309,7 +306,7 @@ fun AddMedicineScreen(
                             } else {
                                 "+ Add Image"
                             },
-                            color = EditGreen,
+                            color = MaterialTheme.colorScheme.primary,
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
@@ -388,7 +385,7 @@ fun AddMedicineScreen(
                     Icon(
                         imageVector = Icons.Default.Info,
                         contentDescription = "Refill reminder information",
-                        tint = EditGreen,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(16.dp)
                     )
                 }
@@ -457,7 +454,7 @@ fun AddMedicineScreen(
                         Text(
                             text = refillQuantityError!!,
                             style = MaterialTheme.typography.bodySmall,
-                            color = EditRed
+                            color = MaterialTheme.colorScheme.error
                         )
                     }
                 }
@@ -518,21 +515,21 @@ fun AddMedicineScreen(
                     Icon(
                         imageVector = Icons.Default.AddCircleOutline,
                         contentDescription = null,
-                        tint = EditGreen,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = "Add Another Time",
                         style = MaterialTheme.typography.labelLarge,
-                        color = EditGreen
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
                 if (reminderTimeError != null) {
                     Text(
                         text = reminderTimeError!!,
                         style = MaterialTheme.typography.bodySmall,
-                        color = EditRed
+                        color = MaterialTheme.colorScheme.error
                     )
                 }
 
@@ -603,7 +600,7 @@ fun AddMedicineScreen(
                                         Icon(
                                             imageVector = Icons.Outlined.Schedule,
                                             contentDescription = null,
-                                            tint = EditGreen,
+                                            tint = MaterialTheme.colorScheme.primary,
                                             modifier = Modifier.size(20.dp)
                                         )
 
@@ -657,7 +654,7 @@ fun AddMedicineScreen(
                                 Text(
                                     text = repeatIntervalError!!,
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = EditRed
+                                    color = MaterialTheme.colorScheme.error
                                 )
                             }
 
@@ -688,7 +685,7 @@ fun AddMedicineScreen(
                                         Icon(
                                             imageVector = Icons.Outlined.Repeat,
                                             contentDescription = null,
-                                            tint = EditGreen,
+                                            tint = MaterialTheme.colorScheme.primary,
                                             modifier = Modifier.size(20.dp)
                                         )
 
@@ -809,7 +806,7 @@ fun AddMedicineScreen(
                     .height(54.dp),
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = EditGreen
+                    containerColor = MaterialTheme.colorScheme.primary
                 )
             ) {
                 Text(
@@ -1187,14 +1184,14 @@ private fun NumberInputField(
             ),
             shape = RoundedCornerShape(8.dp),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = EditGreen,
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
                 unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                errorBorderColor = EditRed,
-                errorCursorColor = EditRed,
+                errorBorderColor = MaterialTheme.colorScheme.error,
+                errorCursorColor = MaterialTheme.colorScheme.error,
                 focusedContainerColor = MaterialTheme.colorScheme.surface,
                 unfocusedContainerColor = MaterialTheme.colorScheme.surface,
                 errorContainerColor = MaterialTheme.colorScheme.surface,
-                cursorColor = EditGreen
+                cursorColor = MaterialTheme.colorScheme.primary
             )
         )
         if (isError && errorMessage != null) {
@@ -1203,7 +1200,7 @@ private fun NumberInputField(
             Text(
                 text = errorMessage,
                 style = MaterialTheme.typography.bodySmall,
-                color = EditRed
+                color = MaterialTheme.colorScheme.error
             )
         }
     }
@@ -1383,7 +1380,7 @@ private fun FrequencyDialog(
                         Text(
                             text = "Please enter a value greater than 0.",
                             style = MaterialTheme.typography.bodySmall,
-                            color = EditRed
+                            color = MaterialTheme.colorScheme.error
                         )
                     }
                 }
@@ -1397,7 +1394,7 @@ private fun FrequencyDialog(
                 Text(
                     text = "Done",
                     style = MaterialTheme.typography.labelLarge,
-                    color = EditGreen
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         },
@@ -1456,14 +1453,14 @@ private fun FormTextField(
             shape = RoundedCornerShape(8.dp),
             textStyle = MaterialTheme.typography.bodyMedium,
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = EditGreen,
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
                 unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                errorBorderColor = EditRed,
-                errorCursorColor = EditRed,
+                errorBorderColor = MaterialTheme.colorScheme.error,
+                errorCursorColor = MaterialTheme.colorScheme.error,
                 focusedContainerColor = MaterialTheme.colorScheme.surface,
                 unfocusedContainerColor = MaterialTheme.colorScheme.surface,
                 errorContainerColor = MaterialTheme.colorScheme.surface,
-                cursorColor = EditGreen
+                cursorColor = MaterialTheme.colorScheme.primary
             )
         )
         if (isError && errorMessage != null) {
@@ -1472,7 +1469,7 @@ private fun FormTextField(
             Text(
                 text = errorMessage,
                 style = MaterialTheme.typography.bodySmall,
-                color = EditRed
+                color = MaterialTheme.colorScheme.error
             )
         }
     }
@@ -1600,7 +1597,7 @@ private fun ReminderTimeRow(
                     .size(26.dp)
                     .border(
                         width = 1.dp,
-                        color = EditRed,
+                        color = MaterialTheme.colorScheme.error,
                         shape = CircleShape
                     )
                     .clickable {
@@ -1611,7 +1608,7 @@ private fun ReminderTimeRow(
                 Icon(
                     imageVector = Icons.Default.Remove,
                     contentDescription = "Remove time",
-                    tint = EditRed,
+                    tint = MaterialTheme.colorScheme.error,
                     modifier = Modifier.size(16.dp)
                 )
             }
@@ -1764,7 +1761,7 @@ private fun StartDatePickerDialog(
                 Text(
                     text = "Done",
                     style = MaterialTheme.typography.labelLarge,
-                    color = EditGreen
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         },
@@ -1799,13 +1796,13 @@ private fun RefillReminderSwitch(
         modifier = Modifier.scale(0.9f),
         thumbContent = null,
         colors = SwitchDefaults.colors(
-            checkedThumbColor = Color.White,
-            checkedTrackColor = EditGreen,
-            checkedBorderColor = EditGreen,
+            checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+            checkedTrackColor = MaterialTheme.colorScheme.primary,
+            checkedBorderColor = MaterialTheme.colorScheme.primary,
 
-            uncheckedThumbColor = Color.White,
-            uncheckedTrackColor = Color(0xFFBDBDBD),
-            uncheckedBorderColor = Color(0xFFBDBDBD)
+            uncheckedThumbColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant,
+            uncheckedBorderColor = MaterialTheme.colorScheme.outline
         )
     )
 }

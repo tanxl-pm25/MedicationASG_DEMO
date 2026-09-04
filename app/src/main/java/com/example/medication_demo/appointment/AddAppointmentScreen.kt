@@ -72,11 +72,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.medication_demo.viewmodel.AddAppointmentViewModel
 import java.util.Locale
 
-private val AppointmentGreen = Color(0xFF16843A)
-private val AppointmentBorder = Color(0xFFE1E5E9)
-private val AppointmentGrey = Color(0xFF6B7280)
-private val AppointmentRed = Color(0xFFC62828)
-
 @Composable
 fun AddAppointmentScreen(
     onBackClick: () -> Unit = {},
@@ -163,7 +158,7 @@ fun AddAppointmentScreen(
 
                 Text(
                     text = message,
-                    color = AppointmentRed,
+                    color = MaterialTheme.colorScheme.error,
                     fontSize = 12.sp
                 )
             }
@@ -223,7 +218,7 @@ fun AddAppointmentScreen(
             Spacer(modifier = Modifier.height(22.dp))
 
             HorizontalDivider(
-                color = AppointmentBorder
+                color = MaterialTheme.colorScheme.outlineVariant
             )
 
             Spacer(modifier = Modifier.height(18.dp))
@@ -247,7 +242,7 @@ fun AddAppointmentScreen(
                     .height(54.dp),
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = AppointmentGreen
+                    containerColor = MaterialTheme.colorScheme.primary
                 )
             ) {
                 Text(
@@ -336,7 +331,7 @@ fun AppointmentTextField(
             placeholder = {
                 Text(
                     text = placeholder,
-                    color = AppointmentGrey
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             },
             singleLine = singleLine,
@@ -344,11 +339,11 @@ fun AppointmentTextField(
             isError = isError,
             shape = RoundedCornerShape(8.dp),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = AppointmentGreen,
-                unfocusedBorderColor = AppointmentBorder,
-                errorBorderColor = AppointmentRed,
-                cursorColor = AppointmentGreen,
-                errorCursorColor = AppointmentRed
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                errorBorderColor = MaterialTheme.colorScheme.error,
+                cursorColor = MaterialTheme.colorScheme.primary,
+                errorCursorColor = MaterialTheme.colorScheme.error
             )
         )
 
@@ -359,7 +354,7 @@ fun AppointmentTextField(
 
             Text(
                 text = errorMessage,
-                color = AppointmentRed,
+                color = MaterialTheme.colorScheme.error,
                 fontSize = 12.sp
             )
         }
@@ -401,14 +396,14 @@ fun AppointmentDateField(
                     Icon(
                         imageVector = Icons.Default.CalendarMonth,
                         contentDescription = "Select date",
-                        tint = AppointmentGrey
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 },
                 shape = RoundedCornerShape(8.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = AppointmentGreen,
-                    unfocusedBorderColor = AppointmentBorder,
-                    errorBorderColor = AppointmentRed
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                    errorBorderColor = MaterialTheme.colorScheme.error
                 )
             )
 
@@ -424,7 +419,7 @@ fun AppointmentDateField(
         if (isError) {
             Text(
                 text = "Date is required.",
-                color = AppointmentRed,
+                color = MaterialTheme.colorScheme.error,
                 fontSize = 12.sp
             )
         }
@@ -494,7 +489,7 @@ fun AppointmentDateField(
                         }
                     }
                 ) {
-                    Text("Done", color = AppointmentGreen)
+                    Text("Done", color = MaterialTheme.colorScheme.primary)
                 }
             },
             dismissButton = {
@@ -503,7 +498,7 @@ fun AppointmentDateField(
                         showDatePicker = false
                     }
                 ) {
-                    Text("Cancel", color = AppointmentGrey)
+                    Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         ) {
@@ -564,14 +559,14 @@ fun AppointmentTimeField(
                     Icon(
                         imageVector = Icons.Default.AccessTime,
                         contentDescription = "Select time",
-                        tint = AppointmentGrey
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 },
                 shape = RoundedCornerShape(8.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = AppointmentGreen,
-                    unfocusedBorderColor = AppointmentBorder,
-                    errorBorderColor = AppointmentRed
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                    errorBorderColor = MaterialTheme.colorScheme.error
                 )
             )
 
@@ -589,7 +584,7 @@ fun AppointmentTimeField(
 
             Text(
                 text = "Time is required.",
-                color = AppointmentRed,
+                color = MaterialTheme.colorScheme.error,
                 fontSize = 12.sp
             )
         }
@@ -654,7 +649,7 @@ fun AppointmentReminderField(
                     )
                     .border(
                         width = 1.dp,
-                        color = AppointmentBorder,
+                        color = MaterialTheme.colorScheme.outline,
                         shape = RoundedCornerShape(8.dp)
                     )
                     .clickable {
@@ -666,7 +661,7 @@ fun AppointmentReminderField(
                 Icon(
                     imageVector = Icons.Default.NotificationsNone,
                     contentDescription = null,
-                    tint = AppointmentGreen
+                    tint = MaterialTheme.colorScheme.primary
                 )
 
                 Spacer(modifier = Modifier.width(10.dp))
@@ -674,13 +669,13 @@ fun AppointmentReminderField(
                 Text(
                     text = selectedLabel,
                     modifier = Modifier.weight(1f),
-                    color = AppointmentGrey
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 Icon(
                     imageVector = Icons.Default.ExpandMore,
                     contentDescription = "Select reminder",
-                    tint = AppointmentGrey
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
