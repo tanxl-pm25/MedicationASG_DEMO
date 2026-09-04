@@ -47,6 +47,8 @@ fun WaterIntakeScreen(
     val uiState by viewModel.uiState.collectAsState()
     var showEditGoalDialog by remember {mutableStateOf(false) }
     val today = getMalaysiaDate()
+    val canEditGoal = uiState.selectedDate == today
+    val isBeforeWaterStarted = viewModel.isSelectedDateBeforeWaterStarted()
     var showDatePicker by remember { mutableStateOf(false) }
 
     val selectedDateText =
@@ -145,7 +147,12 @@ fun WaterIntakeScreen(
         }
 
 
-        if (uiState.dailyGoal == 0) {
+        if (isBeforeWaterStarted) {
+            Spacer(modifier = Modifier.height(70.dp))
+            WaterBeforeStartState()
+            Spacer(modifier = Modifier.weight(1f))
+
+        } else if (uiState.dailyGoal == 0)  {
 
             Spacer(modifier = Modifier.height(70.dp))
 
@@ -315,7 +322,9 @@ fun WaterIntakeScreen(
                             color = Color.White,
                             shape = RoundedCornerShape(16.dp)
                         )
-                        .clickable {
+                        .clickable(
+                            enabled = canEditGoal
+                        ) {
                             showEditGoalDialog = true
                         },
                     contentAlignment = Alignment.Center
@@ -323,7 +332,9 @@ fun WaterIntakeScreen(
 
                     Text(
                         text =
-                            if (uiState.dailyGoal == 0) {
+                            if (!canEditGoal) {
+                                "Today only"
+                            } else if (uiState.dailyGoal == 0) {
                                 "Set Goal"
                             } else {
                                 "Edit Goal"
@@ -353,11 +364,35 @@ fun WaterIntakeScreen(
         }
     }
     if (showDatePicker) {
+        val selectableDates = remember {
+            object : SelectableDates {
+                override fun isSelectableDate(
+                    utcTimeMillis: Long
+                ): Boolean {
+                    val date = Instant
+                        .ofEpochMilli(utcTimeMillis)
+                        .atZone(ZoneOffset.UTC)
+                        .toLocalDate()
+
+                    return !date.isAfter(
+                        getMalaysiaDate()
+                    )
+                }
+
+                override fun isSelectableYear(
+                    year: Int
+                ): Boolean {
+                    return year <= getMalaysiaDate().year
+                }
+            }
+        }
+
         val pickerState = rememberDatePickerState(
             initialSelectedDateMillis = uiState.selectedDate
                 .atStartOfDay(ZoneOffset.UTC)
                 .toInstant()
-                .toEpochMilli()
+                .toEpochMilli(),
+            selectableDates = selectableDates
         )
 
         DatePickerDialog(
@@ -656,6 +691,53 @@ fun WaterProgressCircle(
                 color = Color(0xFF30456D)
             )
         }
+    }
+}
+
+@Composable
+fun WaterBeforeStartState() {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment =
+            Alignment.CenterHorizontally
+    ) {
+        Box(
+            modifier = Modifier
+                .size(64.dp)
+                .background(
+                    color = Color(0xFFEAF4FC),
+                    shape = CircleShape
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector =
+                    Icons.Outlined.CalendarMonth,
+                contentDescription = null,
+                tint = Color(0xFF168FF0),
+                modifier = Modifier.size(30.dp)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = "No water record",
+            fontSize = 17.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = Color(0xFF132957)
+        )
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        Text(
+            text =
+                "This date is before you started " +
+                        "tracking water intake.",
+            fontSize = 14.sp,
+            color = Color(0xFF667085),
+            textAlign = TextAlign.Center
+        )
     }
 }
 

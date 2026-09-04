@@ -16,6 +16,6 @@ data class EditAppointmentUiState(
     val dateError: Boolean = false,
     val timeError: Boolean = false,
     val locationError: Boolean = false,
-
+    val scheduleError: String? = null,
     val isLoading: Boolean = true
 )

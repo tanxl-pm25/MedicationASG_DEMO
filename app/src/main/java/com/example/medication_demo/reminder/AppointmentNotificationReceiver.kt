@@ -40,7 +40,6 @@ class AppointmentNotificationReceiver : BroadcastReceiver() {
 
                 if (
                     appointment != null &&
-                    appointment.isGoing &&
                     appointment.status ==
                     com.example.medication_demo.model
                         .AppointmentStatus.UPCOMING
@@ -78,6 +77,11 @@ class AppointmentNotificationReceiver : BroadcastReceiver() {
                     appointmentId
                 )
 
+                AppointmentReminderScheduler.cancel(
+                    context = context,
+                    appointmentId = appointmentId
+                )
+
                 AppointmentReminder.dismiss(
                     context,
                     appointmentId
@@ -89,6 +93,11 @@ class AppointmentNotificationReceiver : BroadcastReceiver() {
                     appointmentId
                 )
 
+                AppointmentReminderScheduler.cancel(
+                    context = context,
+                    appointmentId = appointmentId
+                )
+
                 AppointmentReminder.dismiss(
                     context,
                     appointmentId
@@ -98,6 +107,11 @@ class AppointmentNotificationReceiver : BroadcastReceiver() {
             ACTION_MARK_MISSED -> {
                 AppointmentRepository.markAsMissed(
                     appointmentId
+                )
+
+                AppointmentReminderScheduler.cancel(
+                    context = context,
+                    appointmentId = appointmentId
                 )
 
                 AppointmentReminder.dismiss(

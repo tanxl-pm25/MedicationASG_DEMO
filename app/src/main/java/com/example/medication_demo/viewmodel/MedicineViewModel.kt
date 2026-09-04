@@ -197,20 +197,18 @@ class MedicineViewModel(
         doseIndex: Int,
         originalTime: String,
         newTime: String
-    ) {
+    ) : Boolean{
         val today =
             getMalaysiaDate()
 
         val medicine =
             _medicines.value.find {
                 it.id == medicineId
-            } ?: return
-
+            } ?: return false
         val newLocalTime =
             parseMedicineTime(
                 newTime
-            ) ?: return
-
+            ) ?: return false
         val newDateTime =
             today.atTime(
                 newLocalTime
@@ -222,14 +220,44 @@ class MedicineViewModel(
                     getMalaysiaTime()
                 )
 
+        val originalLocalTime =
+            parseMedicineTime(originalTime)
+                ?: return false
+
+        val nextDose = findNextScheduledDose(
+            medicine = medicine,
+            afterDateTime = today.atTime(originalLocalTime)
+        )
+
+        if (
+            nextDose != null &&
+            nextDose.doseDate == today &&
+            !newLocalTime.isBefore(
+                nextDose.scheduledLocalTime
+            )
+        ) {
+            return false
+        }
+
         // Do not schedule to a time that has already passed.
         if (
             !newDateTime.isAfter(
                 nowDateTime
             )
         ) {
-            return
+            return false
         }
+
+        _missedRecords.value =
+            _missedRecords.value.filterNot { record ->
+                record.medicineId == medicineId &&
+                        record.date == today &&
+                        record.doseIndex == doseIndex
+            }
+
+        localStorage.saveMissedRecords(
+            _missedRecords.value
+        )
 
         // Save rescheduled dose for UI / History.
         _rescheduledDoses.value =
@@ -275,6 +303,7 @@ class MedicineViewModel(
             repeatCount =
                 medicine.repeatCount
         )
+        return true
     }
 
     fun markDoseAsTaken(
@@ -1066,6 +1095,8 @@ class MedicineViewModel(
                     getMalaysiaTime()
                 )
 
+
+
         val nextDose =
             findNextScheduledDose(
                 medicine = medicine,
@@ -1525,6 +1556,7 @@ class MedicineViewModel(
         _archivedMedicines.value = emptyList()
         _remainingQuantities.value = emptyMap()
         _takenRecords.value = emptyList()
+        _missedRecords.value = emptyList()
         _rescheduledDoses.value = emptyList()
         _scheduleSnapshots.value = emptyList()
         _lowStockMedicineId.value = null

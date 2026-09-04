@@ -46,6 +46,7 @@ import com.example.medication_demo.medication.MedicineScheduleScreen
 import com.example.medication_demo.reminder.MedicationNotification
 import com.example.medication_demo.reminder.MedicationReminderScreen
 import com.example.medication_demo.reminder.TakenDoseScreen
+import com.example.medication_demo.reminder.MissedDoseScreen
 import com.example.medication_demo.reminder.MedicationRescheduleScreen
 import com.example.medication_demo.viewmodel.RescheduleMedicationViewModel
 import androidx.compose.runtime.mutableStateOf
@@ -90,6 +91,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.unit.dp
+import com.example.medication_demo.reminder.createMedicineNotificationChannel
 import com.example.medication_demo.reminder.createRefillNotificationChannel
 import com.example.medication_demo.viewmodel.MedicationPerformanceViewModel
 import com.example.medication_demo.viewmodel.MissedMedicationViewModel
@@ -205,6 +207,14 @@ fun MedicationApp(
             MedicationNotification.ACTION_OPEN_REMINDER -> {
                 navController.navigate(
                     "medicationReminder/$medicineId/$doseIndex"
+                ) {
+                    launchSingleTop = true
+                }
+            }
+
+            MedicationNotification.ACTION_OPEN_MISSED -> {
+                navController.navigate(
+                    "missedDose/$medicineId/$doseIndex"
                 ) {
                     launchSingleTop = true
                 }
@@ -362,6 +372,15 @@ fun MedicationApp(
                 val userId = SupabaseClientProvider.client.auth.currentUserOrNull()?.id
                 if (userId != null) {
                     medicineVm.switchUser(userId)
+
+                    AppointmentRepository.switchUser(
+                        context = context.applicationContext,
+                        userId = userId
+                    )
+                    waterVm.switchUser(
+                        context = context.applicationContext,
+                        userId = userId
+                    )
                 }
                 if (latestDeepLinkType.value == "recovery") {
                     // 是密码重设连结跳回来的,导去设新密码的页面
@@ -844,23 +863,33 @@ fun MedicationApp(
                                 }
 
                                 else -> {
-                                    medicineVm.rescheduleDose(
-                                        medicineId = medicine.id,
-                                        doseIndex = doseIndex,
-                                        originalTime = originalTime,
-                                        newTime = newTime
-                                    )
+                                    val rescheduled =
+                                        medicineVm.rescheduleDose(
+                                            medicineId = medicine.id,
+                                            doseIndex = doseIndex,
+                                            originalTime = originalTime,
+                                            newTime = newTime
+                                        )
 
-                                    rescheduleVm.reset()
+                                    if (rescheduled) {
+                                        rescheduleVm.reset()
 
-                                    navController.navigate("home") {
-                                        popUpTo("home") {
-                                            inclusive = false
+                                        navController.navigate("home") {
+                                            popUpTo("home") {
+                                                inclusive = false
+                                            }
+                                            launchSingleTop = true
                                         }
-                                        launchSingleTop = true
+                                    } else {
+                                        scope.launch {
+                                            snackbarHostState.showSnackbar(
+                                                "Choose a future time before the next dose."
+                                            )
+                                        }
                                     }
                                 }
                             }
+
                         },
 
                         onCancelClick = {
@@ -1154,19 +1183,20 @@ fun MedicationApp(
 
             composable("medicationPerformance") {
 
-                val medicationPerformanceVm:
-                        MedicationPerformanceViewModel =
-                    viewModel()
+                val medicationPerformanceVm: MedicationPerformanceViewModel = viewModel()
 
                 LaunchedEffect(
                     takenRecords,
                     missedRecords,
-                    medicines
+                    medicines,
+                    archivedMedicines
                 ) {
                     medicationPerformanceVm.updateRecords(
                         taken = takenRecords,
                         missed = missedRecords,
-                        medicineList = medicines
+                        medicines + archivedMedicines.map { archive ->
+                            archive.medicine
+                        }
                     )
                 }
 
@@ -1183,10 +1213,17 @@ fun MedicationApp(
                 val missedMedicationVm: MissedMedicationViewModel =
                     viewModel()
 
-                LaunchedEffect(missedRecords, medicines) {
+                LaunchedEffect(
+                    missedRecords,
+                    medicines,
+                    archivedMedicines
+                ) {
                     missedMedicationVm.updateRecords(
                         missed = missedRecords,
-                        medicineList = medicines
+                        medicineList =
+                            medicines + archivedMedicines.map { archive ->
+                                archive.medicine
+                            }
                     )
                 }
 
@@ -1473,7 +1510,6 @@ fun MedicationApp(
                         it.id == medicineId
                     }
 
-                val archivedMedicines by medicineVm.archivedMedicines.collectAsStateWithLifecycle()
                 val archivedMedicine =
                     archivedMedicines.find {
                         it.medicine.id == medicineId
@@ -1523,17 +1559,7 @@ fun MedicationApp(
     }
 }
 
-@Composable
-fun MissedDoseScreen(
-    medicineName: String,
-    dosage: String,
-    scheduledTime: String,
-    onBackClick: () -> Boolean,
-    onRescheduleClick: () -> Unit,
-    onSkipClick: () -> Unit
-) {
-    TODO("Not yet implemented")
-}
+
 
 private fun navigateBottomBar(
     index: Int,

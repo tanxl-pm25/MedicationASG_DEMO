@@ -13,7 +13,8 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.example.medication_demo.MainActivity
 import com.example.medication_demo.R
-
+import android.media.AudioAttributes
+import android.net.Uri
 object MedicationNotification {
 
     private const val CHANNEL_ID = "medication_reminders"
@@ -27,6 +28,7 @@ object MedicationNotification {
     const val ACTION_TAKEN = "medication_action_taken"
     const val ACTION_RESCHEDULE = "medication_action_reschedule"
     const val ACTION_OPEN_REMINDER = "medication_action_open_reminder"
+    const val ACTION_OPEN_MISSED = "medication_action_open_missed"
 
     fun show(
         context: Context,
@@ -120,6 +122,76 @@ object MedicationNotification {
             )
     }
 
+    fun showMissed(
+        context: Context,
+        medicineId: Int,
+        doseIndex: Int,
+        originalTime: String,
+        medicineName: String,
+        dosage: String
+    ) {
+        createChannel(context)
+
+        val openMissedPendingIntent = actionIntent(
+            context = context,
+            medicineId = medicineId,
+            doseIndex = doseIndex,
+            originalTime = originalTime,
+            action = ACTION_OPEN_MISSED
+        )
+
+        val notification =
+            NotificationCompat.Builder(
+                context,
+                CHANNEL_ID
+            )
+                .setSmallIcon(
+                    R.drawable.ic_launcher_foreground
+                )
+                .setContentTitle("Missed dose")
+                .setContentText(
+                    "$medicineName • $dosage"
+                )
+                .setStyle(
+                    NotificationCompat.BigTextStyle()
+                        .bigText(
+                            "You missed your $originalTime dose of " +
+                                    medicineName +
+                                    ". Tap to reschedule."
+                        )
+                )
+                .setPriority(
+                    NotificationCompat.PRIORITY_HIGH
+                )
+                .setCategory(
+                    NotificationCompat.CATEGORY_REMINDER
+                )
+                .setAutoCancel(true)
+                .setContentIntent(
+                    openMissedPendingIntent
+                )
+                .build()
+        if (
+            Build.VERSION.SDK_INT >=
+            Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+
+        NotificationManagerCompat
+            .from(context)
+            .notify(
+                NOTIFICATION_ID_BASE +
+                        medicineId * 10 +
+                        doseIndex,
+                notification
+            )
+    }
+
     private fun actionIntent(
         context: Context,
         medicineId: Int,
@@ -163,12 +235,31 @@ object MedicationNotification {
             Build.VERSION.SDK_INT >=
             Build.VERSION_CODES.O
         ) {
+            val soundUri = Uri.parse(
+                "android.resource://" +
+                        context.packageName +
+                        "/" +
+                        R.raw.medication_reminder
+            )
+
+            val audioAttributes =
+                AudioAttributes.Builder()
+                    .setUsage(
+                        AudioAttributes.USAGE_NOTIFICATION
+                    )
+                    .build()
+
             val channel = NotificationChannel(
                 CHANNEL_ID,
                 "Medication Reminders",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 description = "Reminders for scheduled medication"
+                enableVibration(true)
+                setSound(
+                    soundUri,
+                    audioAttributes
+                )
             }
 
             val manager =

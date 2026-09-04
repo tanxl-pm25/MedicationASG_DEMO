@@ -1,5 +1,10 @@
 package com.example.medication_demo.viewmodel
 
+import com.example.medication_demo.utils.getMalaysiaDate
+import com.example.medication_demo.utils.getMalaysiaTime
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 import androidx.lifecycle.ViewModel
 import com.example.medication_demo.model.AppointmentUi
 import com.example.medication_demo.model.RescheduleAppointmentUiState
@@ -60,7 +65,7 @@ class RescheduleAppointmentViewModel : ViewModel() {
         )
     }
 
-    fun rescheduleAppointment(): Boolean {
+    fun rescheduleAppointment(): AppointmentUi? {
         val state = _uiState.value
 
         val dateError = state.newDate.isBlank()
@@ -71,13 +76,42 @@ class RescheduleAppointmentViewModel : ViewModel() {
                 dateError = dateError,
                 timeError = timeError
             )
-            return false
+            return null
+        }
+
+        val formatter = DateTimeFormatter.ofPattern(
+            "dd MMM yyyy hh:mm a",
+            Locale.ENGLISH
+        )
+
+        val newAppointmentDateTime = try {
+            LocalDateTime.parse(
+                "${state.newDate} ${state.newTime}",
+                formatter
+            )
+        } catch (_: Exception) {
+            _uiState.value = state.copy(
+                scheduleError =
+                    "Please select a valid date and time."
+            )
+            return null
+        }
+
+        val nowDateTime = getMalaysiaDate()
+            .atTime(getMalaysiaTime())
+
+        if (!newAppointmentDateTime.isAfter(nowDateTime)) {
+            _uiState.value = state.copy(
+                scheduleError =
+                    "Please choose a future date and time."
+            )
+            return null
         }
 
         val oldAppointment =
             AppointmentRepository.getAppointmentById(
                 state.appointmentId
-            ) ?: return false
+            ) ?: return null
 
         val isSameSchedule =
             state.newDate == oldAppointment.date &&
@@ -88,29 +122,27 @@ class RescheduleAppointmentViewModel : ViewModel() {
                 scheduleError =
                     "Please choose a different date or time."
             )
-            return false
+            return null
         }
 
         AppointmentRepository.markAsRescheduled(
             appointmentId = oldAppointment.id
         )
 
-        AppointmentRepository.addAppointment(
-            AppointmentUi(
-                id = AppointmentRepository.getNextId(),
-                doctor = oldAppointment.doctor,
-                appointmentName =
-                    oldAppointment.appointmentName,
-                date = state.newDate,
-                time = state.newTime,
-                location = oldAppointment.location,
-                purpose = oldAppointment.purpose,
-                notes = oldAppointment.notes,
-                reminderMinutesBefore =
-                    state.reminderMinutesBefore
-            )
+        val newAppointment = AppointmentUi(
+            id = AppointmentRepository.getNextId(),
+            doctor = oldAppointment.doctor,
+            appointmentName = oldAppointment.appointmentName,
+            date = state.newDate,
+            time = state.newTime,
+            location = oldAppointment.location,
+            purpose = oldAppointment.purpose,
+            notes = oldAppointment.notes,
+            reminderMinutesBefore = state.reminderMinutesBefore
         )
 
-        return true
+        AppointmentRepository.addAppointment(newAppointment)
+
+        return newAppointment
     }
 }

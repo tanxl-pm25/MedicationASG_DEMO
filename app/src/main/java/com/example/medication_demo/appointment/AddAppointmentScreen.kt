@@ -1,5 +1,7 @@
 package com.example.medication_demo.appointment
 
+import androidx.compose.material3.SelectableDates
+import com.example.medication_demo.utils.getMalaysiaDate
 import androidx.compose.ui.platform.LocalContext
 import com.example.medication_demo.reminder.AppointmentReminderScheduler
 import androidx.compose.material3.DatePicker
@@ -155,6 +157,16 @@ fun AddAppointmentScreen(
                 isError = uiState.timeError,
                 modifier = Modifier.fillMaxWidth()
             )
+
+            uiState.scheduleError?.let { message ->
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Text(
+                    text = message,
+                    color = AppointmentRed,
+                    fontSize = 12.sp
+                )
+            }
 
             Spacer(modifier = Modifier.height(18.dp))
 
@@ -419,6 +431,29 @@ fun AppointmentDateField(
     }
 
     if (showDatePicker) {
+        val today = getMalaysiaDate()
+
+        val selectableDates = remember(today) {
+            object : SelectableDates {
+                override fun isSelectableDate(
+                    utcTimeMillis: Long
+                ): Boolean {
+                    val date = Instant
+                        .ofEpochMilli(utcTimeMillis)
+                        .atZone(ZoneOffset.UTC)
+                        .toLocalDate()
+
+                    return !date.isBefore(today)
+                }
+
+                override fun isSelectableYear(
+                    year: Int
+                ): Boolean {
+                    return year >= today.year
+                }
+            }
+        }
+
         val formatter = DateTimeFormatter.ofPattern(
             "dd MMM yyyy",
             Locale.ENGLISH
@@ -427,14 +462,15 @@ fun AppointmentDateField(
         val parsedDate = try {
             LocalDate.parse(value, formatter)
         } catch (_: Exception) {
-            LocalDate.now()
+            today
         }
 
         val pickerState = rememberDatePickerState(
             initialSelectedDateMillis = parsedDate
                 .atStartOfDay(ZoneOffset.UTC)
                 .toInstant()
-                .toEpochMilli()
+                .toEpochMilli(),
+            selectableDates = selectableDates
         )
 
         DatePickerDialog(

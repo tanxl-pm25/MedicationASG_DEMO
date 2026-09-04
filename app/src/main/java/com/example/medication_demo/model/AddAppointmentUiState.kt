@@ -14,5 +14,6 @@ data class AddAppointmentUiState(
     val appointmentNameError: Boolean = false,
     val dateError: Boolean = false,
     val timeError: Boolean = false,
-    val locationError: Boolean = false
+    val locationError: Boolean = false,
+    val scheduleError: String? = null
 )

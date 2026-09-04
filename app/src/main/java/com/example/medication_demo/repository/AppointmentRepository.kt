@@ -1,5 +1,6 @@
 package com.example.medication_demo.repository
 
+import com.example.medication_demo.storage.CurrentUserStorage
 import android.content.Context
 import com.example.medication_demo.model.AppointmentStatus
 import com.example.medication_demo.model.AppointmentUi
@@ -18,8 +19,8 @@ object AppointmentRepository {
         ignoreUnknownKeys = true
     }
 
-    private lateinit var preferences:
-            android.content.SharedPreferences
+    private lateinit var preferences: android.content.SharedPreferences
+    private var currentUserId: String? = null
 
     private val _appointments =
         MutableStateFlow<List<AppointmentUi>>(emptyList())
@@ -28,12 +29,30 @@ object AppointmentRepository {
         _appointments.asStateFlow()
 
     fun initialize(context: Context) {
-        if (::preferences.isInitialized) {
+        val userId = CurrentUserStorage.getUserId(context)
+            ?: "guest"
+
+        switchUser(
+            context = context,
+            userId = userId
+        )
+    }
+
+    fun switchUser(
+        context: Context,
+        userId: String
+    ) {
+        if (
+            ::preferences.isInitialized &&
+            currentUserId == userId
+        ) {
             return
         }
 
+        currentUserId = userId
+
         preferences = context.getSharedPreferences(
-            PREFERENCES_NAME,
+            "${PREFERENCES_NAME}_$userId",
             Context.MODE_PRIVATE
         )
 

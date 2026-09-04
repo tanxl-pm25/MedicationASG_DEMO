@@ -1,5 +1,10 @@
 package com.example.medication_demo.viewmodel
 
+import com.example.medication_demo.utils.getMalaysiaDate
+import com.example.medication_demo.utils.getMalaysiaTime
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 import androidx.lifecycle.ViewModel
 import com.example.medication_demo.model.AppointmentUi
 import com.example.medication_demo.model.EditAppointmentUiState
@@ -57,14 +62,16 @@ class EditAppointmentViewModel : ViewModel() {
     fun updateDate(value: String) {
         _uiState.value = _uiState.value.copy(
             date = value,
-            dateError = false
+            dateError = false,
+            scheduleError = null
         )
     }
 
     fun updateTime(value: String) {
         _uiState.value = _uiState.value.copy(
             time = value,
-            timeError = false
+            timeError = false,
+            scheduleError = null
         )
     }
 
@@ -116,6 +123,36 @@ class EditAppointmentViewModel : ViewModel() {
                 dateError = dateError,
                 timeError = timeError,
                 locationError = locationError
+            )
+            return false
+        }
+
+        val formatter = DateTimeFormatter.ofPattern(
+            "dd MMM yyyy hh:mm a",
+            Locale.ENGLISH
+        )
+
+        val appointmentDateTime = try {
+            LocalDateTime.parse(
+                "${state.date} ${state.time}",
+                formatter
+            )
+        } catch (_: Exception) {
+            _uiState.value = state.copy(
+                scheduleError =
+                    "Please select a valid date and time."
+            )
+            return false
+        }
+
+        if (
+            !appointmentDateTime.isAfter(
+                getMalaysiaDate().atTime(getMalaysiaTime())
+            )
+        ) {
+            _uiState.value = state.copy(
+                scheduleError =
+                    "Please choose a future date and time."
             )
             return false
         }

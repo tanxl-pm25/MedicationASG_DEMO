@@ -1,5 +1,7 @@
 package com.example.medication_demo.appointment
 
+import androidx.compose.ui.platform.LocalContext
+import com.example.medication_demo.reminder.AppointmentReminderScheduler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -12,9 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -51,6 +51,7 @@ fun RescheduleAppointmentScreen(
     viewModel: RescheduleAppointmentViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     LaunchedEffect(appointmentId) {
         viewModel.loadAppointment(appointmentId)
@@ -213,9 +214,20 @@ fun RescheduleAppointmentScreen(
 
                 Button(
                     onClick = {
-                        if (
+                        val newAppointment =
                             viewModel.rescheduleAppointment()
-                        ) {
+
+                        if (newAppointment != null) {
+                            AppointmentReminderScheduler.cancel(
+                                context = context,
+                                appointmentId = appointmentId
+                            )
+
+                            AppointmentReminderScheduler.schedule(
+                                context = context,
+                                appointment = newAppointment
+                            )
+
                             onRescheduleSuccess()
                         }
                     },

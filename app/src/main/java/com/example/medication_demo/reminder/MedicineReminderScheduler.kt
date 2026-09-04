@@ -58,8 +58,8 @@ fun scheduleMedicineRepeat(
 ) {
     if (
         repeatIntervalMinutes <= 0 ||
-        repeatCount <= 0 ||
-        repeatNumber > repeatCount
+        repeatCount < 0 ||
+        repeatNumber > repeatCount + 1
     ) {
         return
     }

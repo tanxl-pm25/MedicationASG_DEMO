@@ -1,5 +1,6 @@
 package com.example.medication_demo.appointment
 
+import com.example.medication_demo.model.AppointmentStatus
 import androidx.compose.ui.platform.LocalContext
 import com.example.medication_demo.reminder.AppointmentReminderScheduler
 import com.example.medication_demo.repository.AppointmentRepository
@@ -133,6 +134,16 @@ fun EditAppointmentScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
+            uiState.scheduleError?.let { message ->
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Text(
+                    text = message,
+                    color = AppointmentRed,
+                    fontSize = 12.sp
+                )
+            }
+
             Spacer(modifier = Modifier.height(18.dp))
 
             AppointmentReminderField(
@@ -205,10 +216,15 @@ fun EditAppointmentScreen(
                                 appointmentId = appointmentId
                             )
 
-                            AppointmentReminderScheduler.schedule(
-                                context = context,
-                                appointment = updatedAppointment
-                            )
+                            if (
+                                updatedAppointment.status ==
+                                AppointmentStatus.UPCOMING
+                            ) {
+                                AppointmentReminderScheduler.schedule(
+                                    context = context,
+                                    appointment = updatedAppointment
+                                )
+                            }
                         }
                         onSaveSuccess()
                     }

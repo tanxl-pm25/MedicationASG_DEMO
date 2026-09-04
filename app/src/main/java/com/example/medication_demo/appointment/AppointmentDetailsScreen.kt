@@ -1,5 +1,7 @@
 package com.example.medication_demo.appointment
 
+import androidx.compose.ui.platform.LocalContext
+import com.example.medication_demo.reminder.AppointmentReminderScheduler
 import androidx.compose.material3.AlertDialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.Image
@@ -81,6 +83,7 @@ fun AppointmentDetailsScreen(
     )
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     var showDeleteConfirmation by remember { mutableStateOf(false) }
 
 
@@ -403,7 +406,13 @@ fun AppointmentDetailsScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
+                        AppointmentReminderScheduler.cancel(
+                            context = context,
+                            appointmentId = appointmentId
+                        )
+
                         viewModel.deleteAppointment()
+
                         showDeleteConfirmation = false
                         onDeleteSuccess()
                     }

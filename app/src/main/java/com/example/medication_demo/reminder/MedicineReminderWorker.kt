@@ -1,5 +1,6 @@
 package com.example.medication_demo.reminder
 
+import com.example.medication_demo.model.MedicationMissedRecord
 import android.content.Context
 import androidx.work.Worker
 import androidx.work.WorkerParameters
@@ -95,15 +96,80 @@ class MedicineReminderWorker(
             return Result.success()
         }
 
-        showMedicineNotification(
+        val medicine =
+            localStorage.loadMedicines()
+                .firstOrNull {
+                    it.id == medicineId
+                }
+                ?: return Result.success()
+
+        MedicationNotification.show(
             context = applicationContext,
             medicineId = medicineId,
+            doseIndex = doseIndex,
+            originalTime = scheduledTime,
             medicineName = medicineName,
-            scheduledTime = scheduledTime,
-            repeatNumber = repeatNumber
+            dosage =
+                "${medicine.dosageAmount} " +
+                        medicine.dosageType
         )
 
-        if (repeatNumber < repeatCount && repeatIntervalMinutes > 0) {
+        if (repeatNumber > repeatCount) {
+            val missedRecords =
+                localStorage.loadMissedRecords()
+
+            val alreadyMissed =
+                missedRecords.any {
+                    it.medicineId == medicineId &&
+                            it.date == doseDate &&
+                            it.doseIndex == doseIndex
+                }
+
+            if (!alreadyMissed) {
+                localStorage.saveMissedRecords(
+                    missedRecords +
+                            MedicationMissedRecord(
+                                medicineId = medicineId,
+                                date = doseDate,
+                                doseIndex = doseIndex,
+                                reminderTime = scheduledTime,
+                                dosageAmount =
+                                    medicine.dosageAmount,
+                                dosageType =
+                                    medicine.dosageType
+                            )
+                )
+            }
+
+            MedicationNotification.showMissed(
+                context = applicationContext,
+                medicineId = medicineId,
+                doseIndex = doseIndex,
+                originalTime = scheduledTime,
+                medicineName = medicineName,
+                dosage =
+                    "${medicine.dosageAmount} " +
+                            medicine.dosageType
+            )
+
+            return Result.success()
+        }
+
+        MedicationNotification.show(
+            context = applicationContext,
+            medicineId = medicineId,
+            doseIndex = doseIndex,
+            originalTime = scheduledTime,
+            medicineName = medicineName,
+            dosage =
+                "${medicine.dosageAmount} " +
+                        medicine.dosageType
+        )
+
+        if (
+            repeatNumber <= repeatCount &&
+            repeatIntervalMinutes > 0
+        ) {
             scheduleMedicineRepeat(
                 context = applicationContext,
                 userId = userId,
@@ -112,7 +178,12 @@ class MedicineReminderWorker(
                 scheduledTime = scheduledTime,
                 doseIndex = doseIndex,
                 doseDate = doseDate,
-                repeatIntervalMinutes = repeatIntervalMinutes,
+                repeatIntervalMinutes =
+                    if (repeatNumber == repeatCount) {
+                        1
+                    } else {
+                        repeatIntervalMinutes
+                    },
                 repeatCount = repeatCount,
                 repeatNumber = repeatNumber + 1
             )
