@@ -104,6 +104,8 @@ import com.yalantis.ucrop.UCrop
 import java.io.File
 import android.app.Activity
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalConfiguration
+import android.content.res.Configuration
 
 private val EditGreen = Color(0xFF148A32)
 private val EditRed = Color(0xFFFF3B30)
@@ -217,6 +219,8 @@ fun AddMedicineScreen(
                 vm.onRefillReminderEnabledChange(true)
             }
         }
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
     var showImageOptions by remember { mutableStateOf(false) }
     var showPresetImages by remember { mutableStateOf(false) }
     var showAsNeededGuide by remember { mutableStateOf(false) }
@@ -262,7 +266,11 @@ fun AddMedicineScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 18.dp)
+                .padding(
+                    horizontal =
+                        if (isLandscape) 32.dp
+                        else 18.dp
+                )
         ) {
             Spacer(modifier = Modifier.height(10.dp))
 

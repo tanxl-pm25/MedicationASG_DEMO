@@ -1,8 +1,29 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     kotlin("plugin.serialization") version "2.2.10"
 }
+
+val localProperties = Properties()
+
+val localPropertiesFile =
+    rootProject.file("local.properties")
+
+if (localPropertiesFile.exists()) {
+    localPropertiesFile
+        .inputStream()
+        .use {
+            localProperties.load(it)
+        }
+}
+
+val newsDataApiKey =
+    localProperties.getProperty(
+        "NEWSDATA_API_KEY",
+        ""
+    )
 
 android {
     namespace = "com.example.medication_demo"
@@ -20,6 +41,12 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField(
+            "String",
+            "NEWSDATA_API_KEY",
+            "\"$newsDataApiKey\""
+        )
     }
 
     buildTypes {
@@ -35,6 +62,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
