@@ -624,13 +624,7 @@ fun MedicationApp(
                             email = currentUserEmail,
                             code = code,
                             onSuccess = {
-                                userVm.logoutAfterVerification(
-                                    onComplete = {
-                                        navController.navigate("login") {
-                                            popUpTo(0) { inclusive = true }
-                                        }
-                                    }
-                                )
+
                             }
 
                         )
@@ -862,7 +856,7 @@ fun MedicationApp(
             // Home Screen
             composable("home") {
                 HomeScreen(
-                    username = "Sarah",
+                    username = currentUserName.ifBlank { "User" },
                     nextMedicineName = nextMedicineDisplayName,
                     nextMedicineDose = nextDose?.dosage,
                     nextMedicineTime = nextDose?.reminderTime,

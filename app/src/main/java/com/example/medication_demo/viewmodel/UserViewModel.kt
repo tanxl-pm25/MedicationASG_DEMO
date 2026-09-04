@@ -3,7 +3,7 @@ package com.example.medication_demo.viewmodel
 import android.content.Context
 import android.net.Uri
 import android.util.Log
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.medication_demo.data.SupabaseClientProvider
 import io.github.jan.supabase.auth.OtpType
@@ -19,7 +19,7 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
-class UserViewModel : ViewModel() {
+class UserViewModel(application: android.app.Application) : AndroidViewModel(application) {
 
     private val _userName = MutableStateFlow("")
     val userName: StateFlow<String> = _userName.asStateFlow()
@@ -48,6 +48,7 @@ class UserViewModel : ViewModel() {
     private val _userAvatarUrl = MutableStateFlow<String?>(null)
     val userAvatarUrl: StateFlow<String?> = _userAvatarUrl.asStateFlow()
 
+    init { _isNewUser.value = loadIsNewUserFlag() }
 
     // =========================
     // Login
@@ -83,39 +84,34 @@ class UserViewModel : ViewModel() {
     }
 
     fun loadUserProfile() {
-
         val user = SupabaseClientProvider.client.auth.currentUserOrNull()
-
         val metadata = user?.userMetadata
 
-        _userName.value =
-            metadata?.get("full_name")
-                ?.toString()
-                ?.trim('"')
-                ?: ""
+        _userEmail.value = user?.email ?: ""
 
-        _userEmail.value =
-            user?.email
-                ?: ""
+        val customName = metadata?.get("custom_name")?.toString()?.trim('"')
+        val fullName = metadata?.get("full_name")?.toString()?.trim('"')
+        _userName.value = customName?.takeIf { it.isNotBlank() } ?: fullName ?: ""
 
-        _userGender.value =
-            metadata?.get("gender")
-                ?.toString()
-                ?.trim('"')
-                ?: ""
+        val customAvatarUrl = metadata?.get("custom_avatar_url")?.toString()?.trim('"')
+        val avatarUrl = metadata?.get("avatar_url")?.toString()?.trim('"')
+        _userAvatarUrl.value = customAvatarUrl?.takeIf { it.isNotBlank() } ?: avatarUrl
 
-        _userAge.value =
-            metadata?.get("age")
-                ?.toString()
-                ?.trim('"')
-                ?: ""
-
-        _userAvatarUrl.value =
-            metadata?.get("avatar_url")
-                ?.toString()
-                ?.trim('"')
+        _userGender.value = metadata?.get("gender")?.toString()?.trim('"') ?: ""
+        _userAge.value = metadata?.get("age")?.toString()?.trim('"') ?: ""
     }
 
+    private fun saveIsNewUserFlag(value: Boolean) {
+        val prefs = getApplication<android.app.Application>()
+            .getSharedPreferences("user_prefs", android.content.Context.MODE_PRIVATE)
+        prefs.edit().putBoolean("is_new_user", value).apply()
+    }
+
+    private fun loadIsNewUserFlag(): Boolean {
+        val prefs = getApplication<android.app.Application>()
+            .getSharedPreferences("user_prefs", android.content.Context.MODE_PRIVATE)
+        return prefs.getBoolean("is_new_user", false)
+    }
 
     // =========================
     // Sign Up
@@ -135,12 +131,12 @@ class UserViewModel : ViewModel() {
 
                 val result =
                     SupabaseClientProvider.client.auth.signUpWith(Email) {
-
                         this.email = email
                         this.password = password
-
                         data = buildJsonObject {
                             put("full_name", name)
+                            put("custom_name", name)
+
                         }
                     }
 
@@ -154,7 +150,7 @@ class UserViewModel : ViewModel() {
                     _userName.value = name
                     _userEmail.value = email
                     _isNewUser.value = true
-
+                    saveIsNewUserFlag(true)
                     onSuccess()
                 }
 
@@ -198,25 +194,14 @@ class UserViewModel : ViewModel() {
     // =========================
 
     fun loginWithGoogle() {
-
         viewModelScope.launch {
-
             _errorMessage.value = null
-
             try {
-
                 SupabaseClientProvider.client.auth.signInWith(Google)
-
+                loadUserProfile()
             } catch (e: Exception) {
-
-                Log.e(
-                    "GoogleLogin",
-                    "google login error: ${e.message}",
-                    e
-                )
-
-                _errorMessage.value =
-                    "Google sign-in failed. Please try again."
+                Log.e("GoogleLogin", "google login error: ${e.message}", e)
+                _errorMessage.value = "Google sign-in failed. Please try again."
             }
         }
     }
@@ -470,6 +455,8 @@ class UserViewModel : ViewModel() {
     fun onAgeSelected(age: Int) {
 
         _userAge.value = age.toString()
+        _isNewUser.value = false
+        saveIsNewUserFlag(false)
 
         viewModelScope.launch {
 
@@ -566,34 +553,18 @@ class UserViewModel : ViewModel() {
 
     fun updateName(
         newName: String,
-        onSuccess: () -> Unit = {}
     ) {
-
         viewModelScope.launch {
-
             try {
-
                 SupabaseClientProvider.client.auth.updateUser {
-
                     data = buildJsonObject {
                         put("full_name", newName)
+                        put("custom_name", newName)
                     }
                 }
-
                 _userName.value = newName
-
-                onSuccess()
-
             } catch (e: Exception) {
-
-                Log.e(
-                    "UpdateName",
-                    "update name error: ${e.message}",
-                    e
-                )
-
-                _errorMessage.value =
-                    "Failed to update name. Please try again."
+                Log.e("UpdateName", "update name error: ${e.message}", e)
             }
         }
     }
@@ -759,11 +730,10 @@ class UserViewModel : ViewModel() {
                         .from("avatars")
                         .publicUrl(fileName)
 
-                // Avatar URL 存进 Auth Metadata
                 SupabaseClientProvider.client.auth.updateUser {
-
                     data = buildJsonObject {
                         put("avatar_url", publicUrl)
+                        put("custom_avatar_url", publicUrl)
                     }
                 }
 
@@ -795,13 +765,9 @@ class UserViewModel : ViewModel() {
     // =========================
 
     fun logout() {
-
         viewModelScope.launch {
-
             try {
-
                 SupabaseClientProvider.client.auth.signOut()
-
             } catch (e: Exception) {
 
                 Log.e(
@@ -818,7 +784,6 @@ class UserViewModel : ViewModel() {
         _userAge.value = ""
         _userAvatarUrl.value = null
         _errorMessage.value = null
-        _isNewUser.value = false
     }
 
     fun logoutAfterVerification(onComplete: () -> Unit = {}) {

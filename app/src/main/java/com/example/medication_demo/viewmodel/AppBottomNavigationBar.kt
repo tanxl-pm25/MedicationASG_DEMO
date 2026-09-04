@@ -65,7 +65,7 @@ fun AppBottomNavigationBar(
         )
 
         NavigationBar(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = MaterialTheme.colorScheme.background
         ) {
 
             items.forEachIndexed { index, item ->
