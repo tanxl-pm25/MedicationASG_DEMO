@@ -91,6 +91,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.unit.dp
+import com.example.medication_demo.medication.NewsScreen
 import com.example.medication_demo.reminder.createMedicineNotificationChannel
 import com.example.medication_demo.reminder.createRefillNotificationChannel
 import com.example.medication_demo.viewmodel.MedicationPerformanceViewModel
@@ -740,6 +741,18 @@ fun MedicationApp(
                             index = index,
                             navController = navController
                         )
+                    },
+                    onNewsClick = {
+                        navController.navigate("news")
+                    }
+                )
+            }
+
+            // Real-time news
+            composable("news") {
+                NewsScreen(
+                    onBackClick = {
+                        navController.popBackStack()
                     }
 
 
@@ -1030,6 +1043,9 @@ fun MedicationApp(
                             index = index,
                             navController = navController
                         )
+                    },
+                    onNewsClick = {
+                        navController.navigate("news")
                     }
                 )
             }

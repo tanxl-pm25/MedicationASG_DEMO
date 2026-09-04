@@ -47,6 +47,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.medication_demo.model.Medicine
 import com.example.medication_demo.viewmodel.MedicineViewModel
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.outlined.Newspaper
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.remember
@@ -67,7 +68,8 @@ fun MedicineListScreen(
     listVm: MedicineListViewModel = viewModel(),
     onAddMedicineClick: () -> Unit = {},
     onMedicineClick: (Int) -> Unit = {},
-    onBottomNavSelected: (Int) -> Unit = {}
+    onBottomNavSelected: (Int) -> Unit = {},
+    onNewsClick: () -> Unit = {}
 ) {
     val medicines by medicineVm.medicines.collectAsStateWithLifecycle()
     val searchText by listVm.searchText.collectAsStateWithLifecycle()
@@ -104,11 +106,9 @@ fun MedicineListScreen(
                 titleStartPadding = 10.dp,
                 rightContent = {
                     MainScreenActionIcon(
-                        icon = Icons.Default.NotificationsNone,
-                        contentDescription = "Notifications",
-                        onClick = {
-                            // Notification page later
-                        }
+                        icon = Icons.Outlined.Newspaper,
+                        contentDescription = "Health News",
+                        onClick = onNewsClick
                     )
                 }
             )

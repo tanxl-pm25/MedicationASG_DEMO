@@ -1,8 +1,29 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     kotlin("plugin.serialization") version "2.2.10"
 }
+
+val localProperties = Properties()
+
+val localPropertiesFile =
+    rootProject.file("local.properties")
+
+if (localPropertiesFile.exists()) {
+    localPropertiesFile
+        .inputStream()
+        .use {
+            localProperties.load(it)
+        }
+}
+
+val newsDataApiKey =
+    localProperties.getProperty(
+        "NEWSDATA_API_KEY",
+        ""
+    )
 
 android {
     namespace = "com.example.medication_demo"
@@ -20,6 +41,12 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField(
+            "String",
+            "NEWSDATA_API_KEY",
+            "\"$newsDataApiKey\""
+        )
     }
 
     buildTypes {
@@ -35,10 +62,15 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
 dependencies {
+    implementation("androidx.transition:transition:1.6.0")
+    implementation("androidx.appcompat:appcompat:1.7.1")
+    implementation("com.github.yalantis:ucrop:2.2.11-native")
+    implementation("io.github.jan-tennert.supabase:storage-kt")
     implementation("androidx.credentials:credentials:1.3.0")
     implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
     implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
