@@ -3,6 +3,7 @@ package com.example.medication_demo.reminder
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import com.example.medication_demo.storage.CurrentUserStorage
 import com.example.medication_demo.storage.MedicineLocalStorage
 import java.time.LocalDate
 
@@ -17,6 +18,14 @@ class MedicineRepeatReceiver : BroadcastReceiver() {
             intent.getStringExtra("userId")
                 ?: return
 
+        val currentUserId =
+            CurrentUserStorage.getUserId(
+                context
+            )
+
+        if (currentUserId != userId) {
+            return
+        }
         val medicineId =
             intent.getIntExtra(
                 "medicineId",

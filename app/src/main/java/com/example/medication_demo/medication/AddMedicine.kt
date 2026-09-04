@@ -268,8 +268,11 @@ fun AddMedicineScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(
                     horizontal =
-                        if (isLandscape) 32.dp
-                        else 18.dp
+                        if (isLandscape) {
+                            32.dp
+                        } else {
+                            18.dp
+                        }
                 )
         ) {
             Spacer(modifier = Modifier.height(10.dp))

@@ -3,6 +3,7 @@ package com.example.medication_demo.reminder
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import com.example.medication_demo.storage.CurrentUserStorage
 import java.time.LocalDate
 import com.example.medication_demo.storage.MedicineLocalStorage
 import com.example.medication_demo.utils.parseMedicineTime
@@ -18,6 +19,14 @@ class MedicineAlarmReceiver : BroadcastReceiver() {
                 "userId"
             ) ?: return
 
+        val currentUserId =
+            CurrentUserStorage.getUserId(
+                context
+            )
+
+        if (currentUserId != userId) {
+            return
+        }
         val medicineId =
             intent.getIntExtra(
                 "medicineId",
@@ -79,24 +88,18 @@ class MedicineAlarmReceiver : BroadcastReceiver() {
                 return
             }
 
-        android.util.Log.d(
-            "MedicineAlarm",
-            "Received: medicineId=$medicineId, " +
-                    "time=$doseDate $scheduledTime"
+        // Original notification
+        showMedicineNotification(
+            context = context,
+            medicineId = medicineId,
+            medicineName = medicineName,
+            scheduledTime = scheduledTime
         )
-
         val localStorage =
             MedicineLocalStorage(
                 context = context,
                 userId = userId
             )
-
-        val alreadyTaken =
-            localStorage.loadTakenRecords().any {
-                it.medicineId == medicineId &&
-                        it.date == doseDate &&
-                        it.doseIndex == doseIndex
-            }
 
         val medicine =
             localStorage
@@ -106,19 +109,6 @@ class MedicineAlarmReceiver : BroadcastReceiver() {
                 }
 
         if (medicine != null) {
-            // Original Notification?
-            if (!alreadyTaken) {
-                MedicationNotification.show(
-                    context = context,
-                    medicineId = medicineId,
-                    doseIndex = doseIndex,
-                    originalTime = scheduledTime,
-                    medicineName = medicineName,
-                    dosage =
-                        "${medicine.dosageAmount} " +
-                                medicine.dosageType
-                )
-            }
 
             val currentDoseDateTime =
                 doseDate.atTime(
@@ -151,39 +141,24 @@ class MedicineAlarmReceiver : BroadcastReceiver() {
         }
 
         // Original sent out and start to calculate Repeat #1
-        if (!alreadyTaken) {
-            if (
-                repeatReminderEnabled &&
-                repeatIntervalMinutes > 0 &&
-                repeatCount > 0
-            ) {
-                scheduleMedicineRepeat(
-                    context = context,
-                    userId = userId,
-                    medicineId = medicineId,
-                    medicineName = medicineName,
-                    scheduledTime = scheduledTime,
-                    doseIndex = doseIndex,
-                    doseDate = doseDate,
-                    repeatIntervalMinutes =
-                        repeatIntervalMinutes,
-                    repeatCount = repeatCount,
-                    repeatNumber = 1
-                )
-            } else {
-                scheduleMedicineRepeat(
-                    context = context,
-                    userId = userId,
-                    medicineId = medicineId,
-                    medicineName = medicineName,
-                    scheduledTime = scheduledTime,
-                    doseIndex = doseIndex,
-                    doseDate = doseDate,
-                    repeatIntervalMinutes = 1,
-                    repeatCount = 0,
-                    repeatNumber = 1
-                )
-            }
+        if (
+            repeatReminderEnabled &&
+            repeatIntervalMinutes > 0 &&
+            repeatCount > 0
+        ) {
+            scheduleMedicineRepeat(
+                context = context,
+                userId = userId,
+                medicineId = medicineId,
+                medicineName = medicineName,
+                scheduledTime = scheduledTime,
+                doseIndex = doseIndex,
+                doseDate = doseDate,
+                repeatIntervalMinutes =
+                    repeatIntervalMinutes,
+                repeatCount = repeatCount,
+                repeatNumber = 1
+            )
         }
     }
 }
