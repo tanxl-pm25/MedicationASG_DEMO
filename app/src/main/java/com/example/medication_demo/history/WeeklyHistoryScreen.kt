@@ -34,15 +34,21 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -58,6 +64,14 @@ import com.example.medication_demo.model.MedicineHistoryUi
 import com.example.medication_demo.utils.getMalaysiaDate
 import com.example.medication_demo.model.HistoryMedicineSource
 import com.example.medication_demo.utils.isDoseBeforeMedicineDeletion
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
+import com.example.medication_demo.components.InfoGuideDialog
+import com.example.medication_demo.R
+import com.example.medication_demo.components.MainScreenActionIcon
+
 
 private val HistoryGreen = Color(0xFF159447)
 private val HistoryRed = Color(0xFFE53935)
@@ -79,13 +93,8 @@ fun WeeklyHistoryScreen(
     medicineVm: MedicineViewModel = viewModel(),
     medicineListVm: MedicineListViewModel = viewModel()
 ) {
-    val dateFormatter = remember {
-        DateTimeFormatter.ofPattern(
-            "dd MMM yyyy",
-            Locale.ENGLISH
-        )
-    }
-
+    var showMoreMenu by remember { mutableStateOf(false) }
+    var showHelpDialog by remember { mutableStateOf(false) }
     val selectedStartDate by historyVm.selectedStartDate.collectAsStateWithLifecycle()
     val selectedEndDate by historyVm.selectedEndDate.collectAsStateWithLifecycle()
     val showDateRangePicker by historyVm.showDateRangePicker.collectAsStateWithLifecycle()
@@ -94,6 +103,12 @@ fun WeeklyHistoryScreen(
     val takenRecords by medicineVm.takenRecords.collectAsStateWithLifecycle()
     val rescheduledDoses by medicineVm.rescheduledDoses.collectAsStateWithLifecycle()
     val archivedMedicines by medicineVm.archivedMedicines.collectAsStateWithLifecycle()
+    val dateFormatter = remember {
+        DateTimeFormatter.ofPattern(
+            "dd MMM yyyy",
+            Locale.ENGLISH
+        )
+    }
     val historySources =
         medicines.map { medicine ->
             HistoryMedicineSource(
@@ -217,6 +232,25 @@ fun WeeklyHistoryScreen(
                 )
             }
         }
+    val totalTaken =
+        historyMedicines.sumOf {
+            it.takenCount
+        }
+
+    val totalMissing =
+        historyMedicines.sumOf {
+            it.missingCount
+        }
+
+    val totalDoses =
+        totalTaken + totalMissing
+
+    val overallAdherence =
+        if (totalDoses > 0) {
+            totalTaken * 100 / totalDoses
+        } else {
+            0
+        }
     Scaffold(
         containerColor = Color.White,
         bottomBar = {
@@ -236,14 +270,37 @@ fun WeeklyHistoryScreen(
         ) {
             MainScreenTopBar(
                 title = "Weekly History",
-                rightIcon = Icons.Default.MoreVert,
-                rightIconDescription = "More options",
-                onRightIconClick = onMoreClick,
-                modifier = Modifier.padding(
-                    start = 5.dp
-                ),
-                titleStartPadding = 5.dp
+                titleStartPadding = 10.dp,
+                rightContent = {
+                    Box {
+                        MainScreenActionIcon(
+                            icon = Icons.Default.MoreVert,
+                            contentDescription = "More options",
+                            onClick = {
+                                showMoreMenu = true
+                            }
+                        )
+
+                        DropdownMenu(
+                            expanded = showMoreMenu,
+                            onDismissRequest = {
+                                showMoreMenu = false
+                            }
+                        ) {
+                            DropdownMenuItem(
+                                text = {
+                                    Text("Help")
+                                },
+                                onClick = {
+                                    showMoreMenu = false
+                                    showHelpDialog = true
+                                }
+                            )
+                        }
+                    }
+                }
             )
+
             Spacer(modifier = Modifier.height(4.dp))
 
             WeeklyDateRangeSelector(
@@ -254,6 +311,15 @@ fun WeeklyHistoryScreen(
             )
 
             Spacer(modifier = Modifier.height(16.dp))
+
+            if (historyMedicines.isNotEmpty()) {
+                WeeklySummaryCard(
+                    takenCount = totalTaken,
+                    missingCount = totalMissing,
+                    adherence = overallAdherence
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+            }
 
             if (historyMedicines.isEmpty()) {
                 Spacer(modifier = Modifier.height(40.dp))
@@ -281,6 +347,38 @@ fun WeeklyHistoryScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
         }
+    }
+    if (showHelpDialog) {
+
+        InfoGuideDialog(
+            title = "Weekly History Help",
+            imageRes = R.drawable.weeklyhistory,
+            description =
+                buildAnnotatedString {
+                    append("Select a ")
+                    withStyle(
+                        SpanStyle(
+                            color = Color(0xFF009688),
+                            fontWeight = FontWeight.Bold
+                        )
+                    ) {
+                        append("\"7 - day date range\"")
+                    }
+                    append(" to review your")
+                    withStyle(
+                        SpanStyle(
+                            color = Color(0xFF009688),
+                            fontWeight = FontWeight.Bold
+                        )
+                    ) {
+                        append("medication history")
+                    }
+                    append("You can check taken and missed doses and tap a medicine to view more details.")
+                },
+            onDismiss = {
+                showHelpDialog = false
+            }
+        )
     }
 
     if (showDateRangePicker) {
@@ -496,6 +594,17 @@ private fun HistoryMedicineCard(
     medicine: MedicineHistoryUi,
     onClick: () -> Unit
 ) {
+    val total =
+        medicine.takenCount +
+                medicine.missingCount
+
+    val adherence =
+        if (total > 0) {
+            medicine.takenCount * 100 / total
+        } else {
+            0
+        }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         onClick = onClick,
@@ -507,117 +616,302 @@ private fun HistoryMedicineCard(
             defaultElevation = 1.dp
         )
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(16.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(54.dp)
-                    .background(
-                        color = Color.White,
-                        shape = RoundedCornerShape(12.dp)
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                MedicineImage(
-                    presetImageRes = medicine.presetImageRes,
-                    galleryImageUri = medicine.galleryImageUri,
-                    contentDescription = medicine.name,
-                    imageSize = 46.dp
-                )
-            }
 
-            Spacer(modifier = Modifier.size(12.dp))
-
-            Column(
-                modifier = Modifier.weight(1f)
+            // Medicine name + arrow
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = medicine.name,
-                    style = MaterialTheme.typography.titleSmall
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
                 )
 
-                Spacer(modifier = Modifier.height(3.dp))
+                Icon(
+                    imageVector = Icons.Default.ChevronRight,
+                    contentDescription = "View history details",
+                    tint = HistoryGrey,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
 
+            Spacer(
+                modifier = Modifier.height(4.dp)
+            )
+
+            Text(
+                text = medicine.dosage,
+                style = MaterialTheme.typography.bodySmall,
+                color = HistoryGrey
+            )
+
+            Spacer(
+                modifier = Modifier.height(4.dp)
+            )
+
+            Text(
+                text =
+                    "${medicine.time} • ${medicine.frequency}",
+                style = MaterialTheme.typography.bodySmall,
+                color = HistoryGrey,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Spacer(
+                modifier = Modifier.height(14.dp)
+            )
+
+            // Taken / Missed badges
+            Row(
+                horizontalArrangement =
+                    Arrangement.spacedBy(10.dp)
+            ) {
+                HistoryStatusBadge(
+                    text =
+                        "${medicine.takenCount} Taken",
+                    backgroundColor =
+                        HistoryGreen.copy(
+                            alpha = 0.12f
+                        ),
+                    textColor = HistoryGreen
+                )
+
+                HistoryStatusBadge(
+                    text =
+                        "${medicine.missingCount} Missed",
+                    backgroundColor =
+                        HistoryRed.copy(
+                            alpha = 0.10f
+                        ),
+                    textColor = HistoryRed
+                )
+            }
+
+            Spacer(
+                modifier = Modifier.height(14.dp)
+            )
+
+            // Adherence
+            Row(
+                modifier =
+                    Modifier.fillMaxWidth(),
+                horizontalArrangement =
+                    Arrangement.SpaceBetween,
+                verticalAlignment =
+                    Alignment.CenterVertically
+            ) {
                 Text(
-                    text = medicine.dosage,
-                    style = MaterialTheme.typography.bodySmall,
+                    text = "Adherence",
+                    style =
+                        MaterialTheme
+                            .typography
+                            .bodySmall,
                     color = HistoryGrey
                 )
 
-                Spacer(modifier = Modifier.height(3.dp))
-
-                if (
-                    medicine.frequency.equals(
-                        "3 times a day",
-                        ignoreCase = true
-                    )
-                ) {
-                    Text(
-                        text = medicine.time,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = HistoryGrey,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-
-                    Spacer(
-                        modifier = Modifier.height(2.dp)
-                    )
-
-                    Text(
-                        text = medicine.frequency,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = HistoryGrey
-                    )
-
-                } else {
-                    Text(
-                        text = "${medicine.time} • ${medicine.frequency}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = HistoryGrey,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.size(2.dp))
-
-            Column(
-                horizontalAlignment = Alignment.End
-            ) {
                 Text(
-                    text = "Taken x${medicine.takenCount}",
-                    style = MaterialTheme.typography.labelMedium,
+                    text = "$adherence%",
+                    style =
+                        MaterialTheme
+                            .typography
+                            .labelMedium,
+                    fontWeight = FontWeight.Bold,
                     color = HistoryGreen
                 )
-
-                if (medicine.missingCount > 0) {
-                    Spacer(modifier = Modifier.height(6.dp))
-
-                    Text(
-                        text = "Missing x${medicine.missingCount}",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = HistoryRed
-                    )
-                }
             }
-            Spacer(modifier = Modifier.width(6.dp))
 
-            Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = "View history details",
-                tint = HistoryGrey,
-                modifier = Modifier.size(20.dp)
+            Spacer(
+                modifier = Modifier.height(6.dp)
+            )
+
+            LinearProgressIndicator(
+                progress = {
+                    adherence / 100f
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(6.dp)
+                    .clip(
+                        RoundedCornerShape(50)
+                    )
             )
         }
     }
 }
 
+@Composable
+private fun HistoryStatusBadge(
+    text: String,
+    backgroundColor: Color,
+    textColor: Color
+) {
+    Box(
+        modifier = Modifier
+            .background(
+                color = backgroundColor,
+                shape =
+                    RoundedCornerShape(20.dp)
+            )
+            .padding(
+                horizontal = 10.dp,
+                vertical = 5.dp
+            )
+    ) {
+        Text(
+            text = text,
+            style =
+                MaterialTheme
+                    .typography
+                    .labelSmall,
+            color = textColor,
+            fontWeight = FontWeight.Medium
+        )
+    }
+}
+
+@Composable
+private fun WeeklySummaryCard(
+    takenCount: Int,
+    missingCount: Int,
+    adherence: Int
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 1.dp
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Text(
+                text = "Weekly Summary",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(
+                modifier = Modifier.height(14.dp)
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement =
+                    Arrangement.spacedBy(12.dp)
+            ) {
+                SummaryStatBox(
+                    modifier = Modifier.weight(1f),
+                    value = takenCount.toString(),
+                    label = "Taken",
+                    valueColor = HistoryGreen
+                )
+
+                SummaryStatBox(
+                    modifier = Modifier.weight(1f),
+                    value = missingCount.toString(),
+                    label = "Missed",
+                    valueColor = HistoryRed
+                )
+            }
+
+            Spacer(
+                modifier = Modifier.height(16.dp)
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement =
+                    Arrangement.SpaceBetween,
+                verticalAlignment =
+                    Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Overall Adherence",
+                    style =
+                        MaterialTheme.typography.bodySmall,
+                    color = HistoryGrey
+                )
+
+                Text(
+                    text = "$adherence%",
+                    style =
+                        MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = HistoryGreen
+                )
+            }
+
+            Spacer(
+                modifier = Modifier.height(6.dp)
+            )
+
+            LinearProgressIndicator(
+                progress = {
+                    adherence / 100f
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(6.dp)
+                    .clip(
+                        RoundedCornerShape(50)
+                    )
+            )
+        }
+    }
+}
+
+@Composable
+private fun SummaryStatBox(
+    modifier: Modifier = Modifier,
+    value: String,
+    label: String,
+    valueColor: Color
+) {
+    Column(
+        modifier = modifier
+            .background(
+                color = valueColor.copy(
+                    alpha = 0.08f
+                ),
+                shape = RoundedCornerShape(10.dp)
+            )
+            .padding(
+                horizontal = 12.dp,
+                vertical = 10.dp
+            )
+    ) {
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = valueColor
+        )
+
+        Spacer(
+            modifier = Modifier.height(2.dp)
+        )
+
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = HistoryGrey
+        )
+    }
+}
 private fun LocalDate.toUtcMillis(): Long {
     return atStartOfDay(
         ZoneOffset.UTC

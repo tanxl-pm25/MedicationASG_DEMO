@@ -51,7 +51,14 @@ import com.example.medication_demo.model.ReminderTimeUi
 import com.example.medication_demo.viewmodel.MedicineListViewModel
 import com.example.medication_demo.model.MedicineStatus
 import androidx.compose.material3.Button
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
+import com.example.medication_demo.components.InfoGuideDialog
 import com.example.medication_demo.ui.AppTopBar
+import com.example.medication_demo.R
+
 
 private val DetailGreen = Color(0xFF159447)
 private val DetailLightGreen = Color(0xFFE8F7ED)
@@ -175,32 +182,50 @@ fun MedicineDetailsScreen(
         }
     }
     if (showHelpDialog) {
-
-        AlertDialog(
-            onDismissRequest = {
-                showHelpDialog = false
-            },
-
-            title = {
-                Text("Medicine Help")
-            },
-
-            text = {
-                Text(
-                    "This is the medicine details page."
-                            + "You can select edit or delete medicine."
-                    +"If you turn off the medicine reminder, notification will not be send"
-                )
-            },
-
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showHelpDialog = false
-                    }
+        InfoGuideDialog(
+            title = "Medicine Details Help",
+            description = buildAnnotatedString {
+                append("This page shows your medicine details. You can ")
+                withStyle(
+                    SpanStyle(
+                        color = Color(0xFF009688),
+                        fontWeight = FontWeight.Bold
+                    )
                 ) {
-                    Text("Got it")
+                    append("edit ")
                 }
+                append("or")
+                withStyle(
+                    SpanStyle(
+                        color = Color(0xFF009688),
+                        fontWeight = FontWeight.Bold
+                    )
+                ) {
+                    append(" delete")
+                }
+                append( " the medicine. If you turn off the ")
+                withStyle(
+                    SpanStyle(
+                        color = Color(0xFF009688),
+                        fontWeight = FontWeight.Bold
+                    )
+                ) {
+                    append("medicine reminder")
+                }
+                append(", you will no longer ")
+                withStyle(
+                    SpanStyle(
+                        color = Color(0xFF009688),
+                        fontWeight = FontWeight.Bold
+                    )
+                ) {
+                    append("receive reminder notifications")
+                }
+                append(" for this medicine.")
+            },
+            imageRes = R.drawable.detail,
+            onDismiss = {
+                showHelpDialog = false
             }
         )
     }
@@ -617,23 +642,38 @@ private fun ReminderSection(
                     color = DetailDivider
                 )
 
-                val enabledRepeats =
-                    medicine.reminderTimes
-                        .filter {
-                            it.reminderOptionsEnabled && it.minutes.isNotBlank()
-                        }.map { it.minutes }.distinct()
+                if (medicine.repeatReminderEnabled) {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        color = DetailDivider
+                    )
 
-                val repeatEveryText =
-                    when {
-                        enabledRepeats.isEmpty() -> "-"
-                        enabledRepeats.size == 1 -> "${enabledRepeats.first()} minutes"
-                        else ->
-                            enabledRepeats.joinToString(", ") { "$it minutes" }
-                    }
-                ReminderInformationRow(
-                    title = "Repeat Every",
-                    value = repeatEveryText
-                )
+                    ReminderInformationRow(
+                        title = "Remind Every",
+                        value =
+                            "${medicine.repeatIntervalMinutes} " +
+                                    if (medicine.repeatIntervalMinutes == 1) {
+                                        "minute"
+                                    } else {
+                                        "minutes"
+                                    }
+                    )
+
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        color = DetailDivider
+                    )
+
+                    ReminderInformationRow(
+                        title = "Repeat Times",
+                        value =
+                            if (medicine.repeatCount == 1) {
+                                "1 time"
+                            } else {
+                                "${medicine.repeatCount} times"
+                            }
+                    )
+                }
             }
         }
     }
@@ -691,12 +731,10 @@ private fun MedicineDetailsScreenPreview() {
             frequency = "Twice a day",
             reminderTimes = listOf(
                 ReminderTimeUi(
-                    time = "10:00 AM",
-                    minutes = ""
+                    time = "10:00 AM"
                 ),
                 ReminderTimeUi(
-                    time = "08:00 PM",
-                    minutes = ""
+                    time = "08:00 PM"
                 )
             ),
             startDate = "10 May 2025",

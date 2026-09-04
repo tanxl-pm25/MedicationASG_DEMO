@@ -16,11 +16,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.example.medication_demo.data.SupabaseClientProvider
-import com.example.medication_demo.reminder.MedicationNotification
 import com.example.medication_demo.navigation.MedicationApp
+import com.example.medication_demo.reminder.MedicationNotification
 import com.example.medication_demo.repository.AppointmentRepository
 import com.example.medication_demo.ui.theme.Medication_DemoTheme
 import io.github.jan.supabase.auth.handleDeeplinks
+
+
 
 class MainActivity : ComponentActivity() {
 
@@ -28,6 +30,7 @@ class MainActivity : ComponentActivity() {
     private var pendingDeepLinkType by mutableStateOf<String?>(null)
 
     private val refillMedicineId = mutableStateOf<Int?>(null)
+    private val navigateToHome = mutableStateOf(false)
     private var medicationNotificationAction by mutableStateOf<String?>(null)
     private var medicationNotificationMedicineId by mutableStateOf<Int?>(null)
     private var medicationNotificationDoseIndex by mutableStateOf<Int?>(null)
@@ -61,7 +64,13 @@ class MainActivity : ComponentActivity() {
 
         handleIncomingIntent(intent)
         readMedicationNotificationIntent(intent)
+        navigateToHome.value =
+            intent.getBooleanExtra(
+                "navigateToHome",
+                false
+            )
 
+        // If app is opened by tapping the notification
         refillMedicineId.value =
             intent.getIntExtra(
                 "refillMedicineId",
@@ -86,6 +95,9 @@ class MainActivity : ComponentActivity() {
                         onNotificationHandled = {
                             refillMedicineId.value = null
                         },
+                        navigateToHomeFromNotification = navigateToHome.value,
+                        onHomeNavigationHandled = { navigateToHome.value = false
+                        },
                         medicationNotificationAction = medicationNotificationAction,
                         medicationNotificationMedicineId = medicationNotificationMedicineId,
                         medicationNotificationDoseIndex = medicationNotificationDoseIndex,
@@ -102,6 +114,8 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    // Called when MainActivity already exists
+    // and user taps the notification
     override fun onNewIntent(
         intent: Intent
     ) {
@@ -110,6 +124,16 @@ class MainActivity : ComponentActivity() {
         setIntent(intent)
         handleIncomingIntent(intent)
         readMedicationNotificationIntent(intent)
+
+        if (
+            intent.getBooleanExtra(
+                "navigateToHome",
+                false
+            )
+        ) {
+            navigateToHome.value = true
+        }
+
 
         val medicineId =
             intent.getIntExtra(
@@ -122,20 +146,15 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun handleIncomingIntent(
-        intent: Intent
-    ) {
+    private fun handleIncomingIntent(intent: Intent) {
+        // Supabase的密码重设连结,网址里会带"type=recovery"这个字样
         val uriString = intent.data?.toString()
-
-        if (
-            uriString != null &&
-            uriString.contains("type=recovery")
-        ) {
+        if (uriString != null && uriString.contains("type=recovery")) {
             pendingDeepLinkType = "recovery"
         }
 
-        SupabaseClientProvider.client
-            .handleDeeplinks(intent)
+        // 处理Google登入/密码重设完成、浏览器跳回app时带的deep link
+        SupabaseClientProvider.client.handleDeeplinks(intent)
     }
 
     private fun readMedicationNotificationIntent(

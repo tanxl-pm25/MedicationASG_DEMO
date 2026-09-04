@@ -29,7 +29,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -58,7 +57,6 @@ import com.example.medication_demo.viewmodel.MedicineListViewModel
 import com.example.medication_demo.model.MedicineStatus
 
 private val AppGreen = Color(0xFF17852B)
-private val ScreenBackground = Color(0xFFFAFAFA)
 private val SoftGrey = Color(0xFFF3F4F6)
 private val TextGrey = Color(0xFF6B7280)
 
@@ -82,7 +80,7 @@ fun MedicineListScreen(
     )
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        containerColor = ScreenBackground,
+        containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
             AppBottomNavigationBar(
                 selectedIndex = 1,
@@ -103,15 +101,16 @@ fun MedicineListScreen(
         ) {
             MainScreenTopBar(
                 title = "All Medicines",
-                rightIcon = Icons.Default.NotificationsNone,
-                rightIconDescription = "Notifications",
-                onRightIconClick = {
-                    // Notification page later
-                },
-                modifier = Modifier.padding(
-                    start = 5.dp
-                ),
-                titleStartPadding = 5.dp
+                titleStartPadding = 10.dp,
+                rightContent = {
+                    MainScreenActionIcon(
+                        icon = Icons.Default.NotificationsNone,
+                        contentDescription = "Notifications",
+                        onClick = {
+                            // Notification page later
+                        }
+                    )
+                }
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -332,7 +331,7 @@ private fun MedicineCard(
             ) {
                 Text(
                     text = medicine.name,
-                    style = MaterialTheme.typography.titleMedium
+                    style = MaterialTheme.typography.titleSmall
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))

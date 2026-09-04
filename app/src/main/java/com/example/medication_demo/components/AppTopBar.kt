@@ -16,6 +16,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,7 +36,8 @@ fun AppTopBar(
         title = {
             Text(
                 text = title,
-                fontWeight = FontWeight.Bold
+                fontSize = 18.sp,
+                fontWeight = FontWeight.SemiBold
             )
         },
 
@@ -54,7 +56,6 @@ fun AppTopBar(
         },
 
         actions = {
-
             if (showMoreMenu) {
 
                 IconButton(

@@ -74,6 +74,9 @@ import com.example.medication_demo.user.SettingScreen
 import com.example.medication_demo.user.SplashScreen
 import com.example.medication_demo.utils.getMalaysiaDate
 import com.example.medication_demo.utils.getMalaysiaTime
+
+import androidx.compose.foundation.layout.Box
+
 import com.example.medication_demo.viewmodel.MedicineListViewModel
 import com.example.medication_demo.viewmodel.MedicineViewModel
 import com.example.medication_demo.viewmodel.MonthlyStatisticsViewModel
@@ -87,13 +90,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.unit.dp
-import com.example.medication_demo.viewmodel.UserViewModel
-import com.example.medication_demo.viewmodel.WaterIntakeViewModel
-import com.example.medication_demo.viewmodel.WeeklyHistoryViewModel
 import com.example.medication_demo.reminder.createRefillNotificationChannel
 import com.example.medication_demo.viewmodel.MedicationPerformanceViewModel
 import com.example.medication_demo.viewmodel.MissedMedicationViewModel
 import com.example.medication_demo.waterIntake.WaterIntakeScreen
+import com.example.medication_demo.viewmodel.UserViewModel
+import com.example.medication_demo.viewmodel.WaterIntakeViewModel
+import com.example.medication_demo.viewmodel.WeeklyHistoryViewModel
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.status.SessionStatus
 import kotlinx.coroutines.delay
@@ -107,13 +110,16 @@ fun MedicationApp(
     onDeepLinkConsumed: () -> Unit,
     onNotificationHandled: () -> Unit = {},
     notificationMedicineId: Int? = null,
+    navigateToHomeFromNotification: Boolean = false,
+    onHomeNavigationHandled: () -> Unit = {},
     medicationNotificationAction: String? = null,
     medicationNotificationMedicineId: Int? = null,
     medicationNotificationDoseIndex: Int? = null,
     medicationNotificationOriginalTime: String? = null,
     onMedicationNotificationHandled: () -> Unit = {}
+
     ) {
-    // Minimun Android 13 pop up
+    // 通知权限的请求器(Android 13以上才需要真的跳出来问)
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
         onResult = { }
@@ -124,13 +130,13 @@ fun MedicationApp(
     val currentUserGender by userVm.userGender.collectAsStateWithLifecycle()
     val currentUserAge by userVm.userAge.collectAsStateWithLifecycle()
     val latestDeepLinkType = rememberUpdatedState(pendingDeepLinkType)
-
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val navController = rememberNavController()
     val medicineVm: MedicineViewModel = viewModel()
     val lowStockMedicineId by medicineVm.lowStockMedicineId.collectAsStateWithLifecycle()
+    val insufficientStockMedicineId by medicineVm.insufficientStockMedicineId.collectAsStateWithLifecycle()
     val medicineListVm: MedicineListViewModel = viewModel()
     val medicines by medicineVm.medicines.collectAsStateWithLifecycle()
     val historyVm: WeeklyHistoryViewModel = viewModel()
@@ -260,6 +266,21 @@ fun MedicationApp(
                 todayTotalDoseCount = medicinesTotal
             )
         }
+    LaunchedEffect(
+        navigateToHomeFromNotification
+    ) {
+        if (navigateToHomeFromNotification) {
+            navController.navigate(
+                "home"
+            ) {
+                popUpTo("home") {
+                    inclusive = false
+                }
+                launchSingleTop = true
+            }
+            onHomeNavigationHandled()
+        }
+    }
     LaunchedEffect(lowStockMedicineId) {
         val medicineId =
             lowStockMedicineId
@@ -284,6 +305,25 @@ fun MedicationApp(
         medicineVm.clearLowStockEvent()
     }
     LaunchedEffect(
+        insufficientStockMedicineId
+    ) {
+        val medicineId =
+            insufficientStockMedicineId
+                ?: return@LaunchedEffect
+        val medicine =
+            medicines.find {
+                it.id == medicineId
+            }
+        if (medicine != null) {
+            snackbarHostState.showSnackbar(
+                message =
+                    "${medicine.name} stock is insufficient for the next dose. Please restock."
+            )
+        }
+
+        medicineVm.clearInsufficientStockEvent()
+    }
+    LaunchedEffect(
         notificationMedicineId
     ) {
         val medicineId =
@@ -302,6 +342,7 @@ fun MedicationApp(
         NotificationHelper.createNotificationChannel(context)
 
         createRefillNotificationChannel(context)
+        createMedicineNotificationChannel(context)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val hasPermission = ContextCompat.checkSelfPermission(
                 context,
@@ -375,6 +416,13 @@ fun MedicationApp(
                             email = email,
                             password = password,
                             onSuccess = {
+                                val userId =
+                                    SupabaseClientProvider.client.auth
+                                        .currentUserOrNull()
+                                        ?.id
+                                if (userId != null) {
+                                    medicineVm.switchUser(userId)
+                                }
                                 navController.navigate("home") {
                                     popUpTo("splash") {
                                         inclusive = true
@@ -562,10 +610,12 @@ fun MedicationApp(
                         // TODO: Help & Support还没做
                     },
                     onLogoutClick = {
+                        medicineVm.prepareForLogout()
                         userVm.logout()
-                        medicineVm.switchUser("guest")
                         navController.navigate("login") {
-                            popUpTo(0) { inclusive = true }
+                            popUpTo(0) {
+                                inclusive = true
+                            }
                         }
                     },
                     onBottomNavSelected = { index ->

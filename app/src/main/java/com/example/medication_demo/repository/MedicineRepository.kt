@@ -55,7 +55,10 @@ class MedicineRepository {
                 notes = medicine.notes,
                 reminderEnabled = medicine.reminderEnabled,
                 presetImageRes = medicine.presetImageRes,
-                galleryImageUri = medicine.galleryImageUri
+                galleryImageUri = medicine.galleryImageUri,
+                repeatReminderEnabled = medicine.repeatReminderEnabled,
+                repeatIntervalMinutes = medicine.repeatIntervalMinutes,
+                repeatCount = medicine.repeatCount
             )
         return try {
             supabase
@@ -63,11 +66,6 @@ class MedicineRepository {
                 .insert(insertModel)
             true
         } catch (e: Exception) {
-        android.util.Log.e(
-            "MedicineRepository",
-            "Failed to add medicine to Supabase",
-            e
-        )
         false
     }
     }
@@ -87,7 +85,6 @@ class MedicineRepository {
                         set("quantity", medicine.quantity)
                         set("dosage_amount", medicine.dosageAmount)
                         set("dosage_type", medicine.dosageType)
-
                         set(
                             "refill_reminder_enabled",
                             medicine.refillReminderEnabled
@@ -114,6 +111,18 @@ class MedicineRepository {
                         set(
                             "gallery_image_uri",
                             medicine.galleryImageUri
+                        )
+                        set(
+                            "repeat_reminder_enabled",
+                            medicine.repeatReminderEnabled
+                        )
+                        set(
+                            "repeat_interval_minutes",
+                            medicine.repeatIntervalMinutes
+                        )
+                        set(
+                            "repeat_count",
+                            medicine.repeatCount
                         )
                     }
                 ) {

@@ -39,9 +39,23 @@ fun scheduleRefillReminder(
                 TimeUnit.MINUTES
             )
             .setInputData(inputData)
+            .addTag(
+                "refill_reminder_$medicineId"
+            )
             .build()
 
     WorkManager
         .getInstance(context)
         .enqueue(request)
+}
+
+fun cancelRefillReminder(
+    context: Context,
+    medicineId: Int
+) {
+    WorkManager
+        .getInstance(context)
+        .cancelAllWorkByTag(
+            "refill_reminder_$medicineId"
+        )
 }
