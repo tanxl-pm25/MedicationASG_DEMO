@@ -1,20 +1,38 @@
 package com.example.medication_demo.components
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimeInput
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.TimePickerDefaults
+import androidx.compose.material3.TimePickerColors
+import androidx.compose.material3.rememberTimePickerState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import java.time.LocalTime
-
-private val PickerGreen = Color(0xFF159447)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -24,12 +42,11 @@ fun MedicationTimePickerDialog(
     onConfirm: (LocalTime) -> Unit,
     validateTime: ((LocalTime) -> String?)? = null
 ) {
-    val timePickerState =
-        rememberTimePickerState(
-            initialHour = initialTime.hour,
-            initialMinute = initialTime.minute,
-            is24Hour = false
-        )
+    val timePickerState = rememberTimePickerState(
+        initialHour = initialTime.hour,
+        initialMinute = initialTime.minute,
+        is24Hour = false
+    )
 
     var isInputMode by remember {
         mutableStateOf(false)
@@ -44,14 +61,15 @@ fun MedicationTimePickerDialog(
     ) {
         Surface(
             shape = RoundedCornerShape(28.dp),
-            color = Color.White
+            color = MaterialTheme.colorScheme.surface
         ) {
             Column(
                 modifier = Modifier.padding(24.dp)
             ) {
                 Text(
                     text = "Select Time",
-                    style = MaterialTheme.typography.titleMedium
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
                 Spacer(
@@ -75,13 +93,13 @@ fun MedicationTimePickerDialog(
                     }
                 }
 
-                if (errorMessage != null) {
+                errorMessage?.let { message ->
                     Spacer(
                         modifier = Modifier.height(8.dp)
                     )
 
                     Text(
-                        text = errorMessage!!,
+                        text = message,
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.align(
@@ -117,7 +135,7 @@ fun MedicationTimePickerDialog(
                                 } else {
                                     "Enter time"
                                 },
-                            tint = PickerGreen
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
 
@@ -130,17 +148,16 @@ fun MedicationTimePickerDialog(
                     ) {
                         Text(
                             text = "Cancel",
-                            color = PickerGreen
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
 
                     TextButton(
                         onClick = {
-                            val selectedTime =
-                                LocalTime.of(
-                                    timePickerState.hour,
-                                    timePickerState.minute
-                                )
+                            val selectedTime = LocalTime.of(
+                                timePickerState.hour,
+                                timePickerState.minute
+                            )
 
                             val error =
                                 validateTime?.invoke(selectedTime)
@@ -155,7 +172,7 @@ fun MedicationTimePickerDialog(
                     ) {
                         Text(
                             text = "Done",
-                            color = PickerGreen
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
@@ -166,38 +183,41 @@ fun MedicationTimePickerDialog(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun medicationTimePickerColors() =
-    TimePickerDefaults.colors(
+private fun medicationTimePickerColors(): TimePickerColors {
+    val colorScheme = MaterialTheme.colorScheme
+
+    return TimePickerDefaults.colors(
         clockDialColor =
-            PickerGreen.copy(alpha = 0.10f),
+            colorScheme.primary.copy(alpha = 0.12f),
 
         selectorColor =
-            PickerGreen,
+            colorScheme.primary,
 
         clockDialSelectedContentColor =
-            Color.White,
+            colorScheme.onPrimary,
 
         clockDialUnselectedContentColor =
-            Color.DarkGray,
+            colorScheme.onSurface,
 
         periodSelectorBorderColor =
-            PickerGreen,
+            colorScheme.outline,
 
         periodSelectorSelectedContainerColor =
-            PickerGreen,
+            colorScheme.primary,
 
         periodSelectorSelectedContentColor =
-            Color.White,
+            colorScheme.onPrimary,
 
         periodSelectorUnselectedContainerColor =
-            Color.White,
+            colorScheme.surfaceVariant,
 
         periodSelectorUnselectedContentColor =
-            PickerGreen,
+            colorScheme.onSurfaceVariant,
 
         timeSelectorSelectedContainerColor =
-            PickerGreen.copy(alpha = 0.15f),
+            colorScheme.primary.copy(alpha = 0.16f),
 
         timeSelectorSelectedContentColor =
-            PickerGreen
+            colorScheme.primary
     )
+}
