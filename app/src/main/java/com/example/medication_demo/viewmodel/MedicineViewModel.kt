@@ -1,5 +1,10 @@
 package com.example.medication_demo.viewmodel
 
+import com.example.medication_demo.model.MedicationMissedRecordCloudModel
+import com.example.medication_demo.model.MedicationTakenRecordCloudModel
+import com.example.medication_demo.model.RescheduledDoseCloudModel
+import com.example.medication_demo.repository.MedicationRecordCloudRepository
+import com.example.medication_demo.model.MedicationMissedRecord
 import com.example.medication_demo.model.MedicationTakenRecord
 import com.example.medication_demo.model.Medicine
 import com.example.medication_demo.model.MedicineScheduleSnapshot
@@ -41,7 +46,9 @@ class MedicineViewModel(
             userId = "guest"
         )
     private val medicineRepository = MedicineRepository()
+    private val recordCloudRepository = MedicationRecordCloudRepository()
     private val medicineImageRepository = MedicineImageRepository(getApplication())
+
 
     private val _medicines = MutableStateFlow(localStorage.loadMedicines())
     val medicines = _medicines.asStateFlow()
@@ -153,6 +160,10 @@ class MedicineViewModel(
     private val _takenRecords = MutableStateFlow<List<MedicationTakenRecord>>(localStorage.loadTakenRecords())
     val takenRecords: StateFlow<List<MedicationTakenRecord>> = _takenRecords.asStateFlow()
 
+    private val _missedRecords = MutableStateFlow<List<MedicationMissedRecord>>(localStorage.loadMissedRecords())
+
+    val missedRecords: StateFlow<List<MedicationMissedRecord>> = _missedRecords.asStateFlow()
+
     private val _lowStockMedicineId = MutableStateFlow<Int?>(null)
     val lowStockMedicineId: StateFlow<Int?> = _lowStockMedicineId.asStateFlow()
 
@@ -194,20 +205,18 @@ class MedicineViewModel(
         doseIndex: Int,
         originalTime: String,
         newTime: String
-    ) {
+    ) : Boolean{
         val today =
             getMalaysiaDate()
 
         val medicine =
             _medicines.value.find {
                 it.id == medicineId
-            } ?: return
-
+            } ?: return false
         val newLocalTime =
             parseMedicineTime(
                 newTime
-            ) ?: return
-
+            ) ?: return false
         val newDateTime =
             today.atTime(
                 newLocalTime
@@ -219,13 +228,48 @@ class MedicineViewModel(
                     getMalaysiaTime()
                 )
 
+        val originalLocalTime =
+            parseMedicineTime(originalTime)
+                ?: return false
+
+        val nextDose = findNextScheduledDose(
+            medicine = medicine,
+            afterDateTime = today.atTime(originalLocalTime)
+        )
+
+        if (
+            nextDose != null &&
+            nextDose.doseDate == today &&
+            !newLocalTime.isBefore(
+                nextDose.scheduledLocalTime
+            )
+        ) {
+            return false
+        }
+
         // Do not schedule to a time that has already passed.
         if (
             !newDateTime.isAfter(
                 nowDateTime
             )
         ) {
-            return
+            return false
+        }
+
+        _missedRecords.value =
+            _missedRecords.value.filterNot { record ->
+                record.medicineId == medicineId &&
+                        record.date == today &&
+                        record.doseIndex == doseIndex
+            }
+
+        localStorage.saveMissedRecords(_missedRecords.value)
+        viewModelScope.launch {
+            recordCloudRepository.deleteMissed(
+                medicineId = medicineId,
+                date = today.toString(),
+                doseIndex = doseIndex
+            )
         }
 
         // Save rescheduled dose for UI / History.
@@ -244,9 +288,8 @@ class MedicineViewModel(
                         newTime = newTime
                     )
 
-        localStorage.saveRescheduledDoses(
-            _rescheduledDoses.value
-        )
+        localStorage.saveRescheduledDoses(_rescheduledDoses.value)
+        uploadRescheduledDose(_rescheduledDoses.value.last())
 
         // Cancel the current original alarm and repeat reminders.
         cancelMedicineReminders(
@@ -272,6 +315,7 @@ class MedicineViewModel(
             repeatCount =
                 medicine.repeatCount
         )
+        return true
     }
 
     fun markDoseAsTaken(
@@ -311,7 +355,48 @@ class MedicineViewModel(
                 )
             localStorage.saveTakenRecords(_takenRecords.value)
             reduceRemainingQuantity(medicineId = medicineId)
+            uploadTakenRecord(_takenRecords.value.last())
         }
+    }
+
+    fun markDoseAsMissed(
+        medicineId: Int,
+        doseIndex: Int,
+        reminderTime: String
+    ) {
+        val today = getMalaysiaDate()
+
+        val medicine = _medicines.value.firstOrNull {
+            it.id == medicineId
+        } ?: return
+
+        val alreadyTaken = _takenRecords.value.any {
+            it.medicineId == medicineId &&
+                    it.date == today &&
+                    it.doseIndex == doseIndex
+        }
+
+        val alreadyMissed = _missedRecords.value.any {
+            it.medicineId == medicineId &&
+                    it.date == today &&
+                    it.doseIndex == doseIndex
+        }
+
+        if (alreadyTaken || alreadyMissed) {
+            return
+        }
+
+        _missedRecords.value += MedicationMissedRecord(
+            medicineId = medicineId,
+            date = today,
+            doseIndex = doseIndex,
+            reminderTime = reminderTime,
+            dosageAmount = medicine.dosageAmount,
+            dosageType = medicine.dosageType
+        )
+
+        localStorage.saveMissedRecords(_missedRecords.value)
+        uploadMissedRecord(_missedRecords.value.last())
     }
 
     fun getRemainingQuantity(
@@ -1125,11 +1210,61 @@ class MedicineViewModel(
                     getMalaysiaTime()
                 )
 
+        val rescheduledDose =
+            _rescheduledDoses.value
+                .firstOrNull { dose ->
+                    if (
+                        dose.medicineId != medicine.id ||
+                        dose.date != nowDateTime.toLocalDate()
+                    ) {
+                        return@firstOrNull false
+                    }
+
+                    val rescheduledTime =
+                        parseMedicineTime(
+                            dose.newTime
+                        ) ?: return@firstOrNull false
+
+                    dose.date
+                        .atTime(rescheduledTime)
+                        .isAfter(nowDateTime)
+                }
+
+        if (rescheduledDose != null) {
+            val rescheduledTime =
+                parseMedicineTime(
+                    rescheduledDose.newTime
+                ) ?: return
+
+            val delayMillis =
+                java.time.Duration
+                    .between(
+                        nowDateTime,
+                        rescheduledDose.date
+                            .atTime(rescheduledTime)
+                    )
+                    .toMillis()
+                    .coerceAtLeast(0L)
+
+            scheduleMedicineDose(
+                context = getApplication(),
+                userId = currentUserId,
+                medicine = medicine,
+                doseIndex = rescheduledDose.doseIndex,
+                doseDate = rescheduledDose.date,
+                scheduledTime = rescheduledDose.newTime,
+                delayMillis = delayMillis
+            )
+
+            return
+        }
+
         val nextDose =
             findNextScheduledDose(
                 medicine = medicine,
                 afterDateTime = nowDateTime.minusSeconds(1)
             ) ?: return
+
         val scheduledDateTime =
             nextDose.doseDate
                 .atTime(
@@ -1155,7 +1290,6 @@ class MedicineViewModel(
             delayMillis = delayMillis
         )
     }
-
     fun addReminderTime() {
         if (_requiredReminderTimeCount.value == 0) {
             return
@@ -1441,6 +1575,7 @@ class MedicineViewModel(
         _rescheduledDoses.value = localStorage.loadRescheduledDoses()
         _scheduleSnapshots.value = localStorage.loadScheduleSnapshots()
         _takenRecords.value = localStorage.loadTakenRecords()
+        _missedRecords.value = localStorage.loadMissedRecords()
         _lowStockMedicineId.value = null
         _medicines.value.forEach { medicine ->
             scheduleNextMedicineDose(
@@ -1448,6 +1583,7 @@ class MedicineViewModel(
             )
         }
         syncMedicinesFromCloud()
+        syncMedicationRecordsFromCloud()
     }
 
     fun syncMedicinesFromCloud() {
@@ -1532,6 +1668,100 @@ class MedicineViewModel(
             }
         }
     }
+
+    private fun syncMedicationRecordsFromCloud() {
+        if (currentUserId == "guest") {
+            return
+        }
+
+        viewModelScope.launch {
+            val cloudTaken =
+                recordCloudRepository.getTakenRecords()
+                    .mapNotNull { record ->
+                        runCatching {
+                            MedicationTakenRecord(
+                                medicineId = record.medicineId,
+                                date = LocalDate.parse(record.date),
+                                doseIndex = record.doseIndex,
+                                reminderTime = record.reminderTime,
+                                takenTime = record.takenTime,
+                                dosageAmount = record.dosageAmount,
+                                dosageType = record.dosageType
+                            )
+                        }.getOrNull()
+                    }
+
+            val cloudMissed =
+                recordCloudRepository.getMissedRecords()
+                    .mapNotNull { record ->
+                        runCatching {
+                            MedicationMissedRecord(
+                                medicineId = record.medicineId,
+                                date = LocalDate.parse(record.date),
+                                doseIndex = record.doseIndex,
+                                reminderTime = record.reminderTime,
+                                dosageAmount = record.dosageAmount,
+                                dosageType = record.dosageType
+                            )
+                        }.getOrNull()
+                    }
+
+            val cloudRescheduled =
+                recordCloudRepository.getRescheduledDoses()
+                    .mapNotNull { dose ->
+                        runCatching {
+                            RescheduledDose(
+                                medicineId = dose.medicineId,
+                                date = LocalDate.parse(dose.date),
+                                doseIndex = dose.doseIndex,
+                                originalTime = dose.originalTime,
+                                newTime = dose.newTime
+                            )
+                        }.getOrNull()
+                    }
+
+            _takenRecords.value =
+                (_takenRecords.value + cloudTaken)
+                    .distinctBy {
+                        Triple(
+                            it.medicineId,
+                            it.date,
+                            it.doseIndex
+                        )
+                    }
+
+            _missedRecords.value =
+                (_missedRecords.value + cloudMissed)
+                    .distinctBy {
+                        Triple(
+                            it.medicineId,
+                            it.date,
+                            it.doseIndex
+                        )
+                    }
+
+            _rescheduledDoses.value =
+                (_rescheduledDoses.value + cloudRescheduled)
+                    .distinctBy {
+                        Triple(
+                            it.medicineId,
+                            it.date,
+                            it.doseIndex
+                        )
+                    }
+
+            localStorage.saveTakenRecords(
+                _takenRecords.value
+            )
+            localStorage.saveMissedRecords(
+                _missedRecords.value
+            )
+            localStorage.saveRescheduledDoses(
+                _rescheduledDoses.value
+            )
+        }
+    }
+
     fun onRepeatReminderEnabledChange(
         enabled: Boolean
     ) {
@@ -1582,11 +1812,72 @@ class MedicineViewModel(
         _archivedMedicines.value = emptyList()
         _remainingQuantities.value = emptyMap()
         _takenRecords.value = emptyList()
+        _missedRecords.value = emptyList()
         _rescheduledDoses.value = emptyList()
         _scheduleSnapshots.value = emptyList()
         _lowStockMedicineId.value = null
         _insufficientStockMedicineId.value = null
 
         currentUserId = "guest"
+    }
+
+    private fun uploadTakenRecord(
+        record: MedicationTakenRecord
+    ) {
+        if (currentUserId == "guest") return
+
+        viewModelScope.launch {
+            recordCloudRepository.upsertTaken(
+                MedicationTakenRecordCloudModel(
+                    userId = currentUserId,
+                    medicineId = record.medicineId,
+                    date = record.date.toString(),
+                    doseIndex = record.doseIndex,
+                    reminderTime = record.reminderTime,
+                    takenTime = record.takenTime,
+                    dosageAmount = record.dosageAmount,
+                    dosageType = record.dosageType
+                )
+            )
+        }
+    }
+
+    private fun uploadMissedRecord(
+        record: MedicationMissedRecord
+    ) {
+        if (currentUserId == "guest") return
+
+        viewModelScope.launch {
+            recordCloudRepository.upsertMissed(
+                MedicationMissedRecordCloudModel(
+                    userId = currentUserId,
+                    medicineId = record.medicineId,
+                    date = record.date.toString(),
+                    doseIndex = record.doseIndex,
+                    reminderTime = record.reminderTime,
+                    dosageAmount = record.dosageAmount,
+                    dosageType = record.dosageType
+                )
+            )
+        }
+    }
+
+    private fun uploadRescheduledDose(
+        dose: RescheduledDose
+    ) {
+        if (currentUserId == "guest") return
+
+        viewModelScope.launch {
+            recordCloudRepository.upsertRescheduled(
+                RescheduledDoseCloudModel(
+                    userId = currentUserId,
+                    medicineId = dose.medicineId,
+                    date = dose.date.toString(),
+                    doseIndex = dose.doseIndex,
+                    originalTime = dose.originalTime,
+                    newTime = dose.newTime
+                )
+            )
+        }
     }
 }

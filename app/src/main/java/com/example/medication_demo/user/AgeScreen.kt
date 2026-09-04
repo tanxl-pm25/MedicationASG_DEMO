@@ -49,7 +49,9 @@ fun AgeScreen(
 ) {
     var age by remember { mutableFloatStateOf(25f) }
 
-    Scaffold(containerColor = Color.White) { innerPadding ->
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background
+    ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()

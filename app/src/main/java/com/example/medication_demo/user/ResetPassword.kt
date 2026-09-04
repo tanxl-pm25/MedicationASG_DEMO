@@ -49,6 +49,7 @@ private val ResetGreen = Color(0xFF159447)
 fun ResetPasswordScreen(
     errorMessage: String? = null,
     isSuccess: Boolean = false,
+    isLoading: Boolean = false,
     onResetPasswordClick: (newPassword: String) -> Unit = {},
     onBackToLoginClick: () -> Unit = {}
 ) {
@@ -63,162 +64,188 @@ fun ResetPasswordScreen(
     val confirmHasError = submitAttempted &&
             (confirmPassword.isBlank() || confirmPassword != newPassword)
 
-    Scaffold(containerColor = Color.White) { innerPadding ->
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background
+    ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(24.dp)
-                .verticalScroll(rememberScrollState()),
+                .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(40.dp))
-
-            Image(
-                painter = painterResource(id = R.drawable.heart_logo),
-                contentDescription = null,
-                modifier = Modifier.height(100.dp)
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
             if (isSuccess) {
-                Text(
-                    text = "Password Updated!",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontSize = 26.sp,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = "Your password has been reset successfully.\nYou can now log in with your new password.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                Button(
-                    onClick = onBackToLoginClick,
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(52.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = ResetGreen)
+                        .weight(1f),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
                 ) {
-                    Text(
-                        text = "Back to Login",
-                        fontSize = 18.sp,
-                        style = MaterialTheme.typography.labelLarge
+                    Image(
+                        painter = painterResource(id = R.drawable.logoo_icon),
+                        contentDescription = null,
+                        modifier = Modifier.height(130.dp)
                     )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text(
+                        text = "Password Updated!",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontSize = 30.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(18.dp))
+                    Text(
+                        text = "Your password has been reset successfully.\nYou can now log in with your new password.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.height(60.dp))
+
+                    Button(
+                        onClick = onBackToLoginClick,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = ResetGreen)
+                    ) {
+                        Text(
+                            text = "Back to Login",
+                            fontSize = 18.sp,
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                    }
                 }
             } else {
-                Text(
-                    text = "Set New Password",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontSize = 30.sp,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Your new password must be different from your previous password.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center
+                Spacer(modifier = Modifier.height(40.dp))
+
+                Image(
+                    painter = painterResource(id = R.drawable.logoo_icon),
+                    contentDescription = null,
+                    modifier = Modifier.height(130.dp)
                 )
 
-                Spacer(modifier = Modifier.height(28.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                // New Password
-                OutlinedTextField(
-                    value = newPassword,
-                    onValueChange = { newPassword = it },
-                    label = { Text("New Password") },
-                    leadingIcon = {
-                        Icon(imageVector = Icons.Filled.Lock, contentDescription = null)
-                    },
-                    trailingIcon = {
-                        IconButton(onClick = { newPasswordVisible = !newPasswordVisible }) {
-                            Icon(
-                                imageVector = if (newPasswordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
-                                contentDescription = if (newPasswordVisible) "Hide password" else "Show password"
-                            )
-                        }
-                    },
-                    visualTransformation = if (newPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                    singleLine = true,
-                    isError = passwordHasError,
-                    supportingText = {
-                        Text(
-                            text = when {
-                                !passwordHasError -> " "
-                                newPassword.isBlank() -> "Password cannot be empty"
-                                else -> "Password must be at least 6 characters"
-                            }
-                        )
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Confirm Password
-                OutlinedTextField(
-                    value = confirmPassword,
-                    onValueChange = { confirmPassword = it },
-                    label = { Text("Confirm New Password") },
-                    leadingIcon = {
-                        Icon(imageVector = Icons.Filled.Lock, contentDescription = null)
-                    },
-                    trailingIcon = {
-                        IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
-                            Icon(
-                                imageVector = if (confirmPasswordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
-                                contentDescription = if (confirmPasswordVisible) "Hide password" else "Show password"
-                            )
-                        }
-                    },
-                    visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                    singleLine = true,
-                    isError = confirmHasError || errorMessage != null,
-                    supportingText = {
-                        Text(
-                            text = when {
-                                confirmHasError && confirmPassword.isBlank() -> "Please confirm your new password"
-                                confirmHasError -> "Passwords do not match"
-                                errorMessage != null -> errorMessage
-                                else -> " "
-                            }
-                        )
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                Button(
-                    onClick = {
-                        submitAttempted = true
-                        if (newPassword.isNotBlank() && newPassword.length >= 6 &&
-                            confirmPassword == newPassword
-                        ) {
-                            onResetPasswordClick(newPassword)
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = ResetGreen)
+                Column(
+                    modifier = Modifier.verticalScroll(rememberScrollState())
                 ) {
                     Text(
-                        text = "Reset Password",
-                        fontSize = 18.sp,
-                        style = MaterialTheme.typography.labelLarge
+                        text = "Set New Password",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontSize = 30.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
                     )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Your new password must be different from your previous password.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(28.dp))
+
+                    // New Password
+                    OutlinedTextField(
+                        value = newPassword,
+                        onValueChange = { newPassword = it },
+                        label = { Text("New Password") },
+                        leadingIcon = {
+                            Icon(imageVector = Icons.Filled.Lock, contentDescription = null)
+                        },
+                        trailingIcon = {
+                            IconButton(onClick = { newPasswordVisible = !newPasswordVisible }) {
+                                Icon(
+                                    imageVector = if (newPasswordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
+                                    contentDescription = if (newPasswordVisible) "Hide password" else "Show password"
+                                )
+                            }
+                        },
+                        visualTransformation = if (newPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        singleLine = true,
+                        isError = passwordHasError,
+                        supportingText = {
+                            Text(
+                                text = when {
+                                    !passwordHasError -> " "
+                                    newPassword.isBlank() -> "Password cannot be empty"
+                                    else -> "Password must be at least 6 characters"
+                                }
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Confirm Password
+                    OutlinedTextField(
+                        value = confirmPassword,
+                        onValueChange = { confirmPassword = it },
+                        label = { Text("Confirm New Password") },
+                        leadingIcon = {
+                            Icon(imageVector = Icons.Filled.Lock, contentDescription = null)
+                        },
+                        trailingIcon = {
+                            IconButton(onClick = {
+                                confirmPasswordVisible = !confirmPasswordVisible
+                            }) {
+                                Icon(
+                                    imageVector = if (confirmPasswordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
+                                    contentDescription = if (confirmPasswordVisible) "Hide password" else "Show password"
+                                )
+                            }
+                        },
+                        visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        singleLine = true,
+                        isError = confirmHasError || errorMessage != null,
+                        supportingText = {
+                            Text(
+                                text = when {
+                                    confirmHasError && confirmPassword.isBlank() -> "Please confirm your new password"
+                                    confirmHasError -> "Passwords do not match"
+                                    errorMessage != null -> errorMessage
+                                    else -> " "
+                                }
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    Button(
+                        onClick = {
+                            submitAttempted = true
+                            if (newPassword.isNotBlank() && newPassword.length >= 6 &&
+                                confirmPassword == newPassword
+                            ) {
+                                onResetPasswordClick(newPassword)
+                            }
+                        },
+                        enabled = !isLoading,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = ResetGreen)
+                    ) {
+                        Text(
+                            text = "Reset Password",
+                            fontSize = 18.sp,
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                    }
                 }
             }
         }
@@ -230,5 +257,18 @@ fun ResetPasswordScreen(
 private fun ResetPasswordScreenPreview() {
     Medication_DemoTheme {
         ResetPasswordScreen()
+    }
+}
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+private fun ResetPasswordScreenSuccessPreview() {
+    Medication_DemoTheme {
+        ResetPasswordScreen(
+            errorMessage = null,
+            isSuccess = true,
+            onResetPasswordClick = {},
+            onBackToLoginClick = {}
+        )
     }
 }

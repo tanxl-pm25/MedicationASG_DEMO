@@ -66,6 +66,7 @@ private val VerifyGreen = Color(0xFF159447)
 fun EmailVerificationScreen(
     email: String = "example@gmail.com",
     errorMessage: String? = null,
+    isLoading: Boolean = false,
     onVerifyClick: (code: String) -> Unit = {},
     onResendClick: () -> Unit = {},
     onBackClick: () -> Unit = {}
@@ -87,7 +88,7 @@ fun EmailVerificationScreen(
     }
 
     Scaffold(
-        containerColor = Color.White,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
                 title = {},
@@ -255,7 +256,7 @@ fun EmailVerificationScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
                 Image(
                     painter = painterResource(id = R.drawable.verification),
@@ -264,22 +265,35 @@ fun EmailVerificationScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.height(30.dp))
 
             Button(
-                onClick = { onVerifyClick(otpValue) },
+                onClick = {
+                    onVerifyClick(otpValue)
+                },
+                enabled = !isLoading,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(64.dp)
                     .padding(bottom = 10.dp),
                 shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = VerifyGreen)
-            ) {
-                Text(
-                    text = "Verify",
-                    fontSize = 18.sp,
-                    style = MaterialTheme.typography.labelLarge
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = VerifyGreen
                 )
+            ) {
+                if (isLoading) {
+                    androidx.compose.material3.CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text(
+                        text = "Verify",
+                        fontSize = 18.sp,
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                }
             }
         }
     }

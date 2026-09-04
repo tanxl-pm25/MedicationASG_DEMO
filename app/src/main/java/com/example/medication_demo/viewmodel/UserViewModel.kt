@@ -1,5 +1,7 @@
 package com.example.medication_demo.viewmodel
 
+import android.content.Context
+import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -8,10 +10,14 @@ import io.github.jan.supabase.auth.OtpType
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.Google
 import io.github.jan.supabase.auth.providers.builtin.Email
+import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 class UserViewModel : ViewModel() {
 
@@ -39,6 +45,9 @@ class UserViewModel : ViewModel() {
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
+    private val _userAvatarUrl = MutableStateFlow<String?>(null)
+    val userAvatarUrl: StateFlow<String?> = _userAvatarUrl.asStateFlow()
+
 
     // =========================
     // Login
@@ -47,7 +56,7 @@ class UserViewModel : ViewModel() {
     fun login(
         email: String,
         password: String,
-        onSuccess: () -> Unit
+        onSuccess: (isNewUser: Boolean) -> Unit
     ) {
         viewModelScope.launch {
             _isLoading.value = true
@@ -59,17 +68,52 @@ class UserViewModel : ViewModel() {
                     this.password = password
                 }
 
-                _userEmail.value = email
+                loadUserProfile()
 
-                onSuccess()
+                onSuccess(_isNewUser.value)
 
             } catch (e: Exception) {
+                Log.e("Login", "login error: ${e.message}", e)
                 _errorMessage.value =
                     "Login failed. Please check your email and password."
             } finally {
                 _isLoading.value = false
             }
         }
+    }
+
+    fun loadUserProfile() {
+
+        val user = SupabaseClientProvider.client.auth.currentUserOrNull()
+
+        val metadata = user?.userMetadata
+
+        _userName.value =
+            metadata?.get("full_name")
+                ?.toString()
+                ?.trim('"')
+                ?: ""
+
+        _userEmail.value =
+            user?.email
+                ?: ""
+
+        _userGender.value =
+            metadata?.get("gender")
+                ?.toString()
+                ?.trim('"')
+                ?: ""
+
+        _userAge.value =
+            metadata?.get("age")
+                ?.toString()
+                ?.trim('"')
+                ?: ""
+
+        _userAvatarUrl.value =
+            metadata?.get("avatar_url")
+                ?.toString()
+                ?.trim('"')
     }
 
 
@@ -88,10 +132,16 @@ class UserViewModel : ViewModel() {
             _errorMessage.value = null
 
             try {
+
                 val result =
                     SupabaseClientProvider.client.auth.signUpWith(Email) {
+
                         this.email = email
                         this.password = password
+
+                        data = buildJsonObject {
+                            put("full_name", name)
+                        }
                     }
 
                 if (result?.identities.isNullOrEmpty()) {
@@ -103,8 +153,6 @@ class UserViewModel : ViewModel() {
 
                     _userName.value = name
                     _userEmail.value = email
-
-                    // 新注册的账号
                     _isNewUser.value = true
 
                     onSuccess()
@@ -137,6 +185,7 @@ class UserViewModel : ViewModel() {
                     } else {
                         "Sign up failed. Please try again."
                     }
+
             } finally {
                 _isLoading.value = false
             }
@@ -149,10 +198,13 @@ class UserViewModel : ViewModel() {
     // =========================
 
     fun loginWithGoogle() {
+
         viewModelScope.launch {
+
             _errorMessage.value = null
 
             try {
+
                 SupabaseClientProvider.client.auth.signInWith(Google)
 
             } catch (e: Exception) {
@@ -178,7 +230,9 @@ class UserViewModel : ViewModel() {
         email: String,
         onSuccess: () -> Unit
     ) {
+
         viewModelScope.launch {
+
             _isLoading.value = true
             _errorMessage.value = null
 
@@ -215,7 +269,9 @@ class UserViewModel : ViewModel() {
         newPassword: String,
         onSuccess: () -> Unit
     ) {
+
         viewModelScope.launch {
+
             _isLoading.value = true
             _errorMessage.value = null
 
@@ -245,16 +301,78 @@ class UserViewModel : ViewModel() {
     }
 
 
-    // =========================
-    // Email Verification
-    // =========================
+    fun changePassword(
+        currentPassword: String,
+        newPassword: String,
+        onSuccess: () -> Unit,
+        onWrongCurrentPassword: () -> Unit
+    ) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _errorMessage.value = null
 
+            try {
+                val email =
+                    SupabaseClientProvider.client.auth
+                        .currentUserOrNull()
+                        ?.email
+
+                if (email.isNullOrBlank()) {
+                    _errorMessage.value =
+                        "Unable to identify the current user."
+                    return@launch
+                }
+
+                // Re-login to verify the current password
+                try {
+                    SupabaseClientProvider.client.auth.signInWith(Email) {
+                        this.email = email
+                        this.password = currentPassword
+                    }
+                } catch (e: Exception) {
+                    Log.e(
+                        "ChangePassword",
+                        "Wrong current password: ${e.message}",
+                        e
+                    )
+
+                    onWrongCurrentPassword()
+                    return@launch
+                }
+
+                // Current password is correct, update to new password
+                SupabaseClientProvider.client.auth.updateUser {
+                    password = newPassword
+                }
+
+                onSuccess()
+
+            } catch (e: Exception) {
+                Log.e(
+                    "ChangePassword",
+                    "Change password error: ${e.message}",
+                    e
+                )
+
+                _errorMessage.value =
+                    "Failed to change password. Please try again."
+
+                onWrongCurrentPassword()
+                return@launch
+
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
     fun verifyEmail(
         email: String,
         code: String,
         onSuccess: () -> Unit
     ) {
+
         viewModelScope.launch {
+
             _isLoading.value = true
             _errorMessage.value = null
 
@@ -266,6 +384,8 @@ class UserViewModel : ViewModel() {
                         email = email,
                         token = code
                     )
+
+                loadUserProfile()
 
                 onSuccess()
 
@@ -287,8 +407,14 @@ class UserViewModel : ViewModel() {
     }
 
 
+    // =========================
+    // Resend Verification Code
+    // =========================
+
     fun resendVerificationCode(email: String) {
+
         viewModelScope.launch {
+
             try {
 
                 SupabaseClientProvider.client.auth
@@ -311,26 +437,347 @@ class UserViewModel : ViewModel() {
 
     // =========================
     // Gender & Age
+    // 保存到 Supabase Auth Metadata
     // =========================
 
     fun onGenderSelected(gender: String) {
+
         _userGender.value = gender
+
+        viewModelScope.launch {
+
+            try {
+
+                SupabaseClientProvider.client.auth.updateUser {
+
+                    data = buildJsonObject {
+                        put("gender", gender)
+                    }
+                }
+
+            } catch (e: Exception) {
+
+                Log.e(
+                    "Gender",
+                    "save gender error: ${e.message}",
+                    e
+                )
+            }
+        }
     }
+
 
     fun onAgeSelected(age: Int) {
+
         _userAge.value = age.toString()
 
-        // Gender + Age 完成后，
-        // 这个账号以后就不再属于 New User
-        _isNewUser.value = false
+        viewModelScope.launch {
+
+            try {
+
+                SupabaseClientProvider.client.auth.updateUser {
+
+                    data = buildJsonObject {
+                        put("age", age)
+                    }
+                }
+
+                // Gender + Age 完成后，
+                // 这个账号以后不再属于 New User
+                _isNewUser.value = false
+
+            } catch (e: Exception) {
+
+                Log.e(
+                    "Age",
+                    "save age error: ${e.message}",
+                    e
+                )
+            }
+        }
     }
+
+
+    // =========================
+    // Edit Gender
+    // =========================
 
     fun updateGender(gender: String) {
-        _userGender.value = gender
+
+        viewModelScope.launch {
+
+            try {
+
+                SupabaseClientProvider.client.auth.updateUser {
+
+                    data = buildJsonObject {
+                        put("gender", gender)
+                    }
+                }
+
+                _userGender.value = gender
+
+            } catch (e: Exception) {
+
+                Log.e(
+                    "UpdateGender",
+                    "update gender error: ${e.message}",
+                    e
+                )
+            }
+        }
     }
 
+
+    // =========================
+    // Edit Age
+    // =========================
+
     fun updateAge(age: Int) {
-        _userAge.value = age.toString()
+
+        viewModelScope.launch {
+
+            try {
+
+                SupabaseClientProvider.client.auth.updateUser {
+
+                    data = buildJsonObject {
+                        put("age", age)
+                    }
+                }
+
+                _userAge.value = age.toString()
+
+            } catch (e: Exception) {
+
+                Log.e(
+                    "UpdateAge",
+                    "update age error: ${e.message}",
+                    e
+                )
+            }
+        }
+    }
+
+
+    // =========================
+    // Edit Name
+    // =========================
+
+    fun updateName(
+        newName: String,
+        onSuccess: () -> Unit = {}
+    ) {
+
+        viewModelScope.launch {
+
+            try {
+
+                SupabaseClientProvider.client.auth.updateUser {
+
+                    data = buildJsonObject {
+                        put("full_name", newName)
+                    }
+                }
+
+                _userName.value = newName
+
+                onSuccess()
+
+            } catch (e: Exception) {
+
+                Log.e(
+                    "UpdateName",
+                    "update name error: ${e.message}",
+                    e
+                )
+
+                _errorMessage.value =
+                    "Failed to update name. Please try again."
+            }
+        }
+    }
+
+
+    // =========================
+    // Edit Email
+    // =========================
+
+    fun updateEmail(
+        newEmail: String,
+        onSuccess: () -> Unit = {}
+    ) {
+
+        viewModelScope.launch {
+
+            _errorMessage.value = null
+
+            try {
+
+                SupabaseClientProvider.client.auth.updateUser {
+
+                    email = newEmail
+                }
+
+                onSuccess()
+
+            } catch (e: Exception) {
+
+                Log.e(
+                    "UpdateEmail",
+                    "update email error: ${e.message}",
+                    e
+                )
+
+                _errorMessage.value =
+                    "Failed to update email. Please try again."
+            }
+        }
+    }
+
+
+    // =========================
+    // Verify Email Change
+    // =========================
+
+    fun verifyEmailChange(
+        newEmail: String,
+        code: String,
+        onSuccess: () -> Unit = {}
+    ) {
+
+        viewModelScope.launch {
+
+            _isLoading.value = true
+            _errorMessage.value = null
+
+            try {
+
+                SupabaseClientProvider.client.auth
+                    .verifyEmailOtp(
+                        type = OtpType.Email.EMAIL_CHANGE,
+                        email = newEmail,
+                        token = code
+                    )
+
+                _userEmail.value = newEmail
+
+                loadUserProfile()
+
+                onSuccess()
+
+            } catch (e: Exception) {
+
+                Log.e(
+                    "VerifyEmailChange",
+                    "verify error: ${e.message}",
+                    e
+                )
+
+                _errorMessage.value =
+                    "Invalid or expired code. Please try again."
+
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+
+    // =========================
+    // Delete Account
+    // =========================
+
+    fun deleteAccount(
+        onSuccess: () -> Unit = {},
+        onError: () -> Unit = {}
+    ) {
+
+        viewModelScope.launch {
+
+            try {
+
+                SupabaseClientProvider.client
+                    .postgrest
+                    .rpc("delete_own_account")
+
+                onSuccess()
+
+            } catch (e: Exception) {
+
+                Log.e(
+                    "DeleteAccount",
+                    "delete error: ${e.message}",
+                    e
+                )
+
+                onError()
+            }
+        }
+    }
+
+
+    // =========================
+    // Upload Avatar
+    // =========================
+
+    fun uploadAvatar(
+        context: Context,
+        imageUri: Uri
+    ) {
+
+        viewModelScope.launch {
+
+            try {
+
+                val userId =
+                    SupabaseClientProvider.client.auth
+                        .currentUserOrNull()
+                        ?.id
+                        ?: return@launch
+
+                val inputStream =
+                    context.contentResolver
+                        .openInputStream(imageUri)
+
+                val bytes =
+                    inputStream?.readBytes()
+                        ?: return@launch
+
+                inputStream.close()
+
+                val fileName = "$userId.jpg"
+
+                SupabaseClientProvider.client.storage
+                    .from("avatars")
+                    .upload(fileName, bytes) {
+                        upsert = true
+                    }
+
+                val publicUrl =
+                    SupabaseClientProvider.client.storage
+                        .from("avatars")
+                        .publicUrl(fileName)
+
+                // Avatar URL 存进 Auth Metadata
+                SupabaseClientProvider.client.auth.updateUser {
+
+                    data = buildJsonObject {
+                        put("avatar_url", publicUrl)
+                    }
+                }
+
+                _userAvatarUrl.value = publicUrl
+
+            } catch (e: Exception) {
+
+                Log.e(
+                    "UploadAvatar",
+                    "upload error: ${e.message}",
+                    e
+                )
+            }
+        }
     }
 
 
@@ -348,7 +795,9 @@ class UserViewModel : ViewModel() {
     // =========================
 
     fun logout() {
+
         viewModelScope.launch {
+
             try {
 
                 SupabaseClientProvider.client.auth.signOut()
@@ -363,16 +812,14 @@ class UserViewModel : ViewModel() {
             }
         }
 
+        // 这里只清除本地 State
+        // Supabase Auth Metadata 不会被删除
         _userName.value = ""
         _userEmail.value = ""
         _userGender.value = ""
         _userAge.value = ""
-
-        // 注意：
-        // Logout 不代表这个账号变成 New User。
-        // 所以这里不要把 _isNewUser 改成 true。
-        _isNewUser.value = false
-
+        _userAvatarUrl.value = null
         _errorMessage.value = null
+        _isNewUser.value = false
     }
 }

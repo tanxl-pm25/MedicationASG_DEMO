@@ -35,7 +35,7 @@ fun SplashScreen(
     onGetStartedClick: () -> Unit = {}
 ) {
     Scaffold(
-        containerColor = Color.White
+        containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -46,7 +46,7 @@ fun SplashScreen(
             verticalArrangement = Arrangement.Center
         ) {
             Image(
-                painter = painterResource(id = R.drawable.heart_logo),
+                painter = painterResource(id = R.drawable.logoo_icon),
                 contentDescription = "App logo",
                 modifier = Modifier.height(120.dp)
             )

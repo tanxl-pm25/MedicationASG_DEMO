@@ -5,6 +5,8 @@ import com.example.medication_demo.model.Medicine
 import kotlinx.serialization.json.Json
 import com.example.medication_demo.model.MedicationTakenRecord
 import com.example.medication_demo.model.MedicationTakenRecordStorage
+import com.example.medication_demo.model.MedicationMissedRecord
+import com.example.medication_demo.model.MedicationMissedRecordStorage
 import java.time.LocalDate
 import com.example.medication_demo.model.ArchivedMedicine
 import com.example.medication_demo.model.ArchivedMedicineStorage
@@ -127,6 +129,58 @@ class MedicineLocalStorage(
                 )
             }
 
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+    //==================
+// MISSED RECORDS
+//==================
+    fun saveMissedRecords(
+        records: List<MedicationMissedRecord>
+    ) {
+        val storageRecords = records.map { record ->
+            MedicationMissedRecordStorage(
+                medicineId = record.medicineId,
+                date = record.date.toString(),
+                doseIndex = record.doseIndex,
+                reminderTime = record.reminderTime,
+                dosageAmount = record.dosageAmount,
+                dosageType = record.dosageType
+            )
+        }
+
+        sharedPreferences.edit()
+            .putString(
+                KEY_MISSED_RECORDS,
+                json.encodeToString(storageRecords)
+            )
+            .apply()
+    }
+
+    fun loadMissedRecords():
+            List<MedicationMissedRecord> {
+
+        val jsonString = sharedPreferences.getString(
+            KEY_MISSED_RECORDS,
+            null
+        ) ?: return emptyList()
+
+        return try {
+            json.decodeFromString<
+                    List<MedicationMissedRecordStorage>
+                    >(jsonString)
+                .map { record ->
+                    MedicationMissedRecord(
+                        medicineId = record.medicineId,
+                        date = LocalDate.parse(record.date),
+                        doseIndex = record.doseIndex,
+                        reminderTime = record.reminderTime,
+                        dosageAmount = record.dosageAmount,
+                        dosageType = record.dosageType
+                    )
+                }
         } catch (_: Exception) {
             emptyList()
         }
@@ -387,6 +441,7 @@ class MedicineLocalStorage(
         private const val KEY_MEDICINES = "medicines"
         private const val KEY_TAKEN_RECORDS = "taken_records"
         private const val KEY_ARCHIVED_MEDICINES = "archived_medicines"
+        private const val KEY_MISSED_RECORDS = "missed_records"
         private const val KEY_REMAINING_QUANTITIES = "remaining_quantities"
         private const val KEY_RESCHEDULED_DOSES = "rescheduled_doses"
         private const val KEY_SCHEDULE_SNAPSHOTS = "schedule_snapshots"

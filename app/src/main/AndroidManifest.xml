@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+<manifest
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 
     <application
         android:allowBackup="true"
@@ -28,13 +30,11 @@
             android:theme="@style/Theme.Medication_Demo"
             android:windowSoftInputMode="adjustResize">
 
-            <!-- Normal app launch -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- Supabase Google OAuth callback -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
 
@@ -45,7 +45,6 @@
                     android:scheme="medicationdemo"
                     android:host="login-callback" />
             </intent-filter>
-
         </activity>
         <receiver
             android:name=".reminder.MedicineAlarmReceiver"
@@ -67,6 +66,8 @@
 
         </receiver>
 
+        <receiver
+            android:name=".reminder.AppointmentNotificationReceiver"
+            android:exported="false" />
     </application>
-
 </manifest>

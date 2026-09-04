@@ -1,5 +1,7 @@
 package com.example.medication_demo.reminder
 
+import com.example.medication_demo.model.AppointmentStatus
+import com.example.medication_demo.repository.AppointmentRepository
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -74,5 +76,19 @@ class MedicineBootReceiver : BroadcastReceiver() {
                     medicine.repeatCount
             )
         }
+
+        AppointmentRepository.initialize(context)
+
+        AppointmentRepository.appointments.value
+            .filter { appointment ->
+                appointment.status ==
+                        AppointmentStatus.UPCOMING
+            }
+            .forEach { appointment ->
+                AppointmentReminderScheduler.schedule(
+                    context = context,
+                    appointment = appointment
+                )
+            }
     }
 }
