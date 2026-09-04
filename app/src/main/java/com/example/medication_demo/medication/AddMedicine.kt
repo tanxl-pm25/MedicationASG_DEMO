@@ -76,7 +76,6 @@ import com.example.medication_demo.R
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.layout.ContentScale
 import coil.compose.AsyncImage
 import com.example.medication_demo.utils.getMalaysiaDate
@@ -98,7 +97,13 @@ import androidx.compose.material.icons.outlined.Repeat
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.ui.draw.clip
 import com.example.medication_demo.reminder.openExactAlarmSettings
+import android.net.Uri
+import com.yalantis.ucrop.UCrop
+import java.io.File
+import android.app.Activity
+import androidx.activity.result.contract.ActivityResultContracts
 
 private val EditGreen = Color(0xFF148A32)
 private val EditRed = Color(0xFFFF3B30)
@@ -142,17 +147,68 @@ fun AddMedicineScreen(
     val repeatReminderEnabled by vm.repeatReminderEnabled.collectAsStateWithLifecycle()
     val repeatIntervalMinutes by vm.repeatIntervalMinutes.collectAsStateWithLifecycle()
     val repeatCount by vm.repeatCount.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val cropLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.StartActivityForResult()
+        ) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+
+                val resultUri =
+                    result.data?.let { data ->
+                        UCrop.getOutput(data)
+                    }
+                if (resultUri != null) {
+                    vm.onGalleryImageSelected(
+                        resultUri.toString()
+                    )
+                }
+            }
+        }
     val galleryLauncher =
         rememberLauncherForActivityResult(
             contract = ActivityResultContracts.GetContent()
-        ) { uri ->
-            if (uri != null) {
-                vm.onGalleryImageSelected(
-                    uri.toString()
+        ) { sourceUri ->
+            if (sourceUri != null) {
+                val destinationUri =
+                    Uri.fromFile(
+                        File(
+                            context.cacheDir,
+                            "medicine_crop_${System.currentTimeMillis()}.jpg"
+                        )
+                    )
+                val options =
+                    UCrop.Options().apply {
+                        setCircleDimmedLayer(true)
+                        setShowCropFrame(false)
+                        setShowCropGrid(false)
+                        setFreeStyleCropEnabled(false)
+                    }
+                val cropIntent =
+                    UCrop.of(
+                        sourceUri,
+                        destinationUri
+                    )
+                        .withAspectRatio(
+                            1f,
+                            1f
+                        )
+                        .withMaxResultSize(
+                            1000,
+                            1000
+                        )
+                        .withOptions(
+                            options
+                        )
+                        .getIntent(
+                            context
+                        )
+
+                cropLauncher.launch(
+                    cropIntent
                 )
             }
         }
-    val context = LocalContext.current
     val notificationPermissionLauncher =
         rememberLauncherForActivityResult(
             contract = ActivityResultContracts.RequestPermission()
@@ -225,9 +281,7 @@ fun AddMedicineScreen(
                     MedicineImageSelector(
                         presetImageRes = presetImageRes,
                         galleryImageUri = galleryImageUri,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(125.dp)
+                        modifier = Modifier.size(120.dp)
                     )
 
                     TextButton(
@@ -1033,19 +1087,18 @@ private fun MedicineImageSelector(
 ) {
     Box(
         modifier = modifier
+            .clip(CircleShape)
             .background(
-                color = Color(0xFFF5F6F7),
-                shape = RoundedCornerShape(12.dp)
+                color = Color(0xFFF5F6F7)
             )
             .border(
                 width = 1.dp,
                 color = EditBorder,
-                shape = RoundedCornerShape(12.dp)
+                shape = CircleShape
             ),
         contentAlignment = Alignment.Center
-    ) {
+    ){
         when {
-
             galleryImageUri != null -> {
                 AsyncImage(
                     model = galleryImageUri,

@@ -3,6 +3,7 @@ package com.example.medication_demo.data
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
+import io.github.jan.supabase.storage.Storage
 
 object SupabaseClientProvider {
     val client = createSupabaseClient(
@@ -13,6 +14,8 @@ object SupabaseClientProvider {
             host = "login-callback"
             scheme = "medicationdemo"
         }
+
         install(Postgrest)
+        install(Storage)
     }
 }

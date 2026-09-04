@@ -833,12 +833,8 @@ class MedicineListViewModel : ViewModel() {
                         takenRecords = takenRecords,
                         rescheduledDoses = rescheduledDoses
                     ).filter { dose ->
-                        isDoseBeforeMedicineDeletion(
-                            medicineId = archived.medicine.id,
-                            date = date,
-                            doseTime = dose.time,
-                            archivedMedicines = archivedMedicines
-                        )
+                        dose.status == DoseStatus.MISSING ||
+                                dose.status == DoseStatus.TAKEN
                     }
                 }
         return sortDosesByTime(

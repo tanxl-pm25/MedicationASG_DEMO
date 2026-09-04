@@ -18,6 +18,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import com.example.medication_demo.storage.MedicineLocalStorage
 import androidx.lifecycle.viewModelScope
+import com.example.medication_demo.data.MedicineImageRepository
 import com.example.medication_demo.repository.MedicineRepository
 import kotlinx.coroutines.launch
 import com.example.medication_demo.reminder.cancelMedicineReminders
@@ -40,6 +41,7 @@ class MedicineViewModel(
             userId = "guest"
         )
     private val medicineRepository = MedicineRepository()
+    private val medicineImageRepository = MedicineImageRepository(getApplication())
 
     private val _medicines = MutableStateFlow(localStorage.loadMedicines())
     val medicines = _medicines.asStateFlow()
@@ -851,9 +853,75 @@ class MedicineViewModel(
                 updatedMedicine
             )
             viewModelScope.launch {
-                medicineRepository.updateMedicine(
+
+                var medicineForCloud =
                     updatedMedicine
-                )
+
+                val selectedImage =
+                    updatedMedicine.galleryImageUri
+
+                val oldImageUrl =
+                    oldMedicine.galleryImageUri
+
+                // User selected a new local gallery image
+                if (
+                    !selectedImage.isNullOrBlank() &&
+                    !selectedImage.startsWith("http")
+                )  {
+
+                    val uploadedUrl =
+                        medicineImageRepository
+                            .uploadMedicineImage(
+                                userId = currentUserId,
+                                medicineId = updatedMedicine.id,
+                                imageUri = selectedImage
+                            )
+
+                    if (uploadedUrl != null) {
+
+                        medicineForCloud =
+                            updatedMedicine.copy(
+                                galleryImageUri = uploadedUrl
+                            )
+
+                        // Replace the temporary content:// URI
+                        // with the real Supabase Storage URL locally
+                        _medicines.value =
+                            _medicines.value.map { medicine ->
+
+                                if (
+                                    medicine.id ==
+                                    updatedMedicine.id
+                                ) {
+                                    medicineForCloud
+                                } else {
+                                    medicine
+                                }
+                            }
+
+                        localStorage.saveMedicines(
+                            _medicines.value
+                        )
+                    }
+                }
+
+                val updateSuccess =
+                    medicineRepository.updateMedicine(
+                        medicineForCloud
+                    )
+
+                // Only delete old Storage image
+                // after the new medicine data was saved successfully.
+                if (
+                    updateSuccess &&
+                    medicineForCloud.galleryImageUri != oldImageUrl &&
+                    oldImageUrl?.startsWith("http") == true
+                ) {
+                    medicineImageRepository
+                        .deleteMedicineImage(
+                            oldImageUrl
+                        )
+                }
             }
         }
 
@@ -926,10 +994,39 @@ class MedicineViewModel(
         localStorage.saveMedicines(_medicines.value)
         _remainingQuantities.value += (newMedicine.id to (newMedicine.quantity.toDoubleOrNull() ?: 0.0))
         localStorage.saveRemainingQuantities(_remainingQuantities.value)
+
         viewModelScope.launch {
-            medicineRepository.addMedicine(
-                newMedicine
-            )
+            var medicineForCloud = newMedicine
+            val localImageUri = newMedicine.galleryImageUri
+            if (
+                !localImageUri.isNullOrBlank() &&
+                !localImageUri.startsWith("http")
+            )  {
+                val uploadedUrl =
+                    medicineImageRepository
+                        .uploadMedicineImage(
+                            userId = currentUserId,
+                            medicineId = newMedicine.id,
+                            imageUri = localImageUri
+                        )
+                if (uploadedUrl != null) {
+                    medicineForCloud = newMedicine.copy(galleryImageUri = uploadedUrl)
+                    // Update local medicine as well, so future reloads use the cloud URL.
+                    _medicines.value =
+                        _medicines.value.map {
+                                medicine ->
+                            if (
+                                medicine.id == newMedicine.id
+                            ) {
+                                medicineForCloud
+                            } else {
+                                medicine
+                            }
+                        }
+                    localStorage.saveMedicines(_medicines.value)
+                }
+            }
+            medicineRepository.addMedicine(medicineForCloud)
         }
         val medicineStartDate =
             parseMedicineDate(
@@ -997,13 +1094,21 @@ class MedicineViewModel(
         )
 
         viewModelScope.launch {
-            medicineRepository.deleteMedicine(id)
+            val deleteSuccess = medicineRepository.deleteMedicine(id)
+            if (
+                deleteSuccess && medicineToDelete.galleryImageUri?.startsWith("http") == true
+            ) {
+                medicineImageRepository.deleteMedicineImage(medicineToDelete.galleryImageUri)
+            }
         }
 
         // Clear low stock event if this medicine
         // happens to be the current event
         if (_lowStockMedicineId.value == id) {
             _lowStockMedicineId.value = null
+        }
+        if (_insufficientStockMedicineId.value == id) {
+            _insufficientStockMedicineId.value = null
         }
     }
 
@@ -1337,7 +1442,6 @@ class MedicineViewModel(
         _scheduleSnapshots.value = localStorage.loadScheduleSnapshots()
         _takenRecords.value = localStorage.loadTakenRecords()
         _lowStockMedicineId.value = null
-        resetAddMedicineForm()
         _medicines.value.forEach { medicine ->
             scheduleNextMedicineDose(
                 medicine

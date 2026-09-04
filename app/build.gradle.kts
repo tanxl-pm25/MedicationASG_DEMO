@@ -39,6 +39,10 @@ android {
 }
 
 dependencies {
+    implementation("androidx.transition:transition:1.6.0")
+    implementation("androidx.appcompat:appcompat:1.7.1")
+    implementation("com.github.yalantis:ucrop:2.2.11-native")
+    implementation("io.github.jan-tennert.supabase:storage-kt")
     implementation("androidx.credentials:credentials:1.3.0")
     implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
     implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
