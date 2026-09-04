@@ -1,22 +1,6 @@
 package com.example.medication_demo.appointment
 
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import com.example.medication_demo.ui.AppTopBar
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
-import com.example.medication_demo.R
-import com.example.medication_demo.model.AppointmentStatus
-import androidx.compose.foundation.lazy.items
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -33,6 +17,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -52,20 +38,28 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.medication_demo.R
+import com.example.medication_demo.model.AppointmentStatus
 import com.example.medication_demo.model.AppointmentUi
+import com.example.medication_demo.ui.AppTopBar
+import com.example.medication_demo.ui.theme.Medication_DemoTheme
 import com.example.medication_demo.viewmodel.AppointmentListViewModel
-
-
-private val AppGreen = Color(0xFF16843A)
-private val SoftGrey = Color(0xFFF5F5F5)
-private val TextGrey = Color(0xFF757575)
-private val DarkText = Color(0xFF242424)
-
 
 @Composable
 fun AppointmentListScreen(
@@ -74,18 +68,17 @@ fun AppointmentListScreen(
     onAppointmentClick: (AppointmentUi) -> Unit = {},
     viewModel: AppointmentListViewModel = viewModel()
 ) {
-
     val uiState by viewModel.uiState.collectAsState()
+
     var showHelpDialog by remember {
         mutableStateOf(false)
     }
+
     Scaffold(
         modifier = Modifier
             .fillMaxSize()
             .navigationBarsPadding(),
-
         containerColor = MaterialTheme.colorScheme.background,
-
         topBar = {
             AppTopBar(
                 title = "Appointments",
@@ -96,12 +89,13 @@ fun AppointmentListScreen(
                 }
             )
         },
-
         bottomBar = {
-
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .background(
+                        MaterialTheme.colorScheme.background
+                    )
                     .padding(
                         start = 20.dp,
                         end = 20.dp,
@@ -109,7 +103,6 @@ fun AppointmentListScreen(
                         bottom = 34.dp
                     )
             ) {
-
                 Button(
                     onClick = onAddAppointmentClick,
                     modifier = Modifier
@@ -117,10 +110,12 @@ fun AppointmentListScreen(
                         .height(54.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = AppGreen
+                        containerColor =
+                            MaterialTheme.colorScheme.primary,
+                        contentColor =
+                            MaterialTheme.colorScheme.onPrimary
                     )
                 ) {
-
                     Icon(
                         imageVector = Icons.Default.Add,
                         contentDescription = null,
@@ -145,43 +140,19 @@ fun AppointmentListScreen(
                 .padding(innerPadding)
                 .padding(horizontal = 20.dp)
         ) {
-
-
-            if (showHelpDialog) {
-                AlertDialog(
-                    onDismissRequest = {
-                        showHelpDialog = false
-                    },
-                    title = {
-                        Text("Appointments Help")
-                    },
-                    text = {
-                        Text(
-                            "Add an appointment using the button below. " +
-                                    "Tap an appointment to view, edit, " +
-                                    "reschedule, or delete it."
-                        )
-                    },
-                    confirmButton = {
-                        TextButton(
-                            onClick = {
-                                showHelpDialog = false
-                            }
-                        ) {
-                            Text("Got it")
-                        }
-                    }
-                )
-            }
-
             Spacer(
                 modifier = Modifier.height(26.dp)
             )
 
             AppointmentTabs(
-                isUpcomingSelected = uiState.isUpcomingSelected,
-                onUpcomingClick = { viewModel.showUpcoming() },
-                onHistoryClick = { viewModel.showHistory() }
+                isUpcomingSelected =
+                    uiState.isUpcomingSelected,
+                onUpcomingClick = {
+                    viewModel.showUpcoming()
+                },
+                onHistoryClick = {
+                    viewModel.showHistory()
+                }
             )
 
             Spacer(modifier = Modifier.height(22.dp))
@@ -193,8 +164,7 @@ fun AppointmentListScreen(
                     } else {
                         "History (${uiState.selectedCount})"
                     },
-
-                color = DarkText,
+                color = MaterialTheme.colorScheme.onBackground,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.SemiBold
             )
@@ -203,17 +173,13 @@ fun AppointmentListScreen(
                 modifier = Modifier.height(10.dp)
             )
 
-            if (
-                uiState.displayedAppointments.isEmpty()
-            ) {
-
+            if (uiState.displayedAppointments.isEmpty()) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 80.dp),
                     contentAlignment = Alignment.Center
                 ) {
-
                     Text(
                         text =
                             if (uiState.isUpcomingSelected) {
@@ -221,18 +187,20 @@ fun AppointmentListScreen(
                             } else {
                                 "No appointment history yet."
                             },
-                        color = TextGrey
+                        color =
+                            MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-
             } else {
-
                 LazyColumn(
                     modifier = Modifier.fillMaxWidth(),
-                    contentPadding = PaddingValues(bottom = 12.dp)
+                    contentPadding =
+                        PaddingValues(bottom = 12.dp)
                 ) {
                     if (uiState.isUpcomingSelected) {
-                        items(uiState.upcomingAppointments) { appointment ->
+                        items(
+                            uiState.upcomingAppointments
+                        ) { appointment ->
                             AppointmentItem(
                                 appointment = appointment,
                                 showStatus = false,
@@ -242,18 +210,26 @@ fun AppointmentListScreen(
                             )
 
                             HorizontalDivider(
-                                color = Color(0xFFF0F0F0)
+                                color =
+                                    MaterialTheme.colorScheme.outline
                             )
                         }
                     } else {
-                        if (uiState.actionNeededAppointments.isNotEmpty()) {
+                        if (
+                            uiState.actionNeededAppointments
+                                .isNotEmpty()
+                        ) {
                             item {
                                 HistorySectionTitle(
-                                    text = "Action Needed (${uiState.actionNeededAppointments.size})"
+                                    text =
+                                        "Action Needed " +
+                                                "(${uiState.actionNeededAppointments.size})"
                                 )
                             }
 
-                            items(uiState.actionNeededAppointments) { appointment ->
+                            items(
+                                uiState.actionNeededAppointments
+                            ) { appointment ->
                                 AppointmentItem(
                                     appointment = appointment,
                                     showStatus = true,
@@ -263,19 +239,27 @@ fun AppointmentListScreen(
                                 )
 
                                 HorizontalDivider(
-                                    color = Color(0xFFF0F0F0)
+                                    color =
+                                        MaterialTheme.colorScheme.outline
                                 )
                             }
                         }
 
-                        if (uiState.resolvedAppointments.isNotEmpty()) {
+                        if (
+                            uiState.resolvedAppointments
+                                .isNotEmpty()
+                        ) {
                             item {
                                 HistorySectionTitle(
-                                    text = "Completed & Rescheduled (${uiState.resolvedAppointments.size})"
+                                    text =
+                                        "Completed & Rescheduled " +
+                                                "(${uiState.resolvedAppointments.size})"
                                 )
                             }
 
-                            items(uiState.resolvedAppointments) { appointment ->
+                            items(
+                                uiState.resolvedAppointments
+                            ) { appointment ->
                                 AppointmentItem(
                                     appointment = appointment,
                                     showStatus = true,
@@ -285,7 +269,8 @@ fun AppointmentListScreen(
                                 )
 
                                 HorizontalDivider(
-                                    color = Color(0xFFF0F0F0)
+                                    color =
+                                        MaterialTheme.colorScheme.outline
                                 )
                             }
                         }
@@ -294,71 +279,97 @@ fun AppointmentListScreen(
             }
         }
     }
-}
 
+    if (showHelpDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showHelpDialog = false
+            },
+            containerColor = MaterialTheme.colorScheme.surface,
+            titleContentColor =
+                MaterialTheme.colorScheme.onSurface,
+            textContentColor =
+                MaterialTheme.colorScheme.onSurfaceVariant,
+            title = {
+                Text(
+                    text = "Appointments Help"
+                )
+            },
+            text = {
+                Text(
+                    text =
+                        "Add an appointment using the button below. " +
+                                "Tap an appointment to view, edit, " +
+                                "reschedule, or delete it."
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showHelpDialog = false
+                    }
+                ) {
+                    Text(
+                        text = "Got it",
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+        )
+    }
+}
 
 @Composable
 private fun AppointmentTopBar(
     onBackClick: () -> Unit,
     onNotificationClick: () -> Unit
 ) {
-
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(62.dp),
+            .height(62.dp)
+            .background(
+                MaterialTheme.colorScheme.background
+            ),
         contentAlignment = Alignment.Center
     ) {
-
         IconButton(
             onClick = onBackClick,
-            modifier = Modifier
-                .align(
-                    Alignment.CenterStart
-                )
+            modifier = Modifier.align(
+                Alignment.CenterStart
+            )
         ) {
-
             Icon(
-                imageVector =
-                    Icons.Default.ArrowBack,
-
+                imageVector = Icons.Default.ArrowBack,
                 contentDescription = "Back",
-                tint = DarkText,
+                tint = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.size(24.dp)
             )
         }
-
 
         Text(
             text = "Appointments",
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
-            color = DarkText
+            color = MaterialTheme.colorScheme.onBackground
         )
-
 
         IconButton(
             onClick = onNotificationClick,
-            modifier = Modifier
-                .align(
-                    Alignment.CenterEnd
-                )
+            modifier = Modifier.align(
+                Alignment.CenterEnd
+            )
         ) {
-
             Icon(
                 imageVector =
                     Icons.Default.NotificationsNone,
-
-                contentDescription =
-                    "Notifications",
-
-                tint = DarkText,
+                contentDescription = "Notifications",
+                tint = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.size(25.dp)
             )
         }
     }
 }
-
 
 @Composable
 private fun AppointmentTabs(
@@ -366,19 +377,16 @@ private fun AppointmentTabs(
     onUpcomingClick: () -> Unit,
     onHistoryClick: () -> Unit
 ) {
-
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-
         AppointmentTab(
             text = "Upcoming",
             isSelected = isUpcomingSelected,
             onClick = onUpcomingClick,
             modifier = Modifier.weight(1f)
         )
-
 
         AppointmentTab(
             text = "History",
@@ -389,7 +397,6 @@ private fun AppointmentTabs(
     }
 }
 
-
 @Composable
 private fun AppointmentTab(
     text: String,
@@ -397,47 +404,36 @@ private fun AppointmentTab(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-
     Box(
         modifier = modifier
             .height(46.dp)
             .background(
                 color =
                     if (isSelected) {
-                        AppGreen
+                        MaterialTheme.colorScheme.primary
                     } else {
-                        SoftGrey
+                        MaterialTheme.colorScheme.surfaceVariant
                     },
-
-                shape =
-                    RoundedCornerShape(
-                        10.dp
-                    )
+                shape = RoundedCornerShape(10.dp)
             )
             .clickable(
                 onClick = onClick
             ),
-
         contentAlignment = Alignment.Center
     ) {
-
         Text(
             text = text,
-
             color =
                 if (isSelected) {
-                    Color.White
+                    MaterialTheme.colorScheme.onPrimary
                 } else {
-                    TextGrey
+                    MaterialTheme.colorScheme.onSurfaceVariant
                 },
-
             fontSize = 15.sp,
-            fontWeight =
-                FontWeight.SemiBold
+            fontWeight = FontWeight.SemiBold
         )
     }
 }
-
 
 @Composable
 private fun AppointmentItem(
@@ -450,7 +446,7 @@ private fun AppointmentItem(
             .fillMaxWidth()
             .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(
-            containerColor = Color.White
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(
             defaultElevation = 0.dp
@@ -480,7 +476,7 @@ private fun AppointmentItem(
             ) {
                 Text(
                     text = appointment.doctor,
-                    color = DarkText,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -489,7 +485,8 @@ private fun AppointmentItem(
 
                 Text(
                     text = appointment.appointmentName,
-                    color = TextGrey,
+                    color =
+                        MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 14.sp
                 )
 
@@ -498,7 +495,8 @@ private fun AppointmentItem(
                 Row {
                     Text(
                         text = appointment.date,
-                        color = TextGrey,
+                        color =
+                            MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 13.sp
                     )
 
@@ -506,21 +504,27 @@ private fun AppointmentItem(
 
                     Text(
                         text = appointment.time,
-                        color = TextGrey,
+                        color =
+                            MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 13.sp
                     )
                 }
 
                 if (showStatus) {
                     Spacer(modifier = Modifier.height(9.dp))
-                    AppointmentStatusBadge(status = appointment.status)
+
+                    AppointmentStatusBadge(
+                        status = appointment.status
+                    )
                 }
             }
 
             Icon(
                 imageVector = Icons.Default.ChevronRight,
-                contentDescription = "View appointment details",
-                tint = TextGrey
+                contentDescription =
+                    "View appointment details",
+                tint =
+                    MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -530,36 +534,51 @@ private fun AppointmentItem(
 private fun AppointmentStatusBadge(
     status: AppointmentStatus
 ) {
-    val (label, backgroundColor, textColor) = when (status) {
-        AppointmentStatus.COMPLETED -> Triple(
-            "Completed",
-            Color(0xFFE6F4EA),
-            AppGreen
-        )
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val errorColor = MaterialTheme.colorScheme.error
+    val neutralColor =
+        MaterialTheme.colorScheme.onSurfaceVariant
+    val blueColor = Color(0xFF5B9FE3)
 
-        AppointmentStatus.MISSED -> Triple(
-            "Missed",
-            Color(0xFFFFE9E7),
-            Color(0xFFC62828)
-        )
+    val label: String
+    val backgroundColor: Color
+    val textColor: Color
 
-        AppointmentStatus.CANCELLED -> Triple(
-            "Cancelled",
-            Color(0xFFF0F0F0),
-            TextGrey
-        )
+    when (status) {
+        AppointmentStatus.COMPLETED -> {
+            label = "Completed"
+            backgroundColor =
+                primaryColor.copy(alpha = 0.14f)
+            textColor = primaryColor
+        }
 
-        AppointmentStatus.UPCOMING -> Triple(
-            "Upcoming",
-            Color(0xFFF0F0F0),
-            TextGrey
-        )
+        AppointmentStatus.MISSED -> {
+            label = "Missed"
+            backgroundColor =
+                errorColor.copy(alpha = 0.14f)
+            textColor = errorColor
+        }
 
-        AppointmentStatus.RESCHEDULED -> Triple(
-            "Rescheduled",
-            Color(0xFFE8F0FE),
-            Color(0xFF2563EB)
-        )
+        AppointmentStatus.CANCELLED -> {
+            label = "Cancelled"
+            backgroundColor =
+                MaterialTheme.colorScheme.surfaceVariant
+            textColor = neutralColor
+        }
+
+        AppointmentStatus.UPCOMING -> {
+            label = "Upcoming"
+            backgroundColor =
+                MaterialTheme.colorScheme.surfaceVariant
+            textColor = neutralColor
+        }
+
+        AppointmentStatus.RESCHEDULED -> {
+            label = "Rescheduled"
+            backgroundColor =
+                blueColor.copy(alpha = 0.16f)
+            textColor = blueColor
+        }
     }
 
     Box(
@@ -568,7 +587,10 @@ private fun AppointmentStatusBadge(
                 color = backgroundColor,
                 shape = RoundedCornerShape(6.dp)
             )
-            .padding(horizontal = 9.dp, vertical = 4.dp)
+            .padding(
+                horizontal = 9.dp,
+                vertical = 4.dp
+            )
     ) {
         Text(
             text = label,
@@ -578,6 +600,7 @@ private fun AppointmentStatusBadge(
         )
     }
 }
+
 @Composable
 private fun HistorySectionTitle(
     text: String
@@ -588,7 +611,7 @@ private fun HistorySectionTitle(
             top = 14.dp,
             bottom = 6.dp
         ),
-        color = DarkText,
+        color = MaterialTheme.colorScheme.onBackground,
         fontSize = 15.sp,
         fontWeight = FontWeight.Bold
     )
@@ -612,8 +635,7 @@ private fun doctorAvatarFor(
 )
 @Composable
 private fun AppointmentListScreenPreview() {
-
-    MaterialTheme {
+    Medication_DemoTheme {
         AppointmentListScreen()
     }
 }
