@@ -1210,13 +1210,61 @@ class MedicineViewModel(
                     getMalaysiaTime()
                 )
 
+        val rescheduledDose =
+            _rescheduledDoses.value
+                .firstOrNull { dose ->
+                    if (
+                        dose.medicineId != medicine.id ||
+                        dose.date != nowDateTime.toLocalDate()
+                    ) {
+                        return@firstOrNull false
+                    }
 
+                    val rescheduledTime =
+                        parseMedicineTime(
+                            dose.newTime
+                        ) ?: return@firstOrNull false
+
+                    dose.date
+                        .atTime(rescheduledTime)
+                        .isAfter(nowDateTime)
+                }
+
+        if (rescheduledDose != null) {
+            val rescheduledTime =
+                parseMedicineTime(
+                    rescheduledDose.newTime
+                ) ?: return
+
+            val delayMillis =
+                java.time.Duration
+                    .between(
+                        nowDateTime,
+                        rescheduledDose.date
+                            .atTime(rescheduledTime)
+                    )
+                    .toMillis()
+                    .coerceAtLeast(0L)
+
+            scheduleMedicineDose(
+                context = getApplication(),
+                userId = currentUserId,
+                medicine = medicine,
+                doseIndex = rescheduledDose.doseIndex,
+                doseDate = rescheduledDose.date,
+                scheduledTime = rescheduledDose.newTime,
+                delayMillis = delayMillis
+            )
+
+            return
+        }
 
         val nextDose =
             findNextScheduledDose(
                 medicine = medicine,
                 afterDateTime = nowDateTime.minusSeconds(1)
             ) ?: return
+
         val scheduledDateTime =
             nextDose.doseDate
                 .atTime(
@@ -1242,7 +1290,6 @@ class MedicineViewModel(
             delayMillis = delayMillis
         )
     }
-
     fun addReminderTime() {
         if (_requiredReminderTimeCount.value == 0) {
             return

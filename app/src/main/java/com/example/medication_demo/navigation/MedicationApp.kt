@@ -1064,18 +1064,7 @@ fun MedicationApp(
                     onAppointmentClick = {appointment ->
                         navController.navigate(
                             "appointmentDetails/${appointment.id}"
-                        )},
-                    onNotificationClick = {
-                        AppointmentRepository.appointments.value
-                            .firstOrNull {
-                                it.status == AppointmentStatus.UPCOMING
-                            }
-                            ?.let { appointment ->
-                                AppointmentReminder.showTestNotification(
-                                    context = context,
-                                    appointment = appointment
-                                )
-                            }
+                        )
                     }
                 )
             }

@@ -96,6 +96,13 @@ fun scheduleMedicineAlarm(
             .toInstant()
             .toEpochMilli()
 
+    android.util.Log.d(
+        "MedicineAlarm",
+        "Scheduled: medicineId=$medicineId, " +
+                "time=$doseDate $scheduledTime, " +
+                "trigger=$triggerMillis"
+    )
+
     if (
         Build.VERSION.SDK_INT >=
         Build.VERSION_CODES.S

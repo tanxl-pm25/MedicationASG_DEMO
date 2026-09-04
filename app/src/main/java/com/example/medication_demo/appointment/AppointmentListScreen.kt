@@ -72,7 +72,6 @@ fun AppointmentListScreen(
     onBackClick: () -> Unit = {},
     onAddAppointmentClick: () -> Unit = {},
     onAppointmentClick: (AppointmentUi) -> Unit = {},
-    onNotificationClick: () -> Unit = {},
     viewModel: AppointmentListViewModel = viewModel()
 ) {
 
@@ -86,6 +85,17 @@ fun AppointmentListScreen(
             .navigationBarsPadding(),
 
         containerColor = MaterialTheme.colorScheme.background,
+
+        topBar = {
+            AppTopBar(
+                title = "Appointments",
+                onBackClick = onBackClick,
+                showMoreMenu = true,
+                onHelpClick = {
+                    showHelpDialog = true
+                }
+            )
+        },
 
         bottomBar = {
 
@@ -136,14 +146,6 @@ fun AppointmentListScreen(
                 .padding(horizontal = 20.dp)
         ) {
 
-            AppTopBar(
-                title = "Appointments",
-                onBackClick = onBackClick,
-                showMoreMenu = true,
-                onHelpClick = {
-                    showHelpDialog = true
-                }
-            )
 
             if (showHelpDialog) {
                 AlertDialog(
@@ -293,8 +295,6 @@ fun AppointmentListScreen(
         }
     }
 }
-
-fun mutableStateOf(bool: Boolean) {}
 
 
 @Composable

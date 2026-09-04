@@ -54,265 +54,260 @@ fun MonthlyStatisticsScreen(
             java.time.YearMonth.now()
         )
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White)
-            .navigationBarsPadding()
-            .padding(horizontal = 20.dp)
-    ) {
-
-        // TOP BAR
-        AppTopBar(
-            title = "Monthly Statistics",
-            onBackClick = onBack
-        )
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-
-        // MONTH SELECTOR
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+    Scaffold(
+        containerColor = Color.White,
+        topBar = {
+            AppTopBar(
+                title = "Monthly Statistics",
+                onBackClick = onBack
+            )
+        }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(horizontal = 20.dp)
         ) {
 
-            // Left button
-            Box(
-                modifier = Modifier
-                    .size(34.dp)
-                    .background(
-                        color = Color(0xFFF8F9F8),
-                        shape = RoundedCornerShape(50)
-                    )
-                    .clickable {
-                        viewModel.previousMonth()
-                    },
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.ChevronLeft,
-                    contentDescription = "Previous",
-                    tint = Color(0xFF777777),
-                    modifier = Modifier.size(20.dp)
-                )
-            }
+            Spacer(modifier = Modifier.height(14.dp))
 
-            Spacer(modifier = Modifier.width(14.dp))
-
-            // Month box
-            Row(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(38.dp)
-                    .background(
-                        color = Color(0xFFFAFAFA),
-                        shape = RoundedCornerShape(20.dp)
-                    )
-                    .padding(horizontal = 16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
-
-                Text(
-                    text = selectedMonth,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color(0xFF333333)
-                )
-
-                Spacer(modifier = Modifier.width(8.dp))
-            }
-
-            // Right button
-            Box(
-                modifier = Modifier
-                    .size(34.dp)
-                    .background(
-                        color = Color(0xFFF8F9F8),
-                        shape = RoundedCornerShape(50)
-                    )
-                    .alpha(
-                        if (canGoNext) 1f else 0.35f
-                    )
-                    .clickable(
-                        enabled = canGoNext
-                    ) {
-                        viewModel.nextMonth()
-                    },
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.ChevronRight,
-                    contentDescription = "Next",
-                    tint = Color(0xFF777777),
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        if (uiState.totalDoses == 0) {
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            EmptyMonthlyStatisticsState(
-                selectedMonth = selectedMonth
-            )
-
-            Spacer(modifier = Modifier.weight(1f))
-
-        } else {
-            // MEDICATION ADHERENCE CARD
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(105.dp),
-                shape = RoundedCornerShape(10.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = Color(0xFFF5FBF7)
-                ),
-                elevation = CardDefaults.cardElevation(
-                    defaultElevation = 1.dp
-                )
-            ) {
-
-                Column(
-                    modifier = Modifier.padding(
-                        start = 14.dp,
-                        top = 10.dp
-                    )
-                ) {
-
-                    Text(
-                        text = "Medication Adherence",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color(0xFF555555)
-                    )
-
-                    Text(
-                        text = "${uiState.adherencePercentage}%",
-                        fontSize = 30.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF20A447)
-                    )
-
-                    Text(
-                        text = uiState.adherenceMessage,
-                        fontSize = 12.sp,
-                        color = Color(0xFF57A96C)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // ADHERENCE OVER TIME CHART (bar chart)
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(220.dp),
-                shape = RoundedCornerShape(10.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = Color.White
-                ),
-                elevation = CardDefaults.cardElevation(
-                    defaultElevation = 1.dp
-                )
-            ) {
-
-                Column(
-                    modifier = Modifier.padding(
-                        start = 12.dp,
-                        end = 10.dp,
-                        top = 10.dp
-                    )
-                ) {
-
-                    Text(
-                        text = "Adherence Over Time",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF444444)
-                    )
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    AdherenceChart(
-                        values = uiState.chartValues,
-                        labels = uiState.chartLabels
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // STATISTICS CARDS
+            // MONTH SELECTOR
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                Box(
+                    modifier = Modifier
+                        .size(34.dp)
+                        .background(
+                            color = Color(0xFFF8F9F8),
+                            shape = RoundedCornerShape(50)
+                        )
+                        .clickable {
+                            viewModel.previousMonth()
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ChevronLeft,
+                        contentDescription = "Previous",
+                        tint = Color(0xFF777777),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
 
-                StatisticCard(
-                    modifier = Modifier.weight(1f),
-                    icon = Icons.Default.CheckCircle,
-                    iconColor = Color(0xFF20A447),
-                    title = "Taken",
-                    value = uiState.takenDoses.toString(),
-                    unit = "doses"
-                )
+                Spacer(modifier = Modifier.width(14.dp))
 
-                StatisticCard(
-                    modifier = Modifier.weight(1f),
-                    icon = Icons.Default.Cancel,
-                    iconColor = Color(0xFFE53935),
-                    title = "Missed",
-                    value = uiState.missedDoses.toString(),
-                    unit = "doses"
-                )
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(38.dp)
+                        .background(
+                            color = Color(0xFFFAFAFA),
+                            shape = RoundedCornerShape(20.dp)
+                        )
+                        .padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = selectedMonth,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF333333)
+                    )
+                }
 
-                StatisticCard(
-                    modifier = Modifier.weight(1f),
-                    icon = Icons.Default.Description,
-                    iconColor = Color(0xFF4285D4),
-                    title = "Total",
-                    value = uiState.totalDoses.toString(),
-                    unit = "doses"
-                )
+                Spacer(modifier = Modifier.width(14.dp))
+
+                Box(
+                    modifier = Modifier
+                        .size(34.dp)
+                        .background(
+                            color = Color(0xFFF8F9F8),
+                            shape = RoundedCornerShape(50)
+                        )
+                        .alpha(if (canGoNext) 1f else 0.35f)
+                        .clickable(enabled = canGoNext) {
+                            viewModel.nextMonth()
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ChevronRight,
+                        contentDescription = "Next",
+                        tint = Color(0xFF777777),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+
+
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                if (uiState.totalDoses == 0) {
+
+                    Spacer(modifier = Modifier.weight(1f))
+
+                    EmptyMonthlyStatisticsState(
+                        selectedMonth = selectedMonth
+                    )
+
+                    Spacer(modifier = Modifier.weight(1f))
+
+                } else {
+                    // MEDICATION ADHERENCE CARD
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(105.dp),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color(0xFFF5FBF7)
+                        ),
+                        elevation = CardDefaults.cardElevation(
+                            defaultElevation = 1.dp
+                        )
+                    ) {
+
+                        Column(
+                            modifier = Modifier.padding(
+                                start = 14.dp,
+                                top = 10.dp
+                            )
+                        ) {
+
+                            Text(
+                                text = "Medication Adherence",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color(0xFF555555)
+                            )
+
+                            Text(
+                                text = "${uiState.adherencePercentage}%",
+                                fontSize = 30.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF20A447)
+                            )
+
+                            Text(
+                                text = uiState.adherenceMessage,
+                                fontSize = 12.sp,
+                                color = Color(0xFF57A96C)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // ADHERENCE OVER TIME CHART (bar chart)
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(220.dp),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color.White
+                        ),
+                        elevation = CardDefaults.cardElevation(
+                            defaultElevation = 1.dp
+                        )
+                    ) {
+
+                        Column(
+                            modifier = Modifier.padding(
+                                start = 12.dp,
+                                end = 10.dp,
+                                top = 10.dp
+                            )
+                        ) {
+
+                            Text(
+                                text = "Adherence Over Time",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color(0xFF444444)
+                            )
+
+                            Spacer(modifier = Modifier.height(4.dp))
+
+                            AdherenceChart(
+                                values = uiState.chartValues,
+                                labels = uiState.chartLabels
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // STATISTICS CARDS
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+
+                        StatisticCard(
+                            modifier = Modifier.weight(1f),
+                            icon = Icons.Default.CheckCircle,
+                            iconColor = Color(0xFF20A447),
+                            title = "Taken",
+                            value = uiState.takenDoses.toString(),
+                            unit = "doses"
+                        )
+
+                        StatisticCard(
+                            modifier = Modifier.weight(1f),
+                            icon = Icons.Default.Cancel,
+                            iconColor = Color(0xFFE53935),
+                            title = "Missed",
+                            value = uiState.missedDoses.toString(),
+                            unit = "doses"
+                        )
+
+                        StatisticCard(
+                            modifier = Modifier.weight(1f),
+                            icon = Icons.Default.Description,
+                            iconColor = Color(0xFF4285D4),
+                            title = "Total",
+                            value = uiState.totalDoses.toString(),
+                            unit = "doses"
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // MEDICATION PERFORMANCE
+                    StatisticsMenuItem(
+                        icon = Icons.Default.Medication,
+                        iconColor = Color(0xFF36A957),
+                        backgroundColor = Color(0xFFEFFAF2),
+                        title = "Medication Performance",
+                        subtitle = "See how each medication performed this month.",
+                        onClick = onMedicationPerformanceClick
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+
+                    // MISSED MEDICATION
+                    StatisticsMenuItem(
+                        icon = Icons.Default.EventBusy,
+                        iconColor = Color(0xFFFF4A4A),
+                        backgroundColor = Color(0xFFFFF2F2),
+                        title = "Missed Medication",
+                        subtitle = "View the list of missed medications this month.",
+                        onClick = onMissedMedicationClick
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+                }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // MEDICATION PERFORMANCE
-            StatisticsMenuItem(
-                icon = Icons.Default.Medication,
-                iconColor = Color(0xFF36A957),
-                backgroundColor = Color(0xFFEFFAF2),
-                title = "Medication Performance",
-                subtitle = "See how each medication performed this month.",
-                onClick = onMedicationPerformanceClick
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-
-            // MISSED MEDICATION
-            StatisticsMenuItem(
-                icon = Icons.Default.EventBusy,
-                iconColor = Color(0xFFFF4A4A),
-                backgroundColor = Color(0xFFFFF2F2),
-                title = "Missed Medication",
-                subtitle = "View the list of missed medications this month.",
-                onClick = onMissedMedicationClick
-            )
-
-            Spacer(modifier = Modifier.height(10.dp))
         }
     }
-
-
 }
 
 

@@ -79,6 +79,12 @@ class MedicineAlarmReceiver : BroadcastReceiver() {
                 return
             }
 
+        android.util.Log.d(
+            "MedicineAlarm",
+            "Received: medicineId=$medicineId, " +
+                    "time=$doseDate $scheduledTime"
+        )
+
         val localStorage =
             MedicineLocalStorage(
                 context = context,
