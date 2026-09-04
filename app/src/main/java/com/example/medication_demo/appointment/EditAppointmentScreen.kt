@@ -1,14 +1,5 @@
 package com.example.medication_demo.appointment
 
-import com.example.medication_demo.model.AppointmentStatus
-import androidx.compose.ui.platform.LocalContext
-import com.example.medication_demo.reminder.AppointmentReminderScheduler
-import com.example.medication_demo.repository.AppointmentRepository
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardCapitalization
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -20,6 +11,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -32,22 +24,24 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.medication_demo.model.AppointmentStatus
+import com.example.medication_demo.reminder.AppointmentReminderScheduler
+import com.example.medication_demo.repository.AppointmentRepository
 import com.example.medication_demo.viewmodel.EditAppointmentViewModel
-
-private val AppointmentGreen = Color(0xFF16843A)
-private val AppointmentBorder = Color(0xFFE1E5E9)
-private val AppointmentGrey = Color(0xFF6B7280)
-private val AppointmentRed = Color(0xFFC62828)
 
 @Composable
 fun EditAppointmentScreen(
@@ -58,6 +52,7 @@ fun EditAppointmentScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+
     LaunchedEffect(appointmentId) {
         viewModel.loadAppointment(appointmentId)
     }
@@ -70,11 +65,14 @@ fun EditAppointmentScreen(
             )
         }
     ) { innerPadding ->
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(
+                    rememberScrollState()
+                )
                 .padding(horizontal = 18.dp)
         ) {
             Spacer(modifier = Modifier.height(12.dp))
@@ -88,22 +86,27 @@ fun EditAppointmentScreen(
                 errorMessage = "Doctor name is required.",
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Text,
-                    capitalization = KeyboardCapitalization.Words,
-                    imeAction = ImeAction.Next)
+                    capitalization =
+                        KeyboardCapitalization.Words,
+                    imeAction = ImeAction.Next
+                )
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             AppointmentTextField(
                 value = uiState.appointmentName,
-                onValueChange = viewModel::updateAppointmentName,
+                onValueChange =
+                    viewModel::updateAppointmentName,
                 label = "Appointment Name",
                 placeholder = "E.g. Body Check",
                 isError = uiState.appointmentNameError,
-                errorMessage = "Appointment name is required.",
+                errorMessage =
+                    "Appointment name is required.",
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Text,
-                    capitalization = KeyboardCapitalization.Words,
+                    capitalization =
+                        KeyboardCapitalization.Words,
                     imeAction = ImeAction.Next
                 )
             )
@@ -113,7 +116,8 @@ fun EditAppointmentScreen(
             Text(
                 text = "Appointment Schedule",
                 fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onBackground
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -139,7 +143,7 @@ fun EditAppointmentScreen(
 
                 Text(
                     text = message,
-                    color = AppointmentRed,
+                    color = MaterialTheme.colorScheme.error,
                     fontSize = 12.sp
                 )
             }
@@ -147,8 +151,10 @@ fun EditAppointmentScreen(
             Spacer(modifier = Modifier.height(18.dp))
 
             AppointmentReminderField(
-                selectedMinutes = uiState.reminderMinutesBefore,
-                onReminderSelected = viewModel::updateReminderMinutes
+                selectedMinutes =
+                    uiState.reminderMinutesBefore,
+                onReminderSelected =
+                    viewModel::updateReminderMinutes
             )
 
             Spacer(modifier = Modifier.height(18.dp))
@@ -159,10 +165,12 @@ fun EditAppointmentScreen(
                 label = "Hospital / Clinic",
                 placeholder = "E.g. City Medical Centre",
                 isError = uiState.locationError,
-                errorMessage = "Hospital or clinic is required.",
+                errorMessage =
+                    "Hospital or clinic is required.",
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Text,
-                    capitalization = KeyboardCapitalization.Words,
+                    capitalization =
+                        KeyboardCapitalization.Words,
                     imeAction = ImeAction.Next
                 )
             )
@@ -176,7 +184,8 @@ fun EditAppointmentScreen(
                 placeholder = "E.g. Regular check-up",
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Text,
-                    capitalization = KeyboardCapitalization.Words,
+                    capitalization =
+                        KeyboardCapitalization.Words,
                     imeAction = ImeAction.Next
                 )
             )
@@ -191,7 +200,8 @@ fun EditAppointmentScreen(
                 singleLine = false,
                 minLines = 3,
                 keyboardOptions = KeyboardOptions(
-                    capitalization = KeyboardCapitalization.Sentences,
+                    capitalization =
+                        KeyboardCapitalization.Sentences,
                     imeAction = ImeAction.Done
                 )
             )
@@ -199,7 +209,7 @@ fun EditAppointmentScreen(
             Spacer(modifier = Modifier.height(22.dp))
 
             HorizontalDivider(
-                color = AppointmentBorder
+                color = MaterialTheme.colorScheme.outline
             )
 
             Spacer(modifier = Modifier.height(18.dp))
@@ -207,25 +217,29 @@ fun EditAppointmentScreen(
             Button(
                 onClick = {
                     if (viewModel.saveChanges()) {
-                        AppointmentRepository.getAppointmentById(
-                            appointmentId
-                        )?.let { updatedAppointment ->
-
-                            AppointmentReminderScheduler.cancel(
-                                context = context,
-                                appointmentId = appointmentId
+                        AppointmentRepository
+                            .getAppointmentById(
+                                appointmentId
                             )
+                            ?.let { updatedAppointment ->
 
-                            if (
-                                updatedAppointment.status ==
-                                AppointmentStatus.UPCOMING
-                            ) {
-                                AppointmentReminderScheduler.schedule(
+                                AppointmentReminderScheduler.cancel(
                                     context = context,
-                                    appointment = updatedAppointment
+                                    appointmentId = appointmentId
                                 )
+
+                                if (
+                                    updatedAppointment.status ==
+                                    AppointmentStatus.UPCOMING
+                                ) {
+                                    AppointmentReminderScheduler.schedule(
+                                        context = context,
+                                        appointment =
+                                            updatedAppointment
+                                    )
+                                }
                             }
-                        }
+
                         onSaveSuccess()
                     }
                 },
@@ -234,7 +248,10 @@ fun EditAppointmentScreen(
                     .height(54.dp),
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = AppointmentGreen
+                    containerColor =
+                        MaterialTheme.colorScheme.primary,
+                    contentColor =
+                        MaterialTheme.colorScheme.onPrimary
                 )
             ) {
                 Text(
@@ -266,7 +283,8 @@ private fun EditAppointmentTopBar(
         ) {
             Icon(
                 imageVector = Icons.Default.ArrowBack,
-                contentDescription = "Back"
+                contentDescription = "Back",
+                tint = MaterialTheme.colorScheme.onBackground
             )
         }
 
@@ -275,7 +293,8 @@ private fun EditAppointmentTopBar(
             modifier = Modifier.weight(1f),
             textAlign = TextAlign.Center,
             fontSize = 20.sp,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground
         )
 
         Spacer(
@@ -283,4 +302,3 @@ private fun EditAppointmentTopBar(
         )
     }
 }
-

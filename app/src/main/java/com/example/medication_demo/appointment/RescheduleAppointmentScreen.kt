@@ -1,8 +1,5 @@
 package com.example.medication_demo.appointment
 
-import androidx.compose.ui.platform.LocalContext
-import com.example.medication_demo.reminder.AppointmentReminderScheduler
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -30,18 +27,15 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.medication_demo.reminder.AppointmentReminderScheduler
 import com.example.medication_demo.viewmodel.RescheduleAppointmentViewModel
-
-private val RescheduleGreen = Color(0xFF168A45)
-private val RescheduleDarkText = Color(0xFF1E293B)
-private val RescheduleTextGrey = Color(0xFF64748B)
-private val RescheduleLightGreen = Color(0xFFEAF7EE)
 
 @Composable
 fun RescheduleAppointmentScreen(
@@ -67,25 +61,28 @@ fun RescheduleAppointmentScreen(
                     .padding(horizontal = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = onBackClick) {
+                IconButton(
+                    onClick = onBackClick
+                ) {
                     Icon(
                         imageVector = Icons.Default.ArrowBack,
                         contentDescription = "Back",
-                        tint = RescheduleDarkText
+                        tint = MaterialTheme.colorScheme.onBackground
                     )
                 }
 
                 Text(
                     text = "Reschedule Appointment",
                     modifier = Modifier.weight(1f),
-                    textAlign =
-                        androidx.compose.ui.text.style.TextAlign.Center,
+                    textAlign = TextAlign.Center,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = RescheduleDarkText
+                    color = MaterialTheme.colorScheme.onBackground
                 )
 
-                Spacer(modifier = Modifier.width(48.dp))
+                Spacer(
+                    modifier = Modifier.width(48.dp)
+                )
             }
         }
     ) { innerPadding ->
@@ -98,13 +95,14 @@ fun RescheduleAppointmentScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                CircularProgressIndicator(color = RescheduleGreen)
+                CircularProgressIndicator(
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
         } else {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.White)
                     .padding(innerPadding)
                     .padding(horizontal = 20.dp)
             ) {
@@ -114,15 +112,17 @@ fun RescheduleAppointmentScreen(
                     text = "Choose a new time",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = RescheduleDarkText
+                    color = MaterialTheme.colorScheme.onBackground
                 )
 
                 Spacer(modifier = Modifier.height(6.dp))
 
                 Text(
-                    text = "Your previous appointment will remain in History.",
+                    text =
+                        "Your previous appointment will remain in History.",
                     fontSize = 14.sp,
-                    color = RescheduleTextGrey
+                    color =
+                        MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 Spacer(modifier = Modifier.height(20.dp))
@@ -130,7 +130,10 @@ fun RescheduleAppointmentScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
-                        containerColor = RescheduleLightGreen
+                        containerColor =
+                            MaterialTheme.colorScheme.primary.copy(
+                                alpha = 0.12f
+                            )
                     )
                 ) {
                     Column(
@@ -139,7 +142,7 @@ fun RescheduleAppointmentScreen(
                         Text(
                             text = uiState.doctor,
                             fontWeight = FontWeight.Bold,
-                            color = RescheduleDarkText
+                            color = MaterialTheme.colorScheme.onSurface
                         )
 
                         Spacer(modifier = Modifier.height(4.dp))
@@ -147,26 +150,33 @@ fun RescheduleAppointmentScreen(
                         Text(
                             text = uiState.appointmentName,
                             fontSize = 14.sp,
-                            color = RescheduleTextGrey
+                            color =
+                                MaterialTheme.colorScheme
+                                    .onSurfaceVariant
                         )
 
                         Spacer(modifier = Modifier.height(10.dp))
 
                         Row(
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment =
+                                Alignment.CenterVertically
                         ) {
                             Icon(
                                 imageVector = Icons.Default.LocationOn,
                                 contentDescription = null,
-                                tint = RescheduleGreen
+                                tint =
+                                    MaterialTheme.colorScheme.primary
                             )
 
-                            Spacer(modifier = Modifier.width(6.dp))
+                            Spacer(
+                                modifier = Modifier.width(6.dp)
+                            )
 
                             Text(
                                 text = uiState.location,
                                 fontSize = 14.sp,
-                                color = RescheduleDarkText
+                                color =
+                                    MaterialTheme.colorScheme.onSurface
                             )
                         }
                     }
@@ -188,7 +198,6 @@ fun RescheduleAppointmentScreen(
                     onValueChange = viewModel::updateTime,
                     isError = uiState.timeError,
                     modifier = Modifier.fillMaxWidth()
-
                 )
 
                 uiState.scheduleError?.let { message ->
@@ -196,7 +205,7 @@ fun RescheduleAppointmentScreen(
 
                     Text(
                         text = message,
-                        color = Color(0xFFE53935),
+                        color = MaterialTheme.colorScheme.error,
                         fontSize = 12.sp
                     )
                 }
@@ -235,8 +244,10 @@ fun RescheduleAppointmentScreen(
                         .fillMaxWidth()
                         .height(52.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = RescheduleGreen,
-                        contentColor = Color.White
+                        containerColor =
+                            MaterialTheme.colorScheme.primary,
+                        contentColor =
+                            MaterialTheme.colorScheme.onPrimary
                     )
                 ) {
                     Text(
