@@ -1,19 +1,7 @@
 package com.example.medication_demo.appointment
 
-import androidx.compose.ui.platform.LocalContext
-import com.example.medication_demo.reminder.AppointmentReminderScheduler
-import androidx.compose.material3.AlertDialog
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
-import com.example.medication_demo.R
-import androidx.compose.material.icons.filled.NotificationsNone
-import androidx.compose.runtime.getValue
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.medication_demo.viewmodel.AppointmentDetailsViewModel
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -29,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -37,10 +26,12 @@ import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.MedicalInformation
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Notes
+import androidx.compose.material.icons.filled.NotificationsNone
 import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material.icons.filled.MedicalInformation
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -51,25 +42,29 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.medication_demo.R
 import com.example.medication_demo.model.AppointmentStatus
+import com.example.medication_demo.reminder.AppointmentReminderScheduler
+import com.example.medication_demo.ui.theme.Medication_DemoTheme
+import com.example.medication_demo.viewmodel.AppointmentDetailsViewModel
 import com.example.medication_demo.viewmodel.AppointmentDetailsViewModelFactory
-
-private val AppGreen = Color(0xFF16843A)
-private val LightGreen = Color(0xFFE6F4EA)
-private val TextGrey = Color(0xFF757575)
-private val DarkText = Color(0xFF17233C)
-private val SoftGrey = Color(0xFFF5F5F5)
-private val Red = Color(0xFFFF3B30)
 
 @Composable
 fun AppointmentDetailsScreen(
@@ -79,32 +74,34 @@ fun AppointmentDetailsScreen(
     onDeleteSuccess: () -> Unit = {},
     onRescheduleClick: () -> Unit = {},
     viewModel: AppointmentDetailsViewModel = viewModel(
-        factory = AppointmentDetailsViewModelFactory(appointmentId)
+        factory = AppointmentDetailsViewModelFactory(
+            appointmentId
+        )
     )
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    var showDeleteConfirmation by remember { mutableStateOf(false) }
 
+    var showDeleteConfirmation by remember {
+        mutableStateOf(false)
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .statusBarsPadding()
             .navigationBarsPadding()
-            .background(Color.White)
+            .background(
+                MaterialTheme.colorScheme.background
+            )
             .padding(horizontal = 20.dp)
     ) {
-
-        // TOP BAR
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(62.dp),
             contentAlignment = Alignment.Center
         ) {
-
-            // Back Arrow
             Box(
                 modifier = Modifier
                     .align(Alignment.CenterStart)
@@ -117,7 +114,7 @@ fun AppointmentDetailsScreen(
                 Icon(
                     imageVector = Icons.Default.ArrowBack,
                     contentDescription = "Back",
-                    tint = DarkText,
+                    tint = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier.size(24.dp)
                 )
             }
@@ -126,10 +123,9 @@ fun AppointmentDetailsScreen(
                 text = "Appointment Details",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = DarkText
+                color = MaterialTheme.colorScheme.onBackground
             )
 
-            // More
             Box(
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
@@ -139,7 +135,7 @@ fun AppointmentDetailsScreen(
                 Icon(
                     imageVector = Icons.Default.MoreHoriz,
                     contentDescription = "More",
-                    tint = DarkText,
+                    tint = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier.size(24.dp)
                 )
             }
@@ -147,26 +143,22 @@ fun AppointmentDetailsScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Doctor Card
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(
-                containerColor = Color.White
+                containerColor = MaterialTheme.colorScheme.surface
             ),
             elevation = CardDefaults.cardElevation(
                 defaultElevation = 2.dp
             )
         ) {
-
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-
-                //  doctor image placeholder
                 Image(
                     painter = painterResource(
                         id = doctorAvatarFor(uiState.doctor)
@@ -181,12 +173,11 @@ fun AppointmentDetailsScreen(
                 Spacer(modifier = Modifier.width(14.dp))
 
                 Column {
-
                     Text(
                         text = uiState.doctor,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
-                        color = DarkText
+                        color = MaterialTheme.colorScheme.onSurface
                     )
 
                     Spacer(modifier = Modifier.height(4.dp))
@@ -194,7 +185,8 @@ fun AppointmentDetailsScreen(
                     Text(
                         text = uiState.appointmentName,
                         fontSize = 14.sp,
-                        color = TextGrey
+                        color =
+                            MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -202,36 +194,35 @@ fun AppointmentDetailsScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // APPOINTMENT INFORMATION
-        val reminderText = when (uiState.reminderMinutesBefore) {
-            0 -> "At appointment time"
-            5 -> "5 minutes before"
-            15 -> "15 minutes before"
-            30 -> "30 minutes before"
-            60 -> "1 hour before"
-            1440 -> "1 day before"
-            null -> "No reminder set"
-            else -> "${uiState.reminderMinutesBefore} minutes before"
-        }
+        val reminderText =
+            when (uiState.reminderMinutesBefore) {
+                0 -> "At appointment time"
+                5 -> "5 minutes before"
+                15 -> "15 minutes before"
+                30 -> "30 minutes before"
+                60 -> "1 hour before"
+                1440 -> "1 day before"
+                null -> "No reminder set"
+                else ->
+                    "${uiState.reminderMinutesBefore} minutes before"
+            }
 
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(
-                containerColor = Color.White
+                containerColor = MaterialTheme.colorScheme.surface
             ),
             elevation = CardDefaults.cardElevation(
                 defaultElevation = 2.dp
             )
         ) {
-
             Column(
                 modifier = Modifier.padding(
                     horizontal = 18.dp,
                     vertical = 10.dp
                 )
             ) {
-
                 DetailRow(
                     icon = Icons.Default.CalendarToday,
                     title = "Date",
@@ -262,7 +253,6 @@ fun AppointmentDetailsScreen(
                     value = uiState.location
                 )
 
-
                 if (uiState.purpose.isNotBlank()) {
                     DetailDivider()
 
@@ -287,12 +277,10 @@ fun AppointmentDetailsScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // BUTTONS
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-
             Button(
                 onClick = onEditClick,
                 modifier = Modifier
@@ -300,15 +288,19 @@ fun AppointmentDetailsScreen(
                     .height(52.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = Color.White,
-                    contentColor = AppGreen
+                    containerColor =
+                        MaterialTheme.colorScheme.surface,
+                    contentColor =
+                        MaterialTheme.colorScheme.primary
                 ),
-                border = androidx.compose.foundation.BorderStroke(
-                    1.dp,
-                    Color(0xFF9DD8B2)
+                border = BorderStroke(
+                    width = 1.dp,
+                    color =
+                        MaterialTheme.colorScheme.primary.copy(
+                            alpha = 0.55f
+                        )
                 )
             ) {
-
                 Icon(
                     imageVector = Icons.Default.Edit,
                     contentDescription = "Edit",
@@ -325,21 +317,27 @@ fun AppointmentDetailsScreen(
             }
 
             Button(
-                onClick = {showDeleteConfirmation = true },
+                onClick = {
+                    showDeleteConfirmation = true
+                },
                 modifier = Modifier
                     .weight(1f)
                     .height(52.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = Color.White,
-                    contentColor = Red
+                    containerColor =
+                        MaterialTheme.colorScheme.surface,
+                    contentColor =
+                        MaterialTheme.colorScheme.error
                 ),
-                border = androidx.compose.foundation.BorderStroke(
-                    1.dp,
-                    Color(0xFFFFA5A0)
+                border = BorderStroke(
+                    width = 1.dp,
+                    color =
+                        MaterialTheme.colorScheme.error.copy(
+                            alpha = 0.55f
+                        )
                 )
             ) {
-
                 Icon(
                     imageVector = Icons.Default.DeleteOutline,
                     contentDescription = "Delete",
@@ -354,53 +352,66 @@ fun AppointmentDetailsScreen(
                     fontWeight = FontWeight.SemiBold
                 )
             }
+        }
 
-            if (
-                uiState.status == AppointmentStatus.MISSED ||
-                uiState.status == AppointmentStatus.CANCELLED
+        if (
+            uiState.status == AppointmentStatus.MISSED ||
+            uiState.status == AppointmentStatus.CANCELLED
+        ) {
+            Spacer(modifier = Modifier.height(14.dp))
+
+            Button(
+                onClick = onRescheduleClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor =
+                        MaterialTheme.colorScheme.primary,
+                    contentColor =
+                        MaterialTheme.colorScheme.onPrimary
+                )
             ) {
-                Spacer(modifier = Modifier.height(14.dp))
+                Icon(
+                    imageVector = Icons.Default.CalendarMonth,
+                    contentDescription = null,
+                    modifier = Modifier.size(19.dp)
+                )
 
-                Button(
-                    onClick = onRescheduleClick,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = AppGreen
-                    )
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.CalendarMonth,
-                        contentDescription = null,
-                        modifier = Modifier.size(19.dp)
-                    )
+                Spacer(modifier = Modifier.width(8.dp))
 
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    Text(
-                        text = "Reschedule Appointment",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
+                Text(
+                    text = "Reschedule Appointment",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
             }
-
         }
     }
+
     if (showDeleteConfirmation) {
         AlertDialog(
             onDismissRequest = {
                 showDeleteConfirmation = false
             },
+            containerColor = MaterialTheme.colorScheme.surface,
+            titleContentColor =
+                MaterialTheme.colorScheme.onSurface,
+            textContentColor =
+                MaterialTheme.colorScheme.onSurfaceVariant,
             title = {
-                Text("Delete Appointment")
+                Text(
+                    text = "Delete Appointment"
+                )
             },
             text = {
                 Text(
-                    "Are you sure you want to delete ${uiState.appointmentName} with ${uiState.doctor}?" +
-                            "\n\n This action cannot be undone."
+                    text =
+                        "Are you sure you want to delete " +
+                                "${uiState.appointmentName} with " +
+                                "${uiState.doctor}?\n\n" +
+                                "This action cannot be undone."
                 )
             },
             confirmButton = {
@@ -419,7 +430,7 @@ fun AppointmentDetailsScreen(
                 ) {
                     Text(
                         text = "Delete",
-                        color = Red,
+                        color = MaterialTheme.colorScheme.error,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -432,7 +443,8 @@ fun AppointmentDetailsScreen(
                 ) {
                     Text(
                         text = "Cancel",
-                        color = TextGrey
+                        color =
+                            MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -452,25 +464,22 @@ private fun doctorAvatarFor(
     }
 }
 
-// DETAIL ROW
 @Composable
 private fun DetailRow(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     title: String,
     value: String
 ) {
-
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = DarkText,
+            tint = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.size(23.dp)
         )
 
@@ -479,11 +488,11 @@ private fun DetailRow(
         Column(
             modifier = Modifier.weight(1f)
         ) {
-
             Text(
                 text = title,
                 fontSize = 13.sp,
-                color = TextGrey
+                color =
+                    MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             Spacer(modifier = Modifier.height(4.dp))
@@ -492,36 +501,28 @@ private fun DetailRow(
                 text = value,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
-                color = DarkText
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
     }
 }
 
-
-
-// DIVIDER
 @Composable
 private fun DetailDivider() {
-
     HorizontalDivider(
         modifier = Modifier.padding(start = 42.dp),
-        color = Color(0xFFEDEDED),
+        color = MaterialTheme.colorScheme.outline,
         thickness = 1.dp
     )
 }
 
-
-
-// PREVIEW
 @Preview(
     showBackground = true,
     showSystemUi = true
 )
 @Composable
 private fun AppointmentDetailsScreenPreview() {
-
-    MaterialTheme {
+    Medication_DemoTheme {
         AppointmentDetailsScreen(
             appointmentId = 1
         )
