@@ -1,5 +1,6 @@
 package com.example.medication_demo.medication
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -58,13 +59,8 @@ import kotlinx.coroutines.delay
 import com.example.medication_demo.utils.getMalaysiaTime
 import com.example.medication_demo.R
 
-
-private val ScheduleGreen = Color(0xFF159447)
-private val ScheduleRed = Color(0xFFE53935)
 private val ScheduleOrange = Color(0xFFF59E0B)
-private val ScheduleGrey = Color(0xFF6B7280)
-private val ScheduleDivider = Color(0xFFE5E7EB)
-private val ScheduleBackground = Color.White
+
 
 @Composable
 fun MedicineScheduleScreen(
@@ -114,7 +110,7 @@ fun MedicineScheduleScreen(
     var showHelpDialog by remember { mutableStateOf(false) }
 
     Scaffold(
-        containerColor = ScheduleBackground,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             AppTopBar(
                 title = "Medicine Schedule",
@@ -129,7 +125,7 @@ fun MedicineScheduleScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color.White)
+                    .background(MaterialTheme.colorScheme.surface)
                     .padding(
                         start = 18.dp,
                         end = 18.dp,
@@ -143,12 +139,12 @@ fun MedicineScheduleScreen(
                         .fillMaxWidth()
                         .height(52.dp),
                     shape = RoundedCornerShape(10.dp),
-                    border = androidx.compose.foundation.BorderStroke(
+                    border = BorderStroke(
                         width = 1.dp,
-                        color = ScheduleGreen
+                        color = MaterialTheme.colorScheme.primary
                     ),
                     colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = ScheduleGreen
+                        contentColor = MaterialTheme.colorScheme.primary
                     )
                 ) {
                     Text(
@@ -187,7 +183,7 @@ fun MedicineScheduleScreen(
                     text = "TIME",
                     modifier = Modifier.weight(0.9f),
                     style = MaterialTheme.typography.labelMedium,
-                    color = ScheduleGrey
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 Spacer(modifier = Modifier.width(42.dp))
@@ -196,7 +192,7 @@ fun MedicineScheduleScreen(
                     text = "MEDICINE",
                     modifier = Modifier.weight(1.5f),
                     style = MaterialTheme.typography.labelMedium,
-                    color = ScheduleGrey
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 Spacer(modifier = Modifier.width(10.dp))
@@ -205,12 +201,12 @@ fun MedicineScheduleScreen(
                     text = "STATUS",
                     modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.labelMedium,
-                    color = ScheduleGrey
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
             HorizontalDivider(
-                color = ScheduleDivider
+                color = MaterialTheme.colorScheme.outlineVariant
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -221,7 +217,7 @@ fun MedicineScheduleScreen(
                     text = "No medication scheduled",
                     modifier = Modifier.align(Alignment.CenterHorizontally),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = ScheduleGrey
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             } else {
                 scheduleItems.forEachIndexed { index, item ->
@@ -229,7 +225,7 @@ fun MedicineScheduleScreen(
                     if (index != scheduleItems.lastIndex) {
                         HorizontalDivider(
                             modifier = Modifier.padding(vertical = 16.dp),
-                            color = ScheduleDivider
+                            color = MaterialTheme.colorScheme.outlineVariant
                         )
                     }
                 }
@@ -296,7 +292,7 @@ private fun MedicineScheduleRow(
             Text(
                 text = item.dosage,
                 style = MaterialTheme.typography.bodySmall,
-                color = ScheduleGrey
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             if (item.extraText != null) {
@@ -305,7 +301,7 @@ private fun MedicineScheduleRow(
                 Text(
                     text = item.extraText,
                     style = MaterialTheme.typography.bodySmall,
-                    color = ScheduleRed
+                    color = MaterialTheme.colorScheme.error
                 )
             }
         }
@@ -319,9 +315,9 @@ private fun MedicineScheduleRow(
                 text = item.status.displayText,
                 style = MaterialTheme.typography.bodyMedium,
                 color = when (item.status) {
-                    DoseStatus.TAKEN -> ScheduleGreen
-                    DoseStatus.IN_PROGRESS -> ScheduleGreen
-                    DoseStatus.MISSING -> ScheduleRed
+                    DoseStatus.TAKEN -> MaterialTheme.colorScheme.primary
+                    DoseStatus.IN_PROGRESS -> MaterialTheme.colorScheme.primary
+                    DoseStatus.MISSING -> MaterialTheme.colorScheme.error
                     DoseStatus.UPCOMING -> ScheduleOrange
                 }
             )
@@ -332,7 +328,7 @@ private fun MedicineScheduleRow(
                 Text(
                     text = item.takenTime,
                     style = MaterialTheme.typography.bodySmall,
-                    color = ScheduleGreen
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         }
@@ -349,12 +345,12 @@ private fun StatusIcon(
                 if (status == DoseStatus.TAKEN) {
                     Modifier.size(30.dp)
                         .background(
-                            color = ScheduleGreen,
+                            color = MaterialTheme.colorScheme.primary,
                             shape = CircleShape
                         )
                         .border(
                             width = 1.5.dp,
-                            color = ScheduleGreen,
+                            color = MaterialTheme.colorScheme.primary,
                             shape = CircleShape
                         )
                 } else {
@@ -368,7 +364,7 @@ private fun StatusIcon(
                 Icon(
                     imageVector = Icons.Default.Check,
                     contentDescription = "Taken",
-                    tint = Color.White,
+                    tint = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier.size(18.dp)
                 )
             }
@@ -377,7 +373,7 @@ private fun StatusIcon(
                 Icon(
                     imageVector = Icons.Default.Schedule,
                     contentDescription = "In Progress",
-                    tint = ScheduleGreen,
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(35.dp)
                 )
             }
@@ -386,7 +382,7 @@ private fun StatusIcon(
                 Icon(
                     imageVector = Icons.Default.ErrorOutline,
                     contentDescription = "Missing",
-                    tint = ScheduleRed,
+                    tint = MaterialTheme.colorScheme.error,
                     modifier = Modifier.size(35.dp)
                 )
             }

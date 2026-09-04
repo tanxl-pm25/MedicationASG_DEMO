@@ -22,10 +22,6 @@ import androidx.compose.ui.unit.sp
 import com.example.medication_demo.R
 import com.example.medication_demo.ui.theme.Medication_DemoTheme
 
-private val AppGreen = Color(0xFF17852B)
-private val LightGreen = Color(0xFFE8F5E9)
-private val TextGrey = Color(0xFF6B7280)
-
 private data class BottomItem(
     val label: String,
     val icon: ImageVector? = null
@@ -65,7 +61,7 @@ fun AppBottomNavigationBar(
         )
 
         NavigationBar(
-            containerColor = MaterialTheme.colorScheme.background
+            containerColor = MaterialTheme.colorScheme.surface
         ) {
 
             items.forEachIndexed { index, item ->
@@ -104,14 +100,13 @@ fun AppBottomNavigationBar(
                         )
                     },
 
-                    colors =
-                        NavigationBarItemDefaults.colors(
-                            selectedIconColor = AppGreen,
-                            selectedTextColor = AppGreen,
-                            indicatorColor = LightGreen,
-                            unselectedIconColor = TextGrey,
-                            unselectedTextColor = TextGrey
-                        )
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = MaterialTheme.colorScheme.primary,
+                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                        indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 )
             }
         }

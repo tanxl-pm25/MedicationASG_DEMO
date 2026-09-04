@@ -20,7 +20,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.NotificationsNone
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -38,7 +37,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.medication_demo.ui.theme.Medication_DemoTheme
@@ -56,10 +54,6 @@ import com.example.medication_demo.components.MainScreenTopBar
 import com.example.medication_demo.viewmodel.AppBottomNavigationBar
 import com.example.medication_demo.viewmodel.MedicineListViewModel
 import com.example.medication_demo.model.MedicineStatus
-
-private val AppGreen = Color(0xFF17852B)
-private val SoftGrey = Color(0xFFF3F4F6)
-private val TextGrey = Color(0xFF6B7280)
 
 @Composable
 fun MedicineListScreen(
@@ -156,7 +150,7 @@ fun MedicineListScreen(
                     Text(
                         text = emptyMessage,
                         style = MaterialTheme.typography.bodyLarge,
-                        color = TextGrey
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
@@ -194,7 +188,7 @@ fun MedicineListScreen(
                     .height(52.dp),
                 shape = RoundedCornerShape(10.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = AppGreen
+                    containerColor = MaterialTheme.colorScheme.primary
                 )
             ) {
                 Icon(
@@ -228,22 +222,22 @@ private fun MedicineSearchBar(
             Text(
                 text = "Search medicine",
                 style = MaterialTheme.typography.bodyMedium,
-                color = TextGrey
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         },
         leadingIcon = {
             Icon(
                 imageVector = Icons.Default.Search,
                 contentDescription = null,
-                tint = TextGrey
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         },
         shape = RoundedCornerShape(12.dp),
         colors = TextFieldDefaults.colors(
-            focusedContainerColor = Color.White,
-            unfocusedContainerColor = Color.White,
-            focusedIndicatorColor = AppGreen,
-            unfocusedIndicatorColor = Color(0xFFE5E7EB)
+            focusedContainerColor = MaterialTheme.colorScheme.surface,
+            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+            focusedIndicatorColor = MaterialTheme.colorScheme.primary,
+            unfocusedIndicatorColor = MaterialTheme.colorScheme.outline
         )
     )
 }
@@ -273,9 +267,10 @@ private fun MedicineFilterRow(
                     )
                 },
                 colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = AppGreen,
-                    selectedLabelColor = Color.White,
-                    containerColor = SoftGrey
+                    selectedContainerColor = MaterialTheme.colorScheme.primary,
+                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    labelColor = MaterialTheme.colorScheme.onSurfaceVariant
                 ),
                 border = null
             )
@@ -294,7 +289,7 @@ private fun MedicineCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color.White
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(
             defaultElevation = 2.dp
@@ -311,7 +306,7 @@ private fun MedicineCard(
                 modifier = Modifier
                     .size(52.dp)
                     .background(
-                        color = SoftGrey,
+                        color = MaterialTheme.colorScheme.surfaceVariant,
                         shape = RoundedCornerShape(12.dp)
                     ),
                 contentAlignment = Alignment.Center
@@ -343,14 +338,14 @@ private fun MedicineCard(
                             Icon(
                                 imageVector = Icons.Default.Schedule,
                                 contentDescription = "Reminder time",
-                                tint = TextGrey,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(17.dp)
                             )
                             Spacer(modifier = Modifier.size(6.dp))
                             Text(
                                 text = reminder.time,
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = TextGrey
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                         Spacer(modifier = Modifier.height(3.dp))
@@ -360,7 +355,7 @@ private fun MedicineCard(
                     Text(
                         text = "No fixed reminder time",
                         style = MaterialTheme.typography.bodySmall,
-                        color = TextGrey
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(3.dp))
                 }
@@ -373,7 +368,7 @@ private fun MedicineCard(
                     Box(
                         modifier = Modifier
                             .background(
-                                color = SoftGrey,
+                                color = MaterialTheme.colorScheme.surfaceVariant,
                                 shape = RoundedCornerShape(4.dp)
                             )
                             .padding(
@@ -390,7 +385,7 @@ private fun MedicineCard(
                     Text(
                         text = medicine.frequency,
                         style = MaterialTheme.typography.bodySmall,
-                        color = TextGrey
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -401,7 +396,7 @@ private fun MedicineCard(
                         modifier = Modifier
                             .size(32.dp)
                             .background(
-                                color = SoftGrey,
+                                color = MaterialTheme.colorScheme.surfaceVariant,
                                 shape = CircleShape
                             ),
                         contentAlignment = Alignment.Center
@@ -409,7 +404,7 @@ private fun MedicineCard(
                         Icon(
                             imageVector = Icons.Default.Check,
                             contentDescription = "Active",
-                            tint = TextGrey,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -420,7 +415,7 @@ private fun MedicineCard(
                         modifier = Modifier
                             .size(32.dp)
                             .background(
-                                color = SoftGrey,
+                                color = MaterialTheme.colorScheme.surfaceVariant,
                                 shape = CircleShape
                             ),
                         contentAlignment = Alignment.Center
@@ -428,7 +423,7 @@ private fun MedicineCard(
                         Icon(
                             imageVector = Icons.Default.Schedule,
                             contentDescription = "Upcoming",
-                            tint = TextGrey,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -439,7 +434,7 @@ private fun MedicineCard(
                         modifier = Modifier
                             .size(32.dp)
                             .background(
-                                color = AppGreen,
+                                color = MaterialTheme.colorScheme.primary,
                                 shape = CircleShape
                             ),
                         contentAlignment = Alignment.Center
@@ -447,7 +442,7 @@ private fun MedicineCard(
                         Icon(
                             imageVector = Icons.Default.Check,
                             contentDescription = "Completed",
-                            tint = Color.White,
+                            tint = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -457,7 +452,7 @@ private fun MedicineCard(
             Icon(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = "View details",
-                tint = TextGrey,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 6.dp)
             )
         }
