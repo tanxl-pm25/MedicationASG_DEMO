@@ -1,8 +1,5 @@
 package com.example.medication_demo.user
 
-import android.Manifest
-import android.content.Context
-import android.content.pm.PackageManager
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -61,12 +58,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat
-import androidx.core.content.FileProvider
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.medication_demo.ui.theme.Medication_DemoTheme
-import java.io.File
 
 private val ProfileGreen = Color(0xFF159447)
 
@@ -86,32 +80,12 @@ fun PersonalInfoScreen(
     onAgeChange: (Int) -> Unit = {}
 ) {
     var showAgeDialog by remember { mutableStateOf(false) }
-    var showPhotoPickerDialog by remember { mutableStateOf(false) }
-    var cameraImageUri by remember { mutableStateOf<Uri?>(null) }
     val context = LocalContext.current
 
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let { onPhotoSelected(it) }
-    }
-
-    val cameraLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.TakePicture()
-    ) { success ->
-        if (success && cameraImageUri != null) {
-            onPhotoSelected(cameraImageUri!!)
-        }
-    }
-
-    val cameraPermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        if (granted) {
-            val uri = createImageUri(context)
-            cameraImageUri = uri
-            cameraLauncher.launch(uri)
-        }
     }
 
     Scaffold(
@@ -172,7 +146,7 @@ fun PersonalInfoScreen(
                     }
 
                     IconButton(
-                        onClick = { showPhotoPickerDialog = true },
+                        onClick = { galleryLauncher.launch("image/*") },
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
                             .size(15.dp)
@@ -239,71 +213,6 @@ fun PersonalInfoScreen(
             }
         )
     }
-
-    if (showPhotoPickerDialog) {
-        PhotoPickerDialog(
-            onDismiss = { showPhotoPickerDialog = false },
-            onGalleryClick = {
-                showPhotoPickerDialog = false
-                galleryLauncher.launch("image/*")
-            },
-            onCameraClick = {
-                showPhotoPickerDialog = false
-                val permission = Manifest.permission.CAMERA
-                if (ContextCompat.checkSelfPermission(context, permission)
-                    == PackageManager.PERMISSION_GRANTED
-                ) {
-                    val uri = createImageUri(context)
-                    cameraImageUri = uri
-                    cameraLauncher.launch(uri)
-                } else {
-                    cameraPermissionLauncher.launch(permission)
-                }
-            }
-        )
-    }
-}
-
-@Composable
-private fun PhotoPickerDialog(
-    onDismiss: () -> Unit,
-    onGalleryClick: () -> Unit,
-    onCameraClick: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                text = "Change Photo",
-                fontWeight = FontWeight.Bold
-            ) },
-        text = {
-            Column {
-                TextButton(onClick = onGalleryClick) {
-                    Text("Choose from Gallery")
-                }
-                TextButton(onClick = onCameraClick) {
-                    Text("Take Photo")
-                }
-            }
-        },
-        confirmButton = {},
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        }
-    )
-}
-
-private fun createImageUri(context: Context): Uri {
-    val imageFile = File(context.cacheDir, "images").apply { mkdirs() }
-        .resolve("avatar_${System.currentTimeMillis()}.jpg")
-    return FileProvider.getUriForFile(
-        context,
-        "${context.packageName}.fileprovider",
-        imageFile
-    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -487,18 +396,6 @@ private fun PersonalInfoScreenPreview() {
             onAgeChange = { newAge ->
                 currentAge = newAge.toString()
             }
-        )
-    }
-}
-
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-private fun PhotoPickerDialogPreview() {
-    Medication_DemoTheme {
-        PhotoPickerDialog(
-            onDismiss = {},
-            onGalleryClick = {},
-            onCameraClick = {}
         )
     }
 }

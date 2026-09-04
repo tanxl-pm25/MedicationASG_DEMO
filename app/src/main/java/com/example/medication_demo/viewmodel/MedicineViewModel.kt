@@ -1051,10 +1051,12 @@ class MedicineViewModel(
     }
 
     fun addMedicine(): Boolean {
-
+        android.util.Log.d("MedicineViewModel", "addMedicine() CALLED")
         if (!validateMedicineForm()) {
+            android.util.Log.d("MedicineViewModel", "validateMedicineForm FAILED")
             return false
         }
+        android.util.Log.d("MedicineViewModel", "validateMedicineForm PASSED")
 
         val newMedicine = Medicine(
             id = generateNextMedicineId(),
@@ -1080,38 +1082,44 @@ class MedicineViewModel(
         _remainingQuantities.value += (newMedicine.id to (newMedicine.quantity.toDoubleOrNull() ?: 0.0))
         localStorage.saveRemainingQuantities(_remainingQuantities.value)
 
+        android.util.Log.d("MedicineViewModel", "before launch block")
+
         viewModelScope.launch {
+            android.util.Log.d("MedicineViewModel", "launch block STARTED")
             var medicineForCloud = newMedicine
             val localImageUri = newMedicine.galleryImageUri
             if (
                 !localImageUri.isNullOrBlank() &&
                 !localImageUri.startsWith("http")
             )  {
-                val uploadedUrl =
-                    medicineImageRepository
-                        .uploadMedicineImage(
-                            userId = currentUserId,
-                            medicineId = newMedicine.id,
-                            imageUri = localImageUri
-                        )
-                if (uploadedUrl != null) {
-                    medicineForCloud = newMedicine.copy(galleryImageUri = uploadedUrl)
-                    // Update local medicine as well, so future reloads use the cloud URL.
-                    _medicines.value =
-                        _medicines.value.map {
-                                medicine ->
-                            if (
-                                medicine.id == newMedicine.id
-                            ) {
-                                medicineForCloud
-                            } else {
-                                medicine
+                try {
+                    val uploadedUrl =
+                        medicineImageRepository
+                            .uploadMedicineImage(
+                                userId = currentUserId,
+                                medicineId = newMedicine.id,
+                                imageUri = localImageUri
+                            )
+                    android.util.Log.d("MedicineViewModel", "image upload result: $uploadedUrl")
+                    if (uploadedUrl != null) {
+                        medicineForCloud = newMedicine.copy(galleryImageUri = uploadedUrl)
+                        _medicines.value =
+                            _medicines.value.map { medicine ->
+                                if (medicine.id == newMedicine.id) {
+                                    medicineForCloud
+                                } else {
+                                    medicine
+                                }
                             }
-                        }
-                    localStorage.saveMedicines(_medicines.value)
+                        localStorage.saveMedicines(_medicines.value)
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("MedicineViewModel", "image upload failed: ${e.message}", e)
                 }
             }
-            medicineRepository.addMedicine(medicineForCloud)
+            android.util.Log.d("MedicineViewModel", "about to call repository.addMedicine")
+            val result = medicineRepository.addMedicine(medicineForCloud)
+            android.util.Log.d("MedicineViewModel", "repository.addMedicine RESULT = $result")
         }
         val medicineStartDate =
             parseMedicineDate(

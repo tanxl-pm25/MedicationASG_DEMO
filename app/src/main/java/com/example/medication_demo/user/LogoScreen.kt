@@ -30,10 +30,7 @@ import com.example.medication_demo.R
 import com.example.medication_demo.ui.theme.Medication_DemoTheme
 
 private val LeafGreenLight = Color(0xFFDCEEDD)
-private val LeafGreenMid = Color(0xFFB6D9BC)
 private val WaveGreen = Color(0xFFA9D3AE)
-private val TitleDark = Color(0xFF13342A)
-private val SubtitleGray = Color(0xFF6B7A75)
 
 @Composable
 fun LogoScreen(
@@ -45,7 +42,7 @@ fun LogoScreen(
     }
 
     Scaffold(
-        containerColor = Color.White
+        containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
         Box(
             modifier = Modifier
@@ -53,27 +50,30 @@ fun LogoScreen(
                 .padding(innerPadding)
         ) {
 
+            val leafColor = MaterialTheme.colorScheme.surfaceVariant
+            val waveColor = MaterialTheme.colorScheme.primary
+
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val w = size.width
                 val h = size.height
 
                 // top-left blob
                 drawCircle(
-                    color = LeafGreenLight,
+                    color = leafColor,
                     radius = w * 0.55f,
                     center = Offset(x = -w * 0.15f, y = h * 0.05f)
                 )
 
                 // top-right small circle
                 drawCircle(
-                    color = LeafGreenLight,
+                    color = leafColor,
                     radius = w * 0.18f,
                     center = Offset(x = w * 0.95f, y = h * 0.12f)
                 )
 
                 // mid-left small circle
                 drawCircle(
-                    color = LeafGreenLight,
+                    color = leafColor,
                     radius = w * 0.09f,
                     center = Offset(x = w * 0.1f, y = h * 0.28f)
                 )
@@ -90,7 +90,7 @@ fun LogoScreen(
                     lineTo(0f, h)
                     close()
                 }
-                drawPath(path = wavePath1, color = WaveGreen.copy(alpha = 0.4f))
+                drawPath(path = wavePath1, color = waveColor.copy(alpha = 0.25f))
 
                 val wavePath2 = Path().apply {
                     moveTo(0f, h * 0.9f)
@@ -103,7 +103,7 @@ fun LogoScreen(
                     lineTo(0f, h)
                     close()
                 }
-                drawPath(path = wavePath2, color = WaveGreen.copy(alpha = 0.7f))
+                drawPath(path = wavePath2, color = waveColor.copy(alpha = 0.4f))
             }
 
             Column(
@@ -123,6 +123,7 @@ fun LogoScreen(
                     text = "Smart Medication\nCompanion",
                     fontSize = 30.sp,
                     style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onBackground,
                     textAlign = TextAlign.Center
                 )
 
@@ -131,7 +132,7 @@ fun LogoScreen(
                 Text(
                     text = "Your health, our priority.",
                     fontSize = 16.sp,
-                    color = SubtitleGray,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
                 )
             }

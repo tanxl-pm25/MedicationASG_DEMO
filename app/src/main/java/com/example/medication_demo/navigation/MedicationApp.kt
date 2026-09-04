@@ -422,7 +422,6 @@ fun MedicationApp(
                         "resetPassword",
                         "emailVerification",
                         "gender",
-                        "age",
                         "changePassword"
                     )
 
@@ -650,11 +649,9 @@ fun MedicationApp(
                             email = currentUserEmail,
                             code = code,
                             onSuccess = {
-                                userVm.logout()
-                                navController.navigate("login") {
-                                    popUpTo(0) { inclusive = true }
-                                }
+
                             }
+
                         )
                     },
                     onResendClick = {
@@ -892,7 +889,7 @@ fun MedicationApp(
                         null
                     }
                 HomeScreen(
-                    username = "Sarah",
+                    username = currentUserName.ifBlank { "User" },
                     nextMedicineName = nextMedicineDisplayName,
                     nextMedicineDose = nextDose?.dosage,
                     nextMedicineTime = nextDose?.reminderTime,

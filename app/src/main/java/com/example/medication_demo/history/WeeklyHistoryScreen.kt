@@ -252,7 +252,7 @@ fun WeeklyHistoryScreen(
             0
         }
     Scaffold(
-        containerColor = Color.White,
+        containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
             AppBottomNavigationBar(
                 selectedIndex = 2,
@@ -327,7 +327,7 @@ fun WeeklyHistoryScreen(
                     text = "No history record found",
                     modifier = Modifier.align(Alignment.CenterHorizontally),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = HistoryGrey
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             } else {
                 historyMedicines.forEach { medicine ->
@@ -414,7 +414,7 @@ private fun WeeklyDateRangeSelector(
             text = "${startDate.format(formatter)} - " +
                     endDate.format(formatter),
             style = MaterialTheme.typography.bodySmall,
-            color = HistoryGrey,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
@@ -499,7 +499,7 @@ private fun WeeklyDateRangeDialog(
                 Text(
                     text = "Cancel",
                     style = MaterialTheme.typography.labelLarge,
-                    color = HistoryGrey
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -610,7 +610,7 @@ private fun HistoryMedicineCard(
         onClick = onClick,
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(
-            containerColor = HistoryCardBackground
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
         ),
         elevation = CardDefaults.cardElevation(
             defaultElevation = 1.dp
@@ -649,7 +649,7 @@ private fun HistoryMedicineCard(
             Text(
                 text = medicine.dosage,
                 style = MaterialTheme.typography.bodySmall,
-                color = HistoryGrey
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
             Spacer(
@@ -660,7 +660,7 @@ private fun HistoryMedicineCard(
                 text =
                     "${medicine.time} • ${medicine.frequency}",
                 style = MaterialTheme.typography.bodySmall,
-                color = HistoryGrey,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -714,7 +714,7 @@ private fun HistoryMedicineCard(
                         MaterialTheme
                             .typography
                             .bodySmall,
-                    color = HistoryGrey
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
 
                 Text(
@@ -787,7 +787,7 @@ private fun WeeklySummaryCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color.White
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
         ),
         elevation = CardDefaults.cardElevation(
             defaultElevation = 1.dp
@@ -843,7 +843,7 @@ private fun WeeklySummaryCard(
                     text = "Overall Adherence",
                     style =
                         MaterialTheme.typography.bodySmall,
-                    color = HistoryGrey
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
 
                 Text(
@@ -908,7 +908,7 @@ private fun SummaryStatBox(
         Text(
             text = label,
             style = MaterialTheme.typography.bodySmall,
-            color = HistoryGrey
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
