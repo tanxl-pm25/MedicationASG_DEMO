@@ -812,8 +812,6 @@ class UserViewModel : ViewModel() {
             }
         }
 
-        // 这里只清除本地 State
-        // Supabase Auth Metadata 不会被删除
         _userName.value = ""
         _userEmail.value = ""
         _userGender.value = ""
@@ -822,4 +820,23 @@ class UserViewModel : ViewModel() {
         _errorMessage.value = null
         _isNewUser.value = false
     }
+
+    fun logoutAfterVerification(onComplete: () -> Unit = {}) {
+        viewModelScope.launch {
+            try {
+                SupabaseClientProvider.client.auth.signOut()
+            } catch (e: Exception) {
+                Log.e("Logout", "sign out error: ${e.message}", e)
+            }
+            _userName.value = ""
+            _userEmail.value = ""
+            _userGender.value = ""
+            _userAge.value = ""
+            _userAvatarUrl.value = null
+            _errorMessage.value = null
+
+            onComplete()
+        }
+    }
 }
+

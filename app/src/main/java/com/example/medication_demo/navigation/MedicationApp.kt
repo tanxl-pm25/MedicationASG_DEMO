@@ -397,7 +397,6 @@ fun MedicationApp(
                         "resetPassword",
                         "emailVerification",
                         "gender",
-                        "age",
                         "changePassword"
                     )
 
@@ -625,11 +624,15 @@ fun MedicationApp(
                             email = currentUserEmail,
                             code = code,
                             onSuccess = {
-                                userVm.logout()
-                                navController.navigate("login") {
-                                    popUpTo(0) { inclusive = true }
-                                }
+                                userVm.logoutAfterVerification(
+                                    onComplete = {
+                                        navController.navigate("login") {
+                                            popUpTo(0) { inclusive = true }
+                                        }
+                                    }
+                                )
                             }
+
                         )
                     },
                     onResendClick = {

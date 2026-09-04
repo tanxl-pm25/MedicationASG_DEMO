@@ -67,6 +67,7 @@ class MedicineRepository {
                 .insert(insertModel)
             true
         } catch (e: Exception) {
+            android.util.Log.e("MedicineRepository", "addMedicine failed: ${e.message}", e)
         false
     }
     }
