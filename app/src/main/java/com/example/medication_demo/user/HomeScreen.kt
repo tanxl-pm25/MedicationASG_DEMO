@@ -102,7 +102,7 @@ fun HomeScreen(
         )
     }
     Scaffold(
-        containerColor = Color.White,
+        containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
             AppBottomNavigationBar(
                 selectedIndex = 0,
@@ -228,7 +228,7 @@ fun HomeScreen(
                                         vertical = 10.dp
                                     ),
                                     colors = ButtonDefaults.buttonColors(
-                                        containerColor = Color.White,
+                                        containerColor = MaterialTheme.colorScheme.surface,
                                         contentColor = HomeGreen
                                     )
                                 ) {
@@ -280,7 +280,7 @@ fun HomeScreen(
                                     color = HomeGreen
                                 ),
                                 colors = ButtonDefaults.outlinedButtonColors(
-                                    containerColor = Color.White,
+                                    containerColor = MaterialTheme.colorScheme.surface,
                                     contentColor = HomeGreen
                                 )
                             ) {
@@ -437,7 +437,7 @@ private fun OverviewCard(
             .clickable {
                 onClick()
             },
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFF7F7F7)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
         shape = RoundedCornerShape(12.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -455,7 +455,7 @@ private fun OverviewCard(
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                     contentDescription = "View details",
-                    tint = Color.DarkGray,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(20.dp)
                 )
             }
