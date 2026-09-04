@@ -1,5 +1,6 @@
 package com.example.medication_demo.viewmodel
 
+import com.example.medication_demo.model.MedicationMissedRecord
 import com.example.medication_demo.model.MedicationTakenRecord
 import com.example.medication_demo.model.Medicine
 import com.example.medication_demo.model.MedicineScheduleSnapshot
@@ -141,6 +142,10 @@ class MedicineViewModel(
     private val _takenRecords = MutableStateFlow<List<MedicationTakenRecord>>(localStorage.loadTakenRecords())
     val takenRecords: StateFlow<List<MedicationTakenRecord>> = _takenRecords.asStateFlow()
 
+    private val _missedRecords = MutableStateFlow<List<MedicationMissedRecord>>(localStorage.loadMissedRecords())
+
+    val missedRecords: StateFlow<List<MedicationMissedRecord>> = _missedRecords.asStateFlow()
+
     private val _lowStockMedicineId = MutableStateFlow<Int?>(null)
     val lowStockMedicineId: StateFlow<Int?> = _lowStockMedicineId.asStateFlow()
 
@@ -236,6 +241,47 @@ class MedicineViewModel(
             localStorage.saveTakenRecords(_takenRecords.value)
             reduceRemainingQuantity(medicineId = medicineId)
         }
+    }
+
+    fun markDoseAsMissed(
+        medicineId: Int,
+        doseIndex: Int,
+        reminderTime: String
+    ) {
+        val today = getMalaysiaDate()
+
+        val medicine = _medicines.value.firstOrNull {
+            it.id == medicineId
+        } ?: return
+
+        val alreadyTaken = _takenRecords.value.any {
+            it.medicineId == medicineId &&
+                    it.date == today &&
+                    it.doseIndex == doseIndex
+        }
+
+        val alreadyMissed = _missedRecords.value.any {
+            it.medicineId == medicineId &&
+                    it.date == today &&
+                    it.doseIndex == doseIndex
+        }
+
+        if (alreadyTaken || alreadyMissed) {
+            return
+        }
+
+        _missedRecords.value += MedicationMissedRecord(
+            medicineId = medicineId,
+            date = today,
+            doseIndex = doseIndex,
+            reminderTime = reminderTime,
+            dosageAmount = medicine.dosageAmount,
+            dosageType = medicine.dosageType
+        )
+
+        localStorage.saveMissedRecords(
+            _missedRecords.value
+        )
     }
 
     fun getRemainingQuantity(
@@ -1154,6 +1200,7 @@ class MedicineViewModel(
         _rescheduledDoses.value = localStorage.loadRescheduledDoses()
         _scheduleSnapshots.value = localStorage.loadScheduleSnapshots()
         _takenRecords.value = localStorage.loadTakenRecords()
+        _missedRecords.value = localStorage.loadMissedRecords()
         _lowStockMedicineId.value = null
         resetAddMedicineForm()
         syncMedicinesFromCloud()

@@ -1,18 +1,19 @@
 package com.example.medication_demo.model
 
 import java.time.YearMonth
+import java.time.ZoneId
 
 data class MonthlyStatisticsUiState(
-    val selectedMonth: YearMonth = YearMonth.of(2025, 5),
-    val adherencePercentage: Int = 82,
-    val adherenceMessage: String = "Well done! Keep it up.",
-    val takenDoses: Int = 128,
-    val missedDoses: Int = 28,
-    val totalDoses: Int = 156,
-    val chartValues: List<Int> = listOf(
-        35, 48, 68, 55, 64, 72, 60, 92
-    ),
-    val chartLabels: List<String> = listOf(
-        "1", "5", "10", "15", "20", "25", "30","35"
-    )
+    val selectedMonth: YearMonth =
+        YearMonth.now(
+            ZoneId.of("Asia/Kuala_Lumpur")
+        ),
+
+    val adherencePercentage: Int = 0,
+    val adherenceMessage: String = "No medication data yet.",
+    val takenDoses: Int = 0,
+    val missedDoses: Int = 0,
+    val totalDoses: Int = 0,
+    val chartValues: List<Int> = List(8) { 0 },
+    val chartLabels: List<String> = List(8) { "" }
 )

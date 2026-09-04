@@ -16,6 +16,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.example.medication_demo.data.SupabaseClientProvider
+import com.example.medication_demo.reminder.MedicationNotification
 import com.example.medication_demo.navigation.MedicationApp
 import com.example.medication_demo.repository.AppointmentRepository
 import com.example.medication_demo.ui.theme.Medication_DemoTheme
@@ -26,8 +27,11 @@ class MainActivity : ComponentActivity() {
     // 记录这次 deep link 是否为密码重设连结
     private var pendingDeepLinkType by mutableStateOf<String?>(null)
 
-    private val refillMedicineId =
-        mutableStateOf<Int?>(null)
+    private val refillMedicineId = mutableStateOf<Int?>(null)
+    private var medicationNotificationAction by mutableStateOf<String?>(null)
+    private var medicationNotificationMedicineId by mutableStateOf<Int?>(null)
+    private var medicationNotificationDoseIndex by mutableStateOf<Int?>(null)
+    private var medicationNotificationOriginalTime by mutableStateOf<String?>(null)
 
     private val notificationPermissionLauncher =
         registerForActivityResult(
@@ -56,6 +60,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         handleIncomingIntent(intent)
+        readMedicationNotificationIntent(intent)
 
         refillMedicineId.value =
             intent.getIntExtra(
@@ -80,6 +85,16 @@ class MainActivity : ComponentActivity() {
                         notificationMedicineId = refillMedicineId.value,
                         onNotificationHandled = {
                             refillMedicineId.value = null
+                        },
+                        medicationNotificationAction = medicationNotificationAction,
+                        medicationNotificationMedicineId = medicationNotificationMedicineId,
+                        medicationNotificationDoseIndex = medicationNotificationDoseIndex,
+                        medicationNotificationOriginalTime = medicationNotificationOriginalTime,
+                        onMedicationNotificationHandled = {
+                            medicationNotificationAction = null
+                            medicationNotificationMedicineId = null
+                            medicationNotificationDoseIndex = null
+                            medicationNotificationOriginalTime = null
                         }
                     )
                 }
@@ -94,6 +109,7 @@ class MainActivity : ComponentActivity() {
 
         setIntent(intent)
         handleIncomingIntent(intent)
+        readMedicationNotificationIntent(intent)
 
         val medicineId =
             intent.getIntExtra(
@@ -120,5 +136,36 @@ class MainActivity : ComponentActivity() {
 
         SupabaseClientProvider.client
             .handleDeeplinks(intent)
+    }
+
+    private fun readMedicationNotificationIntent(
+        intent: Intent
+    ) {
+        val action = intent.getStringExtra(
+            MedicationNotification.EXTRA_ACTION
+        ) ?: return
+
+        val medicineId = intent.getIntExtra(
+            MedicationNotification.EXTRA_MEDICINE_ID,
+            -1
+        )
+
+        val doseIndex = intent.getIntExtra(
+            MedicationNotification.EXTRA_DOSE_INDEX,
+            -1
+        )
+
+        val originalTime = intent.getStringExtra(
+            MedicationNotification.EXTRA_ORIGINAL_TIME
+        ) ?: return
+
+        if (medicineId == -1 || doseIndex == -1) {
+            return
+        }
+
+        medicationNotificationAction = action
+        medicationNotificationMedicineId = medicineId
+        medicationNotificationDoseIndex = doseIndex
+        medicationNotificationOriginalTime = originalTime
     }
 }

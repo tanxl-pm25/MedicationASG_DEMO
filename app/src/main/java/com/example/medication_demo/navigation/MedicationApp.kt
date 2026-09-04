@@ -43,8 +43,14 @@ import com.example.medication_demo.medication.MedicineCalendarScreen
 import com.example.medication_demo.medication.MedicineDetailsScreen
 import com.example.medication_demo.medication.MedicineListScreen
 import com.example.medication_demo.medication.MedicineScheduleScreen
+import com.example.medication_demo.reminder.MedicationNotification
+import com.example.medication_demo.reminder.MedicationReminderScreen
+import com.example.medication_demo.reminder.TakenDoseScreen
+import com.example.medication_demo.reminder.MedicationRescheduleScreen
+import com.example.medication_demo.viewmodel.RescheduleMedicationViewModel
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import com.example.medication_demo.model.AppointmentStatus
-import com.example.medication_demo.navigation.MedicationApp
 import com.example.medication_demo.notification.NotificationHelper
 import com.example.medication_demo.reminder.AppointmentReminder
 import com.example.medication_demo.reminder.RefillReminderScreen
@@ -66,9 +72,11 @@ import com.example.medication_demo.user.ProfileScreen
 import com.example.medication_demo.user.ResetPasswordScreen
 import com.example.medication_demo.user.SettingScreen
 import com.example.medication_demo.user.SplashScreen
+import com.example.medication_demo.utils.getMalaysiaDate
 import com.example.medication_demo.utils.getMalaysiaTime
 import com.example.medication_demo.viewmodel.MedicineListViewModel
 import com.example.medication_demo.viewmodel.MedicineViewModel
+import com.example.medication_demo.viewmodel.MonthlyStatisticsViewModel
 
 import com.example.medication_demo.reminder.showRefillNotification
 import com.example.medication_demo.reminder.scheduleRefillReminder
@@ -83,22 +91,32 @@ import com.example.medication_demo.viewmodel.UserViewModel
 import com.example.medication_demo.viewmodel.WaterIntakeViewModel
 import com.example.medication_demo.viewmodel.WeeklyHistoryViewModel
 import com.example.medication_demo.reminder.createRefillNotificationChannel
+import com.example.medication_demo.viewmodel.MedicationPerformanceViewModel
+import com.example.medication_demo.viewmodel.MissedMedicationViewModel
 import com.example.medication_demo.waterIntake.WaterIntakeScreen
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.status.SessionStatus
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @Composable
 fun MedicationApp(
-    pendingDeepLinkType: String?, onDeepLinkConsumed: () -> Unit,
+    pendingDeepLinkType: String?,
+    onDeepLinkConsumed: () -> Unit,
     onNotificationHandled: () -> Unit = {},
-    notificationMedicineId: Int? = null
+    notificationMedicineId: Int? = null,
+    medicationNotificationAction: String? = null,
+    medicationNotificationMedicineId: Int? = null,
+    medicationNotificationDoseIndex: Int? = null,
+    medicationNotificationOriginalTime: String? = null,
+    onMedicationNotificationHandled: () -> Unit = {}
     ) {
-    // 通知权限的请求器(Android 13以上才需要真的跳出来问)
+    // Minimun Android 13 pop up
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
-        onResult = { /* 不管用户答应还是拒绝,都不需要额外处理 */ }
+        onResult = { }
     )
     val userVm: UserViewModel = viewModel()
     val currentUserName by userVm.userName.collectAsStateWithLifecycle()
@@ -117,15 +135,84 @@ fun MedicationApp(
     val medicines by medicineVm.medicines.collectAsStateWithLifecycle()
     val historyVm: WeeklyHistoryViewModel = viewModel()
     val takenRecords by medicineVm.takenRecords.collectAsStateWithLifecycle()
+    val missedRecords by medicineVm.missedRecords.collectAsStateWithLifecycle()
     val archivedMedicines by medicineVm.archivedMedicines.collectAsStateWithLifecycle()
     val rescheduledDoses by medicineVm.rescheduledDoses.collectAsStateWithLifecycle()
     val appointments by AppointmentRepository.appointments.collectAsStateWithLifecycle()
     val waterVm: WaterIntakeViewModel = viewModel()
 
+    LaunchedEffect(
+        medicationNotificationAction,
+        medicationNotificationMedicineId,
+        medicationNotificationDoseIndex,
+        medicationNotificationOriginalTime,
+        medicines
+    ) {
+        val action =
+            medicationNotificationAction
+                ?: return@LaunchedEffect
+
+        val medicineId =
+            medicationNotificationMedicineId
+                ?: return@LaunchedEffect
+
+        val doseIndex =
+            medicationNotificationDoseIndex
+                ?: return@LaunchedEffect
+
+        val originalTime =
+            medicationNotificationOriginalTime
+                ?: return@LaunchedEffect
+
+        val medicine = medicines.firstOrNull {
+            it.id == medicineId
+        }
+
+        if (medicine == null) {
+            onMedicationNotificationHandled()
+            return@LaunchedEffect
+        }
+
+        when (action) {
+            MedicationNotification.ACTION_TAKEN -> {
+                medicineVm.markDoseAsTaken(
+                    medicineId = medicineId,
+                    doseIndex = doseIndex,
+                    reminderTime = originalTime
+                )
+
+                navController.navigate(
+                    "takenDose/$medicineId/$doseIndex"
+                ) {
+                    launchSingleTop = true
+                }
+            }
+
+            MedicationNotification.ACTION_RESCHEDULE -> {
+                navController.navigate(
+                    "rescheduleMedication/$medicineId/$doseIndex"
+                ) {
+                    launchSingleTop = true
+                }
+            }
+
+            MedicationNotification.ACTION_OPEN_REMINDER -> {
+                navController.navigate(
+                    "medicationReminder/$medicineId/$doseIndex"
+                ) {
+                    launchSingleTop = true
+                }
+            }
+        }
+
+        onMedicationNotificationHandled()
+    }
+
     LaunchedEffect(Unit) {
         waterVm.initialize(context.applicationContext)
     }
     val waterUiState by waterVm.uiState.collectAsStateWithLifecycle()
+    val todayWaterGlasses = waterVm.getTodayGlasses()
 
     val upcomingAppointmentCount =
         appointments.count {
@@ -536,7 +623,7 @@ fun MedicationApp(
                     nextMedicineDose = nextDose?.dosage,
                     nextMedicineTime = nextDose?.reminderTime,
                     nextMedicineStatus = nextDose?.status,
-                    waterGlasses = waterUiState.glasses.toString(),
+                    waterGlasses = todayWaterGlasses.toString(),
                     waterGoal = waterUiState.dailyGoal,
                     medicinesTaken =
                         if (medicinesTotal == 0) {
@@ -554,6 +641,7 @@ fun MedicationApp(
                         navController.navigate("appointmentList")
                     },
                     onWaterIntakeClick = {
+                        waterVm.selectToday()
                         navController.navigate("waterIntake")
                     },
                     onMonthlyStatisticsClick = {
@@ -587,6 +675,262 @@ fun MedicationApp(
 
 
                 )
+            }
+
+            composable(
+                route = "takenDose/{medicineId}/{doseIndex}"
+            ) { backStackEntry ->
+
+                val medicineId = backStackEntry.arguments
+                    ?.getString("medicineId")
+                    ?.toIntOrNull()
+
+                val doseIndex = backStackEntry.arguments
+                    ?.getString("doseIndex")
+                    ?.toIntOrNull()
+
+                val medicine = medicines.firstOrNull {
+                    it.id == medicineId
+                }
+
+                val takenRecord = takenRecords.firstOrNull {
+                    it.medicineId == medicineId &&
+                            it.doseIndex == doseIndex &&
+                            it.date == getMalaysiaDate()
+                }
+
+                if (
+                    medicine != null &&
+                    takenRecord != null
+                ) {
+                    TakenDoseScreen(
+                        medicineName = medicine.name,
+                        dosage =
+                            "${takenRecord.dosageAmount} " +
+                                    takenRecord.dosageType,
+                        scheduledTime = takenRecord.reminderTime,
+                        takenTime = takenRecord.takenTime.orEmpty(),
+                        onBackClick = {
+                            navController.popBackStack()
+                        },
+                        onDoneClick = {
+                            navController.navigate("home") {
+                                popUpTo("home") {
+                                    inclusive = false
+                                }
+                                launchSingleTop = true
+                            }
+                        }
+                    )
+                }
+            }
+
+            composable("rescheduleMedication/{medicineId}/{doseIndex}") { backStackEntry ->
+
+                val medicineId =
+                    backStackEntry.arguments
+                        ?.getString("medicineId")
+                        ?.toIntOrNull()
+
+                val doseIndex =
+                    backStackEntry.arguments
+                        ?.getString("doseIndex")
+                        ?.toIntOrNull()
+
+                val medicine = medicines.firstOrNull {
+                    it.id == medicineId
+                }
+
+                val rescheduleVm: RescheduleMedicationViewModel =
+                    viewModel()
+
+                val rescheduleUiState by rescheduleVm.uiState
+                    .collectAsStateWithLifecycle()
+
+
+                if (medicine != null && doseIndex != null) {
+                    val originalTime = medicine.reminderTimes
+                        .getOrNull(doseIndex)
+                        ?.time
+                        ?: "-"
+
+                    val rescheduleDateText =
+                        "Today, " + getMalaysiaDate().format(
+                            DateTimeFormatter.ofPattern(
+                                "dd MMM yyyy",
+                                Locale.ENGLISH
+                            )
+                        )
+
+                    MedicationRescheduleScreen(
+                        medicineName = medicine.name,
+                        missedTime = originalTime,
+                        newTime = rescheduleUiState.newTime.ifBlank { "Select time" },
+                        rescheduleDate = rescheduleDateText,
+                        onBackClick = {
+                            navController.popBackStack()
+                        },
+                        onTimeChange = { time ->
+                            rescheduleVm.updateTime(time)
+                        },
+                        onConfirmClick = {
+                            val newTime = rescheduleUiState.newTime
+
+                            when {
+                                newTime.isBlank() -> {
+                                    scope.launch {
+                                        snackbarHostState.showSnackbar(
+                                            "Please select a new time."
+                                        )
+                                    }
+                                }
+
+                                newTime == originalTime -> {
+                                    scope.launch {
+                                        snackbarHostState.showSnackbar(
+                                            "Please select a different time."
+                                        )
+                                    }
+                                }
+
+                                else -> {
+                                    medicineVm.rescheduleDose(
+                                        medicineId = medicine.id,
+                                        doseIndex = doseIndex,
+                                        originalTime = originalTime,
+                                        newTime = newTime
+                                    )
+
+                                    rescheduleVm.reset()
+
+                                    navController.navigate("home") {
+                                        popUpTo("home") {
+                                            inclusive = false
+                                        }
+                                        launchSingleTop = true
+                                    }
+                                }
+                            }
+                        },
+
+                        onCancelClick = {
+                            navController.popBackStack()
+                        }
+                    )
+                }
+            }
+
+            composable("missedDose/{medicineId}/{doseIndex}") { backStackEntry ->
+
+                val medicineId =
+                    backStackEntry.arguments
+                        ?.getString("medicineId")
+                        ?.toIntOrNull()
+
+                val doseIndex =
+                    backStackEntry.arguments
+                        ?.getString("doseIndex")
+                        ?.toIntOrNull()
+
+                val medicine = medicines.firstOrNull {
+                    it.id == medicineId
+                }
+
+                if (medicine != null && doseIndex != null) {
+                    val originalTime = medicine.reminderTimes
+                        .getOrNull(doseIndex)
+                        ?.time
+                        ?: "-"
+
+                    MissedDoseScreen(
+                        medicineName = medicine.name,
+                        dosage =
+                            "${medicine.dosageAmount} ${medicine.dosageType}",
+                        scheduledTime = originalTime,
+
+                        onBackClick = {
+                            navController.popBackStack()
+                        },
+
+                        onRescheduleClick = {
+                            navController.navigate(
+                                "rescheduleMedication/" +
+                                        "${medicine.id}/$doseIndex"
+                            )
+                        },
+
+                        onSkipClick = {
+                            medicineVm.markDoseAsMissed(
+                                medicineId = medicine.id,
+                                doseIndex = doseIndex,
+                                reminderTime = originalTime
+                            )
+
+                            navController.navigate("home") {
+                                popUpTo("home") {
+                                    inclusive = false
+                                }
+                                launchSingleTop = true
+                            }
+                        }
+                    )
+                }
+            }
+
+            composable("medicationReminder/{medicineId}/{doseIndex}") { backStackEntry ->
+
+                val medicineId =
+                    backStackEntry.arguments
+                        ?.getString("medicineId")
+                        ?.toIntOrNull()
+
+                val doseIndex =
+                    backStackEntry.arguments
+                        ?.getString("doseIndex")
+                        ?.toIntOrNull()
+
+                val medicine = medicines.firstOrNull {
+                    it.id == medicineId
+                }
+
+                if (medicine != null && doseIndex != null) {
+                    val originalTime = medicine.reminderTimes
+                        .getOrNull(doseIndex)
+                        ?.time
+                        ?: "-"
+
+                    MedicationReminderScreen(
+                        medicineName = medicine.name,
+                        dosage =
+                            "${medicine.dosageAmount} ${medicine.dosageType}",
+                        scheduledTime = originalTime,
+
+                        onBackClick = {
+                            navController.popBackStack()
+                        },
+
+                        onTakenClick = {
+                            medicineVm.markDoseAsTaken(
+                                medicineId = medicine.id,
+                                doseIndex = doseIndex,
+                                reminderTime = originalTime
+                            )
+
+                            navController.navigate(
+                                "takenDose/${medicine.id}/$doseIndex"
+                            ) {
+                                launchSingleTop = true
+                            }
+                        },
+
+                        onRescheduleClick = {
+                            navController.navigate(
+                                "rescheduleMedication/" +
+                                        "${medicine.id}/$doseIndex"
+                            )
+                        }
+                    )
+                }
             }
 
             // Medicine List Screen
@@ -727,7 +1071,19 @@ fun MedicationApp(
                 )
             }
 
+
+
             composable("monthlyStatistics") {
+                val monthlyStatisticsVm: MonthlyStatisticsViewModel =
+                    viewModel()
+
+                LaunchedEffect(takenRecords, missedRecords) {
+                    monthlyStatisticsVm.updateRecords(
+                        taken = takenRecords,
+                        missed = missedRecords
+                    )
+                }
+
                 MonthlyStatisticsScreen(
                     onBack = {
                         navController.popBackStack()
@@ -741,23 +1097,54 @@ fun MedicationApp(
                         navController.navigate(
                             "missedMedication"
                         )
-                    }
+                    },
+                    viewModel = monthlyStatisticsVm
                 )
             }
 
             composable("medicationPerformance") {
+
+                val medicationPerformanceVm:
+                        MedicationPerformanceViewModel =
+                    viewModel()
+
+                LaunchedEffect(
+                    takenRecords,
+                    missedRecords,
+                    medicines
+                ) {
+                    medicationPerformanceVm.updateRecords(
+                        taken = takenRecords,
+                        missed = missedRecords,
+                        medicineList = medicines
+                    )
+                }
+
                 MedicationPerformanceScreen(
                     onBack = {
                         navController.popBackStack()
-                    }
+                    },
+                    viewModel = medicationPerformanceVm
                 )
             }
 
             composable("missedMedication") {
+
+                val missedMedicationVm: MissedMedicationViewModel =
+                    viewModel()
+
+                LaunchedEffect(missedRecords, medicines) {
+                    missedMedicationVm.updateRecords(
+                        missed = missedRecords,
+                        medicineList = medicines
+                    )
+                }
+
                 MissedMedicationScreen(
                     onBackClick = {
                         navController.popBackStack()
-                    }
+                    },
+                    viewModel = missedMedicationVm
                 )
             }
 
@@ -1084,6 +1471,18 @@ fun MedicationApp(
                 )
         )
     }
+}
+
+@Composable
+fun MissedDoseScreen(
+    medicineName: String,
+    dosage: String,
+    scheduledTime: String,
+    onBackClick: () -> Boolean,
+    onRescheduleClick: () -> Unit,
+    onSkipClick: () -> Unit
+) {
+    TODO("Not yet implemented")
 }
 
 private fun navigateBottomBar(

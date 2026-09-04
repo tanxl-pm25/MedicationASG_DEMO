@@ -1,13 +1,11 @@
 package com.example.medication_demo.reminder
 
+
 import androidx.compose.material3.TextButton
 import androidx.compose.foundation.Image
 import androidx.compose.ui.res.painterResource
 import com.example.medication_demo.R
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.medication_demo.viewmodel.MedicationMissedViewModel
 import com.example.medication_demo.ui.theme.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -43,13 +41,15 @@ import androidx.compose.ui.unit.sp
 
 @Composable
 fun MissedDoseScreen(
+    medicineName: String,
+    dosage: String,
+    scheduledTime: String,
+    message: String =
+        "Don't worry, you can reschedule your dose.",
     onBackClick: () -> Unit = {},
     onRescheduleClick: () -> Unit = {},
     onSkipClick: () -> Unit = {},
-    viewModel: MedicationMissedViewModel = viewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -101,7 +101,7 @@ fun MissedDoseScreen(
 
             // MEDICATION NAME
             Text(
-                text = uiState.medicineName,
+                text = medicineName,
                 fontSize = 23.sp,
                 fontWeight = FontWeight.Bold,
                 color = DarkText
@@ -110,7 +110,7 @@ fun MissedDoseScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "${uiState.dosage} • ${uiState.scheduledTime}",
+                text = "$dosage • $scheduledTime",
                 fontSize = 17.sp,
                 color = TextGrey
             )
@@ -137,7 +137,7 @@ fun MissedDoseScreen(
 
             // MISSED MESSAGE
             Text(
-                text = "Missed at ${uiState.scheduledTime}",
+                text = "Missed at $scheduledTime",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 color = DarkText
@@ -145,7 +145,7 @@ fun MissedDoseScreen(
 
             Spacer(modifier = Modifier.height(10.dp))
             Text(
-                text = uiState.message,
+                text = message,
                 fontSize = 17.sp,
                 color = TextGrey
             )
@@ -215,6 +215,10 @@ fun MissedDoseScreen(
 @Composable
 private fun MedicationMissedScreenPreview() {
     MaterialTheme {
-        MissedDoseScreen()
+        MissedDoseScreen(
+            medicineName = "Metformin",
+            dosage = "1 Tablet",
+            scheduledTime = "08:30 AM"
+        )
     }
 }

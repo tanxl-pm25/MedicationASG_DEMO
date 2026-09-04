@@ -78,7 +78,7 @@ fun AppointmentListScreen(
             .statusBarsPadding()
             .navigationBarsPadding(),
 
-        containerColor = Color.White,
+        containerColor = MaterialTheme.colorScheme.background,
 
         bottomBar = {
 

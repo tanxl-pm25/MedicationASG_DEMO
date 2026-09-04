@@ -1,18 +1,18 @@
 package com.example.medication_demo.viewmodel
 
 import androidx.lifecycle.ViewModel
-import com.example.medication_demo.model.MedicationMissedUiState
+import com.example.medication_demo.model.MissedDoseDetailUiState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class MedicationMissedViewModel : ViewModel() {
+class MissedDoseDetailViewModel : ViewModel() {
 
     private val _uiState = MutableStateFlow(
-        MedicationMissedUiState()
+        MissedDoseDetailUiState()
     )
 
-    val uiState: StateFlow<MedicationMissedUiState> =
+    val uiState: StateFlow<MissedDoseDetailUiState> =
         _uiState.asStateFlow()
 
     fun setMissedMedication(
@@ -20,7 +20,7 @@ class MedicationMissedViewModel : ViewModel() {
         dosage: String,
         scheduledTime: String
     ) {
-        _uiState.value = MedicationMissedUiState(
+        _uiState.value = MissedDoseDetailUiState(
             medicineName = medicineName,
             dosage = dosage,
             scheduledTime = scheduledTime

@@ -18,17 +18,11 @@ class WaterIntakeViewModel : ViewModel() {
         const val KEY_WATER_RECORDS = "water_records"
     }
 
-    private lateinit var preferences:
-            android.content.SharedPreferences
+    private lateinit var preferences: android.content.SharedPreferences
+    private val waterRecords = mutableMapOf<LocalDate, Int>()
+    private val _uiState = MutableStateFlow(WaterIntakeUiState())
 
-    private val waterRecords =
-        mutableMapOf<LocalDate, Int>()
-
-    private val _uiState =
-        MutableStateFlow(WaterIntakeUiState())
-
-    val uiState: StateFlow<WaterIntakeUiState> =
-        _uiState.asStateFlow()
+    val uiState: StateFlow<WaterIntakeUiState> = _uiState.asStateFlow()
 
     fun initialize(context: Context) {
         if (::preferences.isInitialized) {
@@ -54,6 +48,22 @@ class WaterIntakeViewModel : ViewModel() {
             dailyGoal = dailyGoal,
             selectedDate = selectedDate
         )
+    }
+
+    fun selectToday() {
+        val today = getMalaysiaDate()
+
+        selectDate(
+            year = today.year,
+            month = today.monthValue,
+            day = today.dayOfMonth
+        )
+    }
+
+    fun getTodayGlasses(): Int {
+        return waterRecords[
+            getMalaysiaDate()
+        ] ?: 0
     }
 
     fun addGlass() {

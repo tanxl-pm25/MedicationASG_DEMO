@@ -1,200 +1,127 @@
 package com.example.medication_demo.viewmodel
 
-
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
+import com.example.medication_demo.model.MedicationMissedRecord
 import com.example.medication_demo.model.MedicationPerformanceItem
 import com.example.medication_demo.model.MedicationPerformanceUiState
+import com.example.medication_demo.model.MedicationTakenRecord
+import com.example.medication_demo.model.Medicine
+import com.example.medication_demo.utils.getMalaysiaDate
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.time.YearMonth
 
 class MedicationPerformanceViewModel : ViewModel() {
-    private val _uiState =
-        MutableStateFlow(
-            MedicationPerformanceUiState()
-        )
+
+    private val _uiState = MutableStateFlow(
+        MedicationPerformanceUiState()
+    )
 
     val uiState: StateFlow<MedicationPerformanceUiState> =
         _uiState.asStateFlow()
 
+    private var takenRecords =
+        emptyList<MedicationTakenRecord>()
+
+    private var missedRecords =
+        emptyList<MedicationMissedRecord>()
+
+    private var medicines =
+        emptyList<Medicine>()
+
+    fun updateRecords(
+        taken: List<MedicationTakenRecord>,
+        missed: List<MedicationMissedRecord>,
+        medicineList: List<Medicine>
+    ) {
+        takenRecords = taken
+        missedRecords = missed
+        medicines = medicineList
+        updateMedicationPerformance()
+    }
 
     fun previousMonth() {
-
-        val currentMonth =
-            _uiState.value.selectedMonth
-
-        _uiState.value =
-            _uiState.value.copy(
-                selectedMonth =
-                    currentMonth.minusMonths(1)
-            )
+        _uiState.value = _uiState.value.copy(
+            selectedMonth = _uiState.value.selectedMonth
+                .minusMonths(1)
+        )
 
         updateMedicationPerformance()
     }
 
-
     fun nextMonth() {
+        val currentMonth = YearMonth.from(
+            getMalaysiaDate()
+        )
 
         if (
             !_uiState.value.selectedMonth.isBefore(
-                java.time.YearMonth.now()
+                currentMonth
             )
         ) {
             return
         }
 
-        val currentMonth =
-            _uiState.value.selectedMonth
-
-        _uiState.value =
-            _uiState.value.copy(
-                selectedMonth =
-                    currentMonth.plusMonths(1)
-            )
+        _uiState.value = _uiState.value.copy(
+            selectedMonth = _uiState.value.selectedMonth
+                .plusMonths(1)
+        )
 
         updateMedicationPerformance()
     }
-
-
-    fun selectMonth(
-        year: Int,
-        month: Int
-    ) {
-
-        _uiState.value =
-            _uiState.value.copy(
-                selectedMonth =
-                    YearMonth.of(
-                        year,
-                        month
-                    )
-            )
-
-        updateMedicationPerformance()
-    }
-
 
     private fun updateMedicationPerformance() {
+        val selectedMonth = _uiState.value.selectedMonth
 
-        val month =
-            _uiState.value.selectedMonth.monthValue
-
-        when (month) {
-
-            4 -> {
-                _uiState.value =
-                    _uiState.value.copy(
-                        medications = listOf(
-                            MedicationPerformanceItem(
-                                medicationName =
-                                    "Vitamin D3 1000IU",
-                                taken = 27,
-                                total = 30,
-                                missed = 3,
-                                iconColor =
-                                    Color(0xFF1976D2)
-                            ),
-
-                            MedicationPerformanceItem(
-                                medicationName =
-                                    "Metformin 500mg",
-                                taken = 55,
-                                total = 60,
-                                missed = 5,
-                                iconColor =
-                                    Color(0xFFBFC2C4)
-                            ),
-
-                            MedicationPerformanceItem(
-                                medicationName =
-                                    "Omega-3 1000mg",
-                                taken = 25,
-                                total = 30,
-                                missed = 5,
-                                iconColor =
-                                    Color(0xFFFFB300)
-                            )
-                        )
-                    )
-            }
-
-
-            5 -> {
-                _uiState.value =
-                    _uiState.value.copy(
-                        medications = listOf(
-                            MedicationPerformanceItem(
-                                medicationName =
-                                    "Vitamin D3 1000IU",
-                                taken = 30,
-                                total = 31,
-                                missed = 1,
-                                iconColor =
-                                    Color(0xFF1976D2)
-                            ),
-
-                            MedicationPerformanceItem(
-                                medicationName =
-                                    "Metformin 500mg",
-                                taken = 60,
-                                total = 62,
-                                missed = 2,
-                                iconColor =
-                                    Color(0xFFBFC2C4)
-                            ),
-
-                            MedicationPerformanceItem(
-                                medicationName =
-                                    "Omega-3 1000mg",
-                                taken = 28,
-                                total = 30,
-                                missed = 2,
-                                iconColor =
-                                    Color(0xFFFFB300)
-                            )
-                        )
-                    )
-            }
-
-
-            6 -> {
-                _uiState.value =
-                    _uiState.value.copy(
-                        medications = listOf(
-                            MedicationPerformanceItem(
-                                medicationName =
-                                    "Vitamin D3 1000IU",
-                                taken = 30,
-                                total = 30,
-                                missed = 0,
-                                iconColor =
-                                    Color(0xFF1976D2)
-                            ),
-
-                            MedicationPerformanceItem(
-                                medicationName =
-                                    "Metformin 500mg",
-                                taken = 58,
-                                total = 60,
-                                missed = 2,
-                                iconColor =
-                                    Color(0xFFBFC2C4)
-                            ),
-
-                            MedicationPerformanceItem(
-                                medicationName =
-                                    "Omega-3 1000mg",
-                                taken = 29,
-                                total = 30,
-                                missed = 1,
-                                iconColor =
-                                    Color(0xFFFFB300)
-                            )
-                        )
-                    )
-            }
+        val takenForMonth = takenRecords.filter {
+            YearMonth.from(it.date) == selectedMonth
         }
+
+        val missedForMonth = missedRecords.filter {
+            YearMonth.from(it.date) == selectedMonth
+        }
+
+        val medicineIds = (
+                takenForMonth.map { it.medicineId } +
+                        missedForMonth.map { it.medicineId }
+                ).distinct()
+
+        val colors = listOf(
+            Color(0xFF1976D2),
+            Color(0xFF159447),
+            Color(0xFFFFB300),
+            Color(0xFF8E44AD)
+        )
+
+        val items = medicineIds.mapIndexed { index, medicineId ->
+            val medicine = medicines.firstOrNull {
+                it.id == medicineId
+            }
+
+            val takenCount = takenForMonth.count {
+                it.medicineId == medicineId
+            }
+
+            val missedCount = missedForMonth.count {
+                it.medicineId == medicineId
+            }
+
+            MedicationPerformanceItem(
+                medicationName = medicine?.name
+                    ?: "Medication",
+                taken = takenCount,
+                missed = missedCount,
+                total = takenCount + missedCount,
+                iconColor = colors[index % colors.size],
+                presetImageRes = medicine?.presetImageRes,
+                galleryImageUri = medicine?.galleryImageUri
+            )
+        }
+
+        _uiState.value = _uiState.value.copy(
+            medications = items
+        )
     }
 }

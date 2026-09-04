@@ -85,7 +85,7 @@ fun AddAppointmentScreen(
     val context = LocalContext.current
 
     Scaffold(
-        containerColor = Color.White,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             AddAppointmentTopBar(
                 onBackClick = onBackClick

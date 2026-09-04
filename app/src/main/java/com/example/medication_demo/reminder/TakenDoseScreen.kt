@@ -4,10 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import com.example.medication_demo.R
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.medication_demo.viewmodel.MedicationTakenViewModel
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -46,12 +43,16 @@ private val SoftGreen = Color(0xFFC8F0E2)
 
 @Composable
 fun TakenDoseScreen(
+    medicineName: String,
+    dosage: String,
+    scheduledTime: String,
+    takenTime: String,
+    encouragementMessage: String =
+        "Great job! Keep following your schedule.",
     onBackClick: () -> Unit = {},
     onMoreClick: () -> Unit = {},
     onDoneClick: () -> Unit = {},
-    viewModel: MedicationTakenViewModel = viewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
 
     Column(
         modifier = Modifier
@@ -114,7 +115,7 @@ fun TakenDoseScreen(
 
             // MEDICATION NAME
             Text(
-                text = uiState.medicineName,
+                text = medicineName,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 color = DarkText
@@ -125,7 +126,7 @@ fun TakenDoseScreen(
             )
 
             Text(
-                text = "${uiState.dosage} • ${uiState.scheduledTime}",                fontSize = 14.sp,
+                text = "$dosage • $scheduledTime",                fontSize = 14.sp,
                 color = TextGrey
             )
 
@@ -145,7 +146,7 @@ fun TakenDoseScreen(
 
             // TAKEN MESSAGE
             Text(
-                text = "Taken at ${uiState.takenTime} 🎉",
+                text = "Taken at $takenTime 🎉",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 color = DarkText
@@ -156,7 +157,7 @@ fun TakenDoseScreen(
             )
 
             Text(
-                uiState.encouragementMessage,
+                encouragementMessage,
                 fontSize = 19.sp,
                 color = TextGrey
             )
@@ -202,6 +203,11 @@ fun TakenDoseScreen(
 private fun TakenDoseScreenPreview() {
 
     MaterialTheme {
-        TakenDoseScreen()
+        TakenDoseScreen(
+            medicineName = "Metformin",
+            dosage = "1 Tablet",
+            scheduledTime = "08:30 AM",
+            takenTime = "08:32 AM"
+        )
     }
 }

@@ -1,5 +1,10 @@
 package com.example.medication_demo.statistics
 
+import com.example.medication_demo.R
+import androidx.compose.foundation.Image
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import coil.compose.AsyncImage
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
@@ -31,7 +36,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.tooling.preview.Preview
-
 
 
 // MEDICATION PERFORMANCE SCREEN
@@ -202,7 +206,9 @@ fun MedicationPerformanceScreen(
                     taken = medication.taken,
                     total = medication.total,
                     missed = medication.missed,
-                    iconColor = medication.iconColor
+                    iconColor = medication.iconColor,
+                    presetImageRes = medication.presetImageRes,
+                    galleryImageUri = medication.galleryImageUri,
                 )
 
                 if (index < uiState.medications.lastIndex) {
@@ -223,130 +229,143 @@ fun MedicationPerformanceCard(
     taken: Int,
     total: Int,
     missed: Int,
-    iconColor: Color
+    iconColor: Color,
+    presetImageRes: Int?,
+    galleryImageUri: String?
 ) {
-
-    val progress = if (total > 0) taken.toFloat() / total.toFloat()
-    else 0f
+    val progress =
+        if (total > 0) {
+            taken.toFloat() / total.toFloat()
+        } else {
+            0f
+        }
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(110.dp),
-        shape = RoundedCornerShape(10.dp),
+            .height(132.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color.White
         ),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = 1.dp
+            defaultElevation = 2.dp
         )
     ) {
-
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(
-                    horizontal = 14.dp,
-                    vertical = 12.dp
-                )
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-
-            // TOP ROW
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+            Box(
+                modifier = Modifier
+                    .size(76.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color(0xFFF6F7F8)),
+                contentAlignment = Alignment.Center
             ) {
+                when {
+                    !galleryImageUri.isNullOrBlank() -> {
+                        AsyncImage(
+                            model = galleryImageUri,
+                            contentDescription =
+                                "$medicationName image",
+                            modifier = Modifier.size(46.dp),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
 
-                // Medicine Icon
-                Box(
-                    modifier = Modifier
-                        .size(44.dp)
-                        .background(
-                            color = Color(0xFFF5F6F7),
-                            shape = RoundedCornerShape(8.dp)
-                        ),
-                    contentAlignment = Alignment.Center
+                    presetImageRes != null -> {
+                        Image(
+                            painter = painterResource(
+                                id = presetImageRes
+                            ),
+                            contentDescription =
+                                "$medicationName image",
+                            modifier = Modifier.size(46.dp),
+                            contentScale = ContentScale.Fit
+                        )
+                    }
+
+                    else -> {
+                        Image(
+                            painter = painterResource(
+                                R.drawable.pill_24dp_1f1f1f_fill0_wght400_grad0_opsz24
+                            ),
+                            contentDescription =
+                                "$medicationName default image",
+                            modifier = Modifier.size(46.dp),
+                            contentScale = ContentScale.Fit
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment =
+                        Alignment.CenterVertically
                 ) {
+                    Text(
+                        text = medicationName,
+                        modifier = Modifier.weight(1f),
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF333333),
+                        maxLines = 1
+                    )
 
-                    Icon(
-                        imageVector = Icons.Outlined.Medication,
-                        contentDescription = null,
-                        tint = iconColor,
-                        modifier = Modifier.size(28.dp)
+                    Text(
+                        text = "$taken/$total",
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF159447)
                     )
                 }
 
-                Spacer(modifier = Modifier.width(8.dp))
-
-                // Medication Name
-                Text(
-                    text = medicationName,
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF333333),
-                    modifier = Modifier.weight(1f)
-                )
-
-
-                // Taken / Total
-                Text(
-                    text = "$taken/$total",
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF159447)
-                )
-            }
-
-
-            Spacer(modifier = Modifier.height(5.dp))
-
-
-            // PROGRESS BAR
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(8.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(
-                        Color(0xFFE6E8EA)
-                    )
-            ) {
+                Spacer(modifier = Modifier.height(14.dp))
 
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth(progress)
-                        .fillMaxHeight()
-                        .clip(
-                            RoundedCornerShape(10.dp)
-                        )
-                        .background(
-                            Color(0xFF159447)
-                        )
-                )
-            }
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(Color(0xFFE4E7EA))
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(progress)
+                            .fillMaxHeight()
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(Color(0xFF159447))
+                    )
+                }
 
-            Spacer(modifier = Modifier.height(5.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
-            // TAKEN / MISSED
-            Row(
-                modifier = Modifier.fillMaxWidth()
-            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Taken",
+                        fontSize = 13.sp,
+                        color = Color(0xFF159447)
+                    )
 
-                Text(
-                    text = "Taken",
-                    fontSize = 13.sp,
-                    color = Color(0xFF159447)
-                )
+                    Spacer(modifier = Modifier.weight(1f))
 
-                Spacer(
-                    modifier = Modifier.weight(1f)
-                )
-
-                Text(
-                    text = "Missed $missed",
-                    fontSize = 13.sp,
-                    color = Color(0xFFE53935)
-                )
+                    Text(
+                        text = "Missed $missed",
+                        fontSize = 13.sp,
+                        color = Color(0xFFE53935)
+                    )
+                }
             }
         }
     }

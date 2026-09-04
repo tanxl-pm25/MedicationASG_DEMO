@@ -26,6 +26,7 @@ object MedicationNotification {
     const val EXTRA_ORIGINAL_TIME = "medication_original_time"
     const val ACTION_TAKEN = "medication_action_taken"
     const val ACTION_RESCHEDULE = "medication_action_reschedule"
+    const val ACTION_OPEN_REMINDER = "medication_action_open_reminder"
 
     fun show(
         context: Context,
@@ -36,6 +37,14 @@ object MedicationNotification {
         dosage: String
     ) {
         createChannel(context)
+
+        val openReminderPendingIntent = actionIntent(
+            context = context,
+            medicineId = medicineId,
+            doseIndex = doseIndex,
+            originalTime = originalTime,
+            action = ACTION_OPEN_REMINDER
+        )
 
         val takenPendingIntent = actionIntent(
             context = context,
@@ -79,6 +88,7 @@ object MedicationNotification {
                     NotificationCompat.CATEGORY_REMINDER
                 )
                 .setAutoCancel(true)
+                .setContentIntent(openReminderPendingIntent)
                 .addAction(
                     R.drawable.ic_launcher_foreground,
                     "Taken",
@@ -134,7 +144,12 @@ object MedicationNotification {
         return PendingIntent.getActivity(
             context,
             medicineId * 100 + doseIndex +
-                    if (action == ACTION_TAKEN) 1 else 2,
+                    when (action) {
+                        ACTION_TAKEN -> 1
+                        ACTION_RESCHEDULE -> 2
+                        ACTION_OPEN_REMINDER -> 3
+                        else -> 0
+                    },
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or
                     PendingIntent.FLAG_IMMUTABLE

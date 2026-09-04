@@ -1,57 +1,66 @@
 package com.example.medication_demo.viewmodel
 
 import androidx.lifecycle.ViewModel
+import com.example.medication_demo.model.MedicationMissedRecord
+import com.example.medication_demo.model.MedicationTakenRecord
 import com.example.medication_demo.model.MonthlyStatisticsUiState
+import com.example.medication_demo.utils.getMalaysiaDate
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.time.YearMonth
+import kotlin.math.roundToInt
 
 class MonthlyStatisticsViewModel : ViewModel() {
 
-    private val _uiState =
-        MutableStateFlow(
-            MonthlyStatisticsUiState()
-        )
+    private val _uiState = MutableStateFlow(
+        MonthlyStatisticsUiState()
+    )
 
     val uiState: StateFlow<MonthlyStatisticsUiState> =
         _uiState.asStateFlow()
 
+    private var takenRecords =
+        emptyList<MedicationTakenRecord>()
+
+    private var missedRecords =
+        emptyList<MedicationMissedRecord>()
+
+    fun updateRecords(
+        taken: List<MedicationTakenRecord>,
+        missed: List<MedicationMissedRecord>
+    ) {
+        takenRecords = taken
+        missedRecords = missed
+        updateStatistics()
+    }
 
     fun previousMonth() {
-
-        val currentMonth =
-            _uiState.value.selectedMonth
-
-        _uiState.value =
-            _uiState.value.copy(
-                selectedMonth =
-                    currentMonth.minusMonths(1)
-            )
+        _uiState.value = _uiState.value.copy(
+            selectedMonth = _uiState.value.selectedMonth
+                .minusMonths(1)
+        )
 
         updateStatistics()
     }
 
-
-
-
     fun nextMonth() {
+        val currentMonth = YearMonth.from(
+            getMalaysiaDate()
+        )
+
         if (
             !_uiState.value.selectedMonth.isBefore(
-                YearMonth.now()
+                currentMonth
             )
         ) {
             return
         }
 
-        val currentMonth =
-            _uiState.value.selectedMonth
-
-        _uiState.value =
-            _uiState.value.copy(
-                selectedMonth =
-                    currentMonth.plusMonths(1)
-            )
+        _uiState.value = _uiState.value.copy(
+            selectedMonth = _uiState.value.selectedMonth
+                .plusMonths(1)
+        )
 
         updateStatistics()
     }
@@ -61,111 +70,100 @@ class MonthlyStatisticsViewModel : ViewModel() {
         month: Int
     ) {
         _uiState.value = _uiState.value.copy(
-            selectedMonth = java.time.YearMonth.of(
-                year,
-                month
-            )
+            selectedMonth = YearMonth.of(year, month)
         )
 
         updateStatistics()
     }
 
-
     private fun updateStatistics() {
+        val selectedMonth = _uiState.value.selectedMonth
 
-        val month =
-            _uiState.value.selectedMonth.monthValue
+        val takenForMonth = takenRecords.filter {
+            YearMonth.from(it.date) == selectedMonth
+        }
 
-        when (month) {
+        val missedForMonth = missedRecords.filter {
+            YearMonth.from(it.date) == selectedMonth
+        }
 
-            4 -> {
+        val takenCount = takenForMonth.size
+        val missedCount = missedForMonth.size
+        val totalCount = takenCount + missedCount
 
-                _uiState.value =
-                    _uiState.value.copy(
-
-                        adherencePercentage = 76,
-
-                        adherenceMessage =
-                            "You're improving!",
-
-                        takenDoses = 112,
-
-                        missedDoses = 35,
-
-                        totalDoses = 147,
-
-                        chartValues = listOf(
-                            40,
-                            52,
-                            61,
-                            48,
-                            70,
-                            65,
-                            75,
-                            82
-                        )
-                    )
+        val percentage =
+            if (totalCount == 0) {
+                0
+            } else {
+                (
+                        takenCount.toFloat() /
+                                totalCount.toFloat() * 100
+                        ).roundToInt()
             }
 
+        val message = when {
+            totalCount == 0 ->
+                "No medication data yet."
 
-            5 -> {
+            percentage >= 90 ->
+                "Excellent progress!"
 
-                _uiState.value =
-                    _uiState.value.copy(
+            percentage >= 75 ->
+                "Well done! Keep it up."
 
-                        adherencePercentage = 82,
+            percentage >= 50 ->
+                "You're improving!"
 
-                        adherenceMessage =
-                            "Well done! Keep it up.",
+            else ->
+                "Let's get back on track."
+        }
 
-                        takenDoses = 128,
+        val daysPerBar =
+            (selectedMonth.lengthOfMonth() + 7) / 8
 
-                        missedDoses = 28,
+        val chartRanges = List(8) { index ->
+            val startDay = index * daysPerBar + 1
 
-                        totalDoses = 156,
+            val endDay = minOf(
+                startDay + daysPerBar - 1,
+                selectedMonth.lengthOfMonth()
+            )
 
-                        chartValues = listOf(
-                            35,
-                            48,
-                            68,
-                            55,
-                            64,
-                            72,
-                            60,
-                            92
-                        )
-                    )
+            startDay to endDay
+        }
+
+        val chartValues = chartRanges.map { range ->
+            val takenForRange = takenForMonth.count {
+                it.date.dayOfMonth in range.first..range.second
             }
 
+            val missedForRange = missedForMonth.count {
+                it.date.dayOfMonth in range.first..range.second
+            }
 
-            6 -> {
+            val totalForRange =
+                takenForRange + missedForRange
 
-                _uiState.value =
-                    _uiState.value.copy(
-
-                        adherencePercentage = 88,
-
-                        adherenceMessage =
-                            "Excellent progress!",
-
-                        takenDoses = 142,
-
-                        missedDoses = 19,
-
-                        totalDoses = 161,
-
-                        chartValues = listOf(
-                            55,
-                            60,
-                            72,
-                            68,
-                            78,
-                            82,
-                            88,
-                            95
-                        )
-                    )
+            if (totalForRange == 0) {
+                0
+            } else {
+                (
+                        takenForRange.toFloat() /
+                                totalForRange.toFloat() * 100
+                        ).roundToInt()
             }
         }
+
+        _uiState.value = _uiState.value.copy(
+            adherencePercentage = percentage,
+            adherenceMessage = message,
+            takenDoses = takenCount,
+            missedDoses = missedCount,
+            totalDoses = totalCount,
+            chartValues = chartValues,
+            chartLabels = chartRanges.map {
+                it.first.toString()
+            }
+        )
     }
 }

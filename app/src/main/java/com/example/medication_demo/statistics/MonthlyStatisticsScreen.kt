@@ -511,7 +511,7 @@ fun StatisticCard(
             .height(85.dp),
         shape = RoundedCornerShape(9.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color.White
+            containerColor = MaterialTheme.colorScheme.background
         ),
         elevation = CardDefaults.cardElevation(
             defaultElevation = 1.dp

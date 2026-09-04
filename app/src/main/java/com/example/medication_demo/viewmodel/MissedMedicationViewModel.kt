@@ -1,213 +1,111 @@
 package com.example.medication_demo.viewmodel
 
 import androidx.lifecycle.ViewModel
+import com.example.medication_demo.model.MedicationMissedRecord
+import com.example.medication_demo.model.Medicine
 import com.example.medication_demo.model.MissedMedicine
 import com.example.medication_demo.model.MissedMedicationUiState
+import com.example.medication_demo.utils.getMalaysiaDate
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.time.YearMonth
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 class MissedMedicationViewModel : ViewModel() {
 
-    private val _uiState =
-        MutableStateFlow(
-            MissedMedicationUiState()
-        )
+    private val _uiState = MutableStateFlow(
+        MissedMedicationUiState()
+    )
 
     val uiState: StateFlow<MissedMedicationUiState> =
         _uiState.asStateFlow()
 
+    private var missedRecords =
+        emptyList<MedicationMissedRecord>()
+
+    private var medicines =
+        emptyList<Medicine>()
+
+    fun updateRecords(
+        missed: List<MedicationMissedRecord>,
+        medicineList: List<Medicine>
+    ) {
+        missedRecords = missed
+        medicines = medicineList
+        updateMissedMedication()
+    }
 
     fun previousMonth() {
-
-        _uiState.value =
-            _uiState.value.copy(
-                selectedMonth =
-                    _uiState.value.selectedMonth.minusMonths(1)
-            )
+        _uiState.value = _uiState.value.copy(
+            selectedMonth = _uiState.value.selectedMonth
+                .minusMonths(1)
+        )
 
         updateMissedMedication()
     }
 
-
     fun nextMonth() {
+        val currentMonth = YearMonth.from(
+            getMalaysiaDate()
+        )
+
         if (
             !_uiState.value.selectedMonth.isBefore(
-                java.time.YearMonth.now()
+                currentMonth
             )
         ) {
             return
         }
 
-        _uiState.value =
-            _uiState.value.copy(
-                selectedMonth =
-                    _uiState.value.selectedMonth.plusMonths(1)
-            )
+        _uiState.value = _uiState.value.copy(
+            selectedMonth = _uiState.value.selectedMonth
+                .plusMonths(1)
+        )
 
         updateMissedMedication()
     }
-
-
-    fun selectMonth(
-        year: Int,
-        month: Int
-    ) {
-
-        _uiState.value =
-            _uiState.value.copy(
-                selectedMonth =
-                    YearMonth.of(year, month)
-            )
-
-        updateMissedMedication()
-    }
-
 
     private fun updateMissedMedication() {
+        val selectedMonth = _uiState.value.selectedMonth
 
-        when (_uiState.value.selectedMonth.monthValue) {
+        val monthFormatter = DateTimeFormatter.ofPattern(
+            "MMM yyyy",
+            Locale.ENGLISH
+        )
 
-            // JUNE
-            6 -> {
+        val weekdayFormatter = DateTimeFormatter.ofPattern(
+            "EEE",
+            Locale.ENGLISH
+        )
 
-                _uiState.value =
-                    _uiState.value.copy(
-                        missedMedicines = listOf(
+        val list = missedRecords
+            .filter { record ->
+                YearMonth.from(record.date) == selectedMonth
+            }
+            .sortedByDescending { record ->
+                record.date
+            }
+            .map { record ->
+                val medicine = medicines.firstOrNull {
+                    it.id == record.medicineId
+                }
 
-                            MissedMedicine(
-                                day = "5",
-                                month = "Jun 2026",
-                                weekday = "Fri",
-                                medicineName = "Vitamin D3 1000IU",
-                                scheduledTime = "8:00 AM",
-                                dosage = "1000 IU"
-                            ),
-
-                            MissedMedicine(
-                                day = "16",
-                                month = "Jun 2026",
-                                weekday = "Tue",
-                                medicineName = "Metformin 500mg",
-                                scheduledTime = "8:00 AM",
-                                dosage = "500 mg"
-                            ),
-
-                            MissedMedicine(
-                                day = "24",
-                                month = "Jun 2026",
-                                weekday = "Wed",
-                                medicineName = "Omega-3 1000mg",
-                                scheduledTime = "1:00 PM",
-                                dosage = "1000 mg"
-                            )
-                        )
-                    )
+                MissedMedicine(
+                    day = record.date.dayOfMonth.toString(),
+                    month = record.date.format(monthFormatter),
+                    weekday = record.date.format(weekdayFormatter),
+                    medicineName = medicine?.name
+                        ?: "Medication",
+                    scheduledTime = record.reminderTime,
+                    dosage =
+                        "${record.dosageAmount} ${record.dosageType}"
+                )
             }
 
-
-            // JULY
-            7 -> {
-
-                _uiState.value =
-                    _uiState.value.copy(
-                        missedMedicines = listOf(
-
-                            MissedMedicine(
-                                "3",
-                                "Jul 2026",
-                                "Thu",
-                                "Vitamin D3 1000IU",
-                                "8:00 AM",
-                                "1000 IU"
-                            ),
-
-                            MissedMedicine(
-                                "12",
-                                "Jul 2026",
-                                "Sat",
-                                "Metformin 500mg",
-                                "8:00 AM",
-                                "500 mg"
-                            ),
-
-                            MissedMedicine(
-                                "18",
-                                "Jul 2026",
-                                "Fri",
-                                "Omega-3 1000mg",
-                                "1:00 PM",
-                                "1000 mg"
-                            ),
-
-                            MissedMedicine(
-                                "21",
-                                "Jul 2026",
-                                "Mon",
-                                "Metformin 500mg",
-                                "8:00 AM",
-                                "500 mg"
-                            ),
-
-                            MissedMedicine(
-                                "25",
-                                "Jul 2026",
-                                "Fri",
-                                "Omega-3 1000mg",
-                                "1:00 PM",
-                                "1000 mg"
-                            ),
-
-                            MissedMedicine(
-                                "29",
-                                "Jul 2026",
-                                "Tue",
-                                "Metformin 500mg",
-                                "8:00 AM",
-                                "500 mg"
-                            )
-                        )
-                    )
-            }
-
-
-            // AUGUST
-            8 -> {
-
-                _uiState.value =
-                    _uiState.value.copy(
-                        missedMedicines = listOf(
-
-                            MissedMedicine(
-                                "7",
-                                "Aug 2026",
-                                "Fri",
-                                "Metformin 500mg",
-                                "8:00 AM",
-                                "500 mg"
-                            ),
-
-                            MissedMedicine(
-                                "20",
-                                "Aug 2026",
-                                "Thu",
-                                "Omega-3 1000mg",
-                                "1:00 PM",
-                                "1000 mg"
-                            )
-                        )
-                    )
-            }
-
-
-            else -> {
-
-                _uiState.value =
-                    _uiState.value.copy(
-                        missedMedicines = emptyList()
-                    )
-            }
-        }
+        _uiState.value = _uiState.value.copy(
+            missedMedicines = list
+        )
     }
 }

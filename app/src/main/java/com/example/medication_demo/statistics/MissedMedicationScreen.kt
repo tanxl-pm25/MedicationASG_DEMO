@@ -17,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.EventBusy
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.KeyboardArrowRight
@@ -258,23 +259,29 @@ fun MissedMedicationScreen(
         }
 
         // MISSED MEDICATION LIST
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
-            contentPadding = PaddingValues(
-                start = 22.dp,
-                end = 22.dp,
-                bottom = 20.dp
-            ),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
+        if (uiState.missedMedicines.isEmpty()) {
+            Spacer(modifier = Modifier.weight(1f))
+            EmptyMissedMedicationState()
+            Spacer(modifier = Modifier.weight(1f))
 
-            items(uiState.missedMedicines) { medicine ->
+        } else {
 
-                MissedMedicationCard(
-                    medicine = medicine
-                )
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                contentPadding = PaddingValues(
+                    start = 22.dp,
+                    end = 22.dp,
+                    bottom = 20.dp
+                ),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(uiState.missedMedicines) { medicine ->
+                    MissedMedicationCard(
+                        medicine = medicine
+                    )
+                }
             }
         }
     }
@@ -396,6 +403,38 @@ fun MissedMedicationCard(
                 color = Red
             )
         }
+    }
+}
+
+@Composable
+fun EmptyMissedMedicationState() {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            imageVector = Icons.Default.EventBusy,
+            contentDescription = null,
+            tint = Color(0xFF159447),
+            modifier = Modifier.size(48.dp)
+        )
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        Text(
+            text = "No missed medication",
+            fontSize = 17.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = DarkText
+        )
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        Text(
+            text = "Great job! You have no missed doses this month.",
+            fontSize = 13.sp,
+            color = GreyText
+        )
     }
 }
 
