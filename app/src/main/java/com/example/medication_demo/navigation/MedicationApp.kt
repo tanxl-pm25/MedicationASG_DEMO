@@ -60,6 +60,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
@@ -96,6 +97,7 @@ import com.example.medication_demo.waterIntake.WaterIntakeScreen
 import com.example.medication_demo.viewmodel.WaterIntakeViewModel
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(kotlin.time.ExperimentalTime::class)
 @Composable
@@ -248,17 +250,24 @@ fun MedicationApp(
             rescheduledDoses = rescheduledDoses,
             medicineVm = medicineVm
         )
+    var homeRefreshTrigger by remember {
+        mutableIntStateOf(0)
+    }
     val refreshTime by produceState(
         initialValue = getMalaysiaTime()
     ) {
         while (true) {
             value = getMalaysiaTime()
-            delay(1000)
+            delay(10_000.milliseconds)
         }
     }
     val nextDose =
         remember(
-            medicines, takenRecords, rescheduledDoses, refreshTime
+            medicines,
+            takenRecords,
+            rescheduledDoses,
+            refreshTime,
+            homeRefreshTrigger
         ) {
             medicineListVm.getNextMedicineDose(
                 medicines = medicines,
@@ -895,6 +904,8 @@ fun MedicationApp(
                                 doseIndex = nextDose.doseIndex,
                                 reminderTime = nextDose.originalTime
                             )
+
+                            homeRefreshTrigger++
                         }
                     },
                     onRescheduleConfirm = { newTime ->

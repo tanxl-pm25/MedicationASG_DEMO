@@ -1559,6 +1559,12 @@ class MedicineViewModel(
     }
 
     fun switchUser(userId: String) {
+        if (
+            currentUserId == userId &&
+            userId != "guest"
+        ) {
+            return
+        }
         CurrentUserStorage.saveUserId(
             context = getApplication(),
             userId = userId
