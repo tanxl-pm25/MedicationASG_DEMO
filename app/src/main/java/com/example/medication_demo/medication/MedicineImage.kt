@@ -1,6 +1,7 @@
 package com.example.medication_demo.medication
 
 import androidx.compose.foundation.Image
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
@@ -8,7 +9,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
@@ -53,7 +53,7 @@ fun MedicineImage(
                         R.drawable.pill_24dp_1f1f1f_fill0_wght400_grad0_opsz24
                     ),
                     contentDescription = contentDescription,
-                    tint = Color.Unspecified,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(imageSize)
                 )
             }

@@ -70,9 +70,6 @@ private val DetailGrey = Color(0xFF6B7280)
 private val DetailLightGrey = Color(0xFFF3F4F6)
 
 private val DetailRed = Color(0xFFFF3B30)
-private val DetailDivider = Color(0xFFE5E7EB)
-private val DetailBackground = Color(0xFFFFFFFF)
-
 @Composable
 fun MedicineDetailsScreen(
     medicine: Medicine,
@@ -91,7 +88,7 @@ fun MedicineDetailsScreen(
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showHelpDialog by remember { mutableStateOf(false) }
     Scaffold(
-        containerColor = DetailBackground,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             AppTopBar(
                 title = "Medicine Details",
@@ -132,7 +129,7 @@ fun MedicineDetailsScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             HorizontalDivider(
-                color = DetailDivider
+                color = MaterialTheme.colorScheme.outline
             )
 
             Spacer(modifier = Modifier.height(18.dp))
@@ -145,7 +142,7 @@ fun MedicineDetailsScreen(
             Spacer(modifier = Modifier.height(14.dp))
 
             HorizontalDivider(
-                color = DetailDivider
+                color = MaterialTheme.colorScheme.outline
             )
 
             Spacer(modifier = Modifier.height(10.dp))
@@ -288,7 +285,7 @@ private fun MedicineSummary(
             modifier = Modifier
                 .size(82.dp)
                 .clip(CircleShape)
-                .background(Color(0xFFF3F3F3)),
+                .background(MaterialTheme.colorScheme.surfaceVariant),
             contentAlignment = Alignment.Center
         ) {
             MedicineImage(
@@ -398,7 +395,7 @@ private fun MedicineActionButtons(
                 )
             },
             borderColor = Color(0xFFB7E3C4),
-            backgroundColor = Color.White,
+            backgroundColor = MaterialTheme.colorScheme.surface,
             textColor = DetailGreen,
             onClick = onEditClick
         )
@@ -415,7 +412,7 @@ private fun MedicineActionButtons(
                 )
             },
             borderColor = Color(0xFFFFC5C5),
-            backgroundColor = Color.White,
+            backgroundColor = MaterialTheme.colorScheme.surface,
             textColor = DetailRed,
             onClick = onDeleteClick
         )
@@ -537,14 +534,14 @@ private fun MedicineInformationRow(
             text = label,
             modifier = Modifier.weight(1f),
             style = MaterialTheme.typography.bodyLarge,
-            color = Color.Black
+            color = MaterialTheme.colorScheme.onSurface
         )
 
         Text(
             text = value,
             modifier = Modifier.weight(1f),
             style = MaterialTheme.typography.bodyLarge,
-            color = Color.Black,
+            color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.End
         )
     }
@@ -572,7 +569,7 @@ private fun ReminderSection(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(14.dp),
             colors = CardDefaults.cardColors(
-                containerColor = Color(0xFFFAFAFA)
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
             ),
             elevation = CardDefaults.cardElevation(
                 defaultElevation = 0.dp
@@ -629,7 +626,7 @@ private fun ReminderSection(
 
                 HorizontalDivider(
                     modifier = Modifier.padding(horizontal = 16.dp),
-                    color = DetailDivider
+                    color = MaterialTheme.colorScheme.outline
                 )
 
                 ReminderInformationRow(
@@ -639,13 +636,13 @@ private fun ReminderSection(
 
                 HorizontalDivider(
                     modifier = Modifier.padding(horizontal = 16.dp),
-                    color = DetailDivider
+                    color = MaterialTheme.colorScheme.outline
                 )
 
                 if (medicine.repeatReminderEnabled) {
                     HorizontalDivider(
                         modifier = Modifier.padding(horizontal = 16.dp),
-                        color = DetailDivider
+                        color = MaterialTheme.colorScheme.outline
                     )
 
                     ReminderInformationRow(
@@ -661,7 +658,7 @@ private fun ReminderSection(
 
                     HorizontalDivider(
                         modifier = Modifier.padding(horizontal = 16.dp),
-                        color = DetailDivider
+                        color = MaterialTheme.colorScheme.outline
                     )
 
                     ReminderInformationRow(
