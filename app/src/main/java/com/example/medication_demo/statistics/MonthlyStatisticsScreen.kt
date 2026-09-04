@@ -38,7 +38,6 @@ import java.util.Locale
 @Composable
 fun MonthlyStatisticsScreen(
     onBack: () -> Unit = {},
-    onMedicationPerformanceClick: () -> Unit = {},
     onMissedMedicationClick: () -> Unit = {},
     viewModel: MonthlyStatisticsViewModel = viewModel()
 ) {
@@ -281,19 +280,6 @@ fun MonthlyStatisticsScreen(
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
-
-                // MEDICATION PERFORMANCE
-                StatisticsMenuItem(
-                    icon = Icons.Default.Medication,
-                    iconColor = Color(0xFF36A957),
-                    backgroundColor = Color(0xFFEFFAF2),
-                    title = "Medication Performance",
-                    subtitle = "See how each medication performed this month.",
-                    onClick = onMedicationPerformanceClick
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
 
                 // MISSED MEDICATION
                 StatisticsMenuItem(

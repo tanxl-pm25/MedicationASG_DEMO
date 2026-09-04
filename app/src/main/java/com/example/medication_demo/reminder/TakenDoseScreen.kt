@@ -49,8 +49,6 @@ fun TakenDoseScreen(
     takenTime: String,
     encouragementMessage: String =
         "Great job! Keep following your schedule.",
-    onBackClick: () -> Unit = {},
-    onMoreClick: () -> Unit = {},
     onDoneClick: () -> Unit = {},
 ) {
 
@@ -58,49 +56,8 @@ fun TakenDoseScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White)
+            .statusBarsPadding()
     ) {
-
-
-        // TOP BAR
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .statusBarsPadding()
-                .height(62.dp)
-        ) {
-
-            // Back arrow
-            IconButton(
-                onClick = onBackClick,
-                modifier = Modifier
-                    .align(Alignment.CenterStart)
-                    .padding(start = 8.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.ArrowBack,
-                    contentDescription = "Back",
-                    tint = DarkText,
-                    modifier = Modifier.size(22.dp)
-                )
-            }
-
-            // More button
-            IconButton(
-                onClick = onMoreClick,
-                modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .padding(end = 8.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.MoreHoriz,
-                    contentDescription = "More",
-                    tint = DarkText,
-                    modifier = Modifier.size(25.dp)
-                )
-            }
-        }
-
-
         // MAIN CONTENT
         Column(
             modifier = Modifier

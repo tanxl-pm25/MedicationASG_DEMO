@@ -103,8 +103,10 @@ fun AppointmentListScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(
-                        horizontal = 20.dp,
-                        vertical = 14.dp
+                        start = 20.dp,
+                        end = 20.dp,
+                        top = 14.dp,
+                        bottom = 34.dp
                     )
             ) {
 
@@ -125,9 +127,7 @@ fun AppointmentListScreen(
                         modifier = Modifier.size(22.dp)
                     )
 
-                    Spacer(
-                        modifier = Modifier.width(8.dp)
-                    )
+                    Spacer(modifier = Modifier.width(8.dp))
 
                     Text(
                         text = "Add Appointment",

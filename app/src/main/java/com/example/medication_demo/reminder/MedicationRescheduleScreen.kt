@@ -54,7 +54,7 @@ fun MedicationRescheduleScreen(
     onConfirmClick: () -> Unit = {},
     onCancelClick: () -> Unit = {},
 
-) {
+    ) {
     val green = MaterialTheme.colorScheme.primary
 
     var showTimePicker by remember { mutableStateOf(false) }
@@ -71,28 +71,7 @@ fun MedicationRescheduleScreen(
             .padding(horizontal = 20.dp)
             . statusBarsPadding()
     ) {
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onBackClick) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
-                    tint = green
-                )
-            }
-
-            Text(
-                text = "Reschedule Medication",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(start = 8.dp)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
         Card(
             modifier = Modifier.fillMaxWidth(),

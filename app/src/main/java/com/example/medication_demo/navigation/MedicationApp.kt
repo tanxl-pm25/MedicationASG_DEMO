@@ -147,7 +147,8 @@ fun MedicationApp(
     val rescheduledDoses by medicineVm.rescheduledDoses.collectAsStateWithLifecycle()
     val appointments by AppointmentRepository.appointments.collectAsStateWithLifecycle()
     val waterVm: WaterIntakeViewModel = viewModel()
-
+    val monthlyStatisticsVm: MonthlyStatisticsViewModel = viewModel()
+    val monthlyStatisticsUiState by monthlyStatisticsVm.uiState.collectAsStateWithLifecycle()
     LaunchedEffect(
         medicationNotificationAction,
         medicationNotificationMedicineId,
@@ -338,6 +339,21 @@ fun MedicationApp(
         }
 
         medicineVm.clearInsufficientStockEvent()
+    }
+    LaunchedEffect(
+        medicines,
+        archivedMedicines,
+        takenRecords,
+        rescheduledDoses
+    ) {
+        monthlyStatisticsVm.updateRecords(
+            medicines = medicines,
+            archivedMedicines = archivedMedicines,
+            takenRecords = takenRecords,
+            rescheduledDoses = rescheduledDoses,
+            medicineListVm = medicineListVm,
+            medicineVm = medicineVm
+        )
     }
     LaunchedEffect(
         notificationMedicineId
@@ -867,6 +883,14 @@ fun MedicationApp(
 
             // Home Screen
             composable("home") {
+                val monthlyStatText =
+                    if (
+                        monthlyStatisticsUiState.totalDoses > 0
+                    ) {
+                        "${monthlyStatisticsUiState.adherencePercentage}%"
+                    } else {
+                        null
+                    }
                 HomeScreen(
                     username = "Sarah",
                     nextMedicineName = nextMedicineDisplayName,
@@ -926,7 +950,8 @@ fun MedicationApp(
                     },
                     onNewsClick = {
                         navController.navigate("news")
-                    }
+                    },
+                    monthlyStatText = monthlyStatText,
                 )
             }
 
@@ -974,9 +999,6 @@ fun MedicationApp(
                                     takenRecord.dosageType,
                         scheduledTime = takenRecord.reminderTime,
                         takenTime = takenRecord.takenTime.orEmpty(),
-                        onBackClick = {
-                            navController.popBackStack()
-                        },
                         onDoneClick = {
                             navController.navigate("home") {
                                 popUpTo("home") {
@@ -1340,24 +1362,9 @@ fun MedicationApp(
 
 
             composable("monthlyStatistics") {
-                val monthlyStatisticsVm: MonthlyStatisticsViewModel =
-                    viewModel()
-
-                LaunchedEffect(takenRecords, missedRecords) {
-                    monthlyStatisticsVm.updateRecords(
-                        taken = takenRecords,
-                        missed = missedRecords
-                    )
-                }
-
                 MonthlyStatisticsScreen(
                     onBack = {
                         navController.popBackStack()
-                    },
-                    onMedicationPerformanceClick = {
-                        navController.navigate(
-                            "medicationPerformance"
-                        )
                     },
                     onMissedMedicationClick = {
                         navController.navigate(
@@ -1368,33 +1375,6 @@ fun MedicationApp(
                 )
             }
 
-            composable("medicationPerformance") {
-
-                val medicationPerformanceVm: MedicationPerformanceViewModel = viewModel()
-
-                LaunchedEffect(
-                    takenRecords,
-                    missedRecords,
-                    medicines,
-                    archivedMedicines
-                ) {
-                    medicationPerformanceVm.updateRecords(
-                        taken = takenRecords,
-                        missed = missedRecords,
-                        medicineList =
-                            medicines + archivedMedicines.map { archive ->
-                                archive.medicine
-                            }
-                    )
-                }
-
-                MedicationPerformanceScreen(
-                    onBack = {
-                        navController.popBackStack()
-                    },
-                    viewModel = medicationPerformanceVm
-                )
-            }
 
             composable("missedMedication") {
 

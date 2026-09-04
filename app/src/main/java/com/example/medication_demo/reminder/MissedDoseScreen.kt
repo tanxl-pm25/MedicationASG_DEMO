@@ -56,40 +56,6 @@ fun MissedDoseScreen(
             .statusBarsPadding()
             .background(Color.White)
     ) {
-        // TOP BAR
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(70.dp)
-                .padding(horizontal = 20.dp),
-            contentAlignment = Alignment.Center
-        ) {
-
-            // Back arrow
-            Icon(
-                imageVector = Icons.Default.ArrowBack,
-                contentDescription = "Back",
-                tint = DarkText,
-                modifier = Modifier
-                    .align(Alignment.CenterStart)
-                    .size(24.dp)
-                    .clickable {
-                        onBackClick()
-                    }
-            )
-
-            // More icon
-            Icon(
-                imageVector = Icons.Default.MoreHoriz,
-                contentDescription = "More",
-                tint = DarkText,
-                modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .size(25.dp)
-            )
-        }
-
-
         // MAIN CONTENT
         Column(
             modifier = Modifier

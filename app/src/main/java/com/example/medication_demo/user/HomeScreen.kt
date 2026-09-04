@@ -359,10 +359,9 @@ fun HomeScreen(
                     icon = Icons.Filled.BarChart,
                     title = "Monthly Statistics",
                     valueBold = monthlyStatText ?: "",
-
                     valueRest =
                         if (monthlyStatText != null) {
-                            "%"
+                            ""
                         } else {
                             "No record found"
                         },

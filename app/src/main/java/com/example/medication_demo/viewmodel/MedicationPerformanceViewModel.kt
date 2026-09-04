@@ -83,10 +83,24 @@ class MedicationPerformanceViewModel : ViewModel() {
             YearMonth.from(it.date) == selectedMonth
         }
 
-        val medicineIds = (
-                takenForMonth.map { it.medicineId } +
-                        missedForMonth.map { it.medicineId }
-                ).distinct()
+        val availableMedicineIds =
+            medicines
+                .map { it.id }
+                .toSet()
+
+        val medicineIds =
+            (
+                    takenForMonth.map {
+                        it.medicineId
+                    } +
+                            missedForMonth.map {
+                                it.medicineId
+                            }
+                    )
+                .distinct()
+                .filter { medicineId ->
+                    medicineId in availableMedicineIds
+                }
 
         val colors = listOf(
             Color(0xFF1976D2),
