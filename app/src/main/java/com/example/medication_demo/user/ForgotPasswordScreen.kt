@@ -51,6 +51,7 @@ private fun isValidForgotEmail(email: String): Boolean {
 fun ForgotPasswordScreen(
     errorMessage: String? = null,
     isEmailSent: Boolean = false,
+    isLoading: Boolean = false,
     onSendResetLinkClick: (email: String) -> Unit = {},
     onBackToLoginClick: () -> Unit = {}
 ) {
@@ -58,7 +59,9 @@ fun ForgotPasswordScreen(
     var showValidation by remember { mutableStateOf(false) }
     val emailHasError = showValidation && (email.isBlank() || !isValidForgotEmail(email))
 
-    Scaffold(containerColor = Color.White) { innerPadding ->
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background
+    ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -139,16 +142,25 @@ fun ForgotPasswordScreen(
                         onSendResetLinkClick(email)
                     }
                 },
+                enabled = !isLoading,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
                 shape = RoundedCornerShape(10.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = ForgotGreen)
             ) {
-                Text(
-                    text = "Send Reset Link",
-                    style = MaterialTheme.typography.labelLarge
-                )
+                if (isLoading) {
+                    androidx.compose.material3.CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text(
+                        text = "Send Reset Link",
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))

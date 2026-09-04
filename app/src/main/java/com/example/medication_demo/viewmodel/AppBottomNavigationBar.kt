@@ -8,6 +8,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonOutline
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
@@ -60,11 +61,11 @@ fun AppBottomNavigationBar(
     Column {
 
         HorizontalDivider(
-            color = Color(0xFFE5E7EB)
+            color = MaterialTheme.colorScheme.outlineVariant
         )
 
         NavigationBar(
-            containerColor = Color.White
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
         ) {
 
             items.forEachIndexed { index, item ->

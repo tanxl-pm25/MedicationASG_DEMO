@@ -18,18 +18,26 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.NotificationsNone
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DeleteForever
+import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonOutline
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -53,17 +61,17 @@ fun ProfileScreen(
     email: String,
     photoUrl: String? = null,
     onPersonalInfoClick: () -> Unit = {},
-    onEmergencyContactsClick: () -> Unit = {},
-    onRemindersClick: () -> Unit = {},
-    onPreferencesClick: () -> Unit = {},
+    onSettingsClick: () -> Unit = {},
     onHelpSupportClick: () -> Unit = {},
     onLogoutClick: () -> Unit = {},
+    onDeleteAccountClick: () -> Unit = {},
     onBottomNavSelected: (Int) -> Unit = {}
 ) {
     val context = LocalContext.current
+    var showDeleteConfirmDialog by remember { mutableStateOf(false) }
 
     Scaffold(
-        containerColor = Color.White,
+        containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
             AppBottomNavigationBar(
                 selectedIndex = 3,
@@ -136,7 +144,9 @@ fun ProfileScreen(
             // Options card
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFF7F7F7)),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                ),
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Column {
@@ -147,15 +157,9 @@ fun ProfileScreen(
                     )
                     ProfileDivider()
                     ProfileOptionRow(
-                        icon = Icons.Filled.Shield,
-                        label = "Emergency Contacts",
-                        onClick = onEmergencyContactsClick
-                    )
-                    ProfileDivider()
-                    ProfileOptionRow(
                         icon = Icons.Filled.Settings,
                         label = "Settings",
-                        onClick = onPreferencesClick
+                        onClick = onSettingsClick
                     )
                     ProfileDivider()
                     ProfileOptionRow(
@@ -168,43 +172,87 @@ fun ProfileScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Logout
+            // Delete Account + Logout
             Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onLogoutClick() },
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFF7F7F7)),
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                ),
                 shape = RoundedCornerShape(16.dp)
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.Logout,
-                        contentDescription = null,
-                        tint = Color.Red
+                Column {
+                    ProfileOptionRow(
+                        icon = Icons.Filled.DeleteOutline,
+                        label = "Delete Account",
+                        onClick = { showDeleteConfirmDialog = true },
+                        tint = Color.Red,
+                        textColor = Color.Red
                     )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        text = "Logout",
-                        color = Color.Red,
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.bodyLarge
+                    ProfileDivider()
+                    ProfileOptionRow(
+                        icon = Icons.AutoMirrored.Filled.Logout,
+                        label = "Logout",
+                        onClick = onLogoutClick,
+                        tint = Color.Red,
+                        textColor = Color.Red
                     )
                 }
             }
         }
     }
+
+    if (showDeleteConfirmDialog) {
+        DeleteAccountConfirmDialog(
+            onDismiss = { showDeleteConfirmDialog = false },
+            onConfirm = {
+                showDeleteConfirmDialog = false
+                onDeleteAccountClick()
+            }
+        )
+    }
+}
+
+@Composable
+private fun DeleteAccountConfirmDialog(
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(10.dp),
+        title = {
+            Text(
+                text = "Delete Account?",
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Text("This action cannot be undone. All your data will be permanently deleted.")
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text(
+                    text = "Delete",
+                    color = Color.Red,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }
 
 @Composable
 private fun ProfileOptionRow(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     label: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    tint: Color = ProfileGreen,
+    textColor: Color = Color.Unspecified
 ) {
     Row(
         modifier = Modifier
@@ -216,14 +264,15 @@ private fun ProfileOptionRow(
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = ProfileGreen,
+            tint = tint,
             modifier = Modifier.size(22.dp)
         )
         Spacer(modifier = Modifier.width(14.dp))
         Text(
             text = label,
             modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.bodyLarge
+            style = MaterialTheme.typography.bodyLarge,
+            color = textColor
         )
         Icon(
             imageVector = Icons.Filled.ChevronRight,
@@ -249,6 +298,17 @@ private fun ProfileScreenPreview() {
             name = "",
             email = "",
             photoUrl = null
+        )
+    }
+}
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+private fun DeleteAccountConfirmDialogPreview() {
+    Medication_DemoTheme {
+        DeleteAccountConfirmDialog(
+            onDismiss = {},
+            onConfirm = {}
         )
     }
 }

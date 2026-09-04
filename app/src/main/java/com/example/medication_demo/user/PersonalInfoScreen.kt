@@ -1,5 +1,11 @@
 package com.example.medication_demo.user
 
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -55,9 +61,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.medication_demo.ui.theme.Medication_DemoTheme
+import java.io.File
 
 private val ProfileGreen = Color(0xFF159447)
 
@@ -70,17 +79,43 @@ fun PersonalInfoScreen(
     age: String = "",
     photoUrl: String? = null,
     onBackClick: () -> Unit = {},
-    onPhotoClick: () -> Unit = {},
+    onPhotoSelected: (Uri) -> Unit = {},
     onNameClick: () -> Unit = {},
     onEmailClick: () -> Unit = {},
     onGenderChange: (String) -> Unit = {},
     onAgeChange: (Int) -> Unit = {}
 ) {
     var showAgeDialog by remember { mutableStateOf(false) }
+    var showPhotoPickerDialog by remember { mutableStateOf(false) }
+    var cameraImageUri by remember { mutableStateOf<Uri?>(null) }
     val context = LocalContext.current
 
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let { onPhotoSelected(it) }
+    }
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success && cameraImageUri != null) {
+            onPhotoSelected(cameraImageUri!!)
+        }
+    }
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            val uri = createImageUri(context)
+            cameraImageUri = uri
+            cameraLauncher.launch(uri)
+        }
+    }
+
     Scaffold(
-        containerColor = Color.White,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
                 title = { Text("Personal Info") },
@@ -137,7 +172,7 @@ fun PersonalInfoScreen(
                     }
 
                     IconButton(
-                        onClick = onPhotoClick,
+                        onClick = { showPhotoPickerDialog = true },
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
                             .size(15.dp)
@@ -204,6 +239,71 @@ fun PersonalInfoScreen(
             }
         )
     }
+
+    if (showPhotoPickerDialog) {
+        PhotoPickerDialog(
+            onDismiss = { showPhotoPickerDialog = false },
+            onGalleryClick = {
+                showPhotoPickerDialog = false
+                galleryLauncher.launch("image/*")
+            },
+            onCameraClick = {
+                showPhotoPickerDialog = false
+                val permission = Manifest.permission.CAMERA
+                if (ContextCompat.checkSelfPermission(context, permission)
+                    == PackageManager.PERMISSION_GRANTED
+                ) {
+                    val uri = createImageUri(context)
+                    cameraImageUri = uri
+                    cameraLauncher.launch(uri)
+                } else {
+                    cameraPermissionLauncher.launch(permission)
+                }
+            }
+        )
+    }
+}
+
+@Composable
+private fun PhotoPickerDialog(
+    onDismiss: () -> Unit,
+    onGalleryClick: () -> Unit,
+    onCameraClick: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Change Photo",
+                fontWeight = FontWeight.Bold
+            ) },
+        text = {
+            Column {
+                TextButton(onClick = onGalleryClick) {
+                    Text("Choose from Gallery")
+                }
+                TextButton(onClick = onCameraClick) {
+                    Text("Take Photo")
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+private fun createImageUri(context: Context): Uri {
+    val imageFile = File(context.cacheDir, "images").apply { mkdirs() }
+        .resolve("avatar_${System.currentTimeMillis()}.jpg")
+    return FileProvider.getUriForFile(
+        context,
+        "${context.packageName}.fileprovider",
+        imageFile
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -230,8 +330,10 @@ private fun GenderDropdown(
                 ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
             },
             colors = OutlinedTextFieldDefaults.colors(
-                unfocusedTextColor = Color(0xFF3D3D3D),
-                focusedTextColor = Color(0xFF3D3D3D)
+                unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
             ),
             singleLine = true,
             modifier = Modifier
@@ -264,33 +366,37 @@ private fun ReadOnlyFieldRow(
     leadingIcon: androidx.compose.ui.graphics.vector.ImageVector? = null,
     onClick: () -> Unit
 ) {
-    OutlinedTextField(
-        value = value.ifBlank { "--" },
-        onValueChange = {},
-        readOnly = true,
-        enabled = false,
-        label = { Text(label) },
-        leadingIcon = leadingIcon?.let {
-            { Icon(it, contentDescription = null) }
-        },
-        trailingIcon = {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = null
-            )
-        },
-        singleLine = true,
-        colors = OutlinedTextFieldDefaults.colors(
-            disabledTextColor = Color(0xFF3D3D3D),
-            disabledBorderColor = Color(0xFFCCCCCC),
-            disabledLabelColor = Color(0xFF3D3D3D),
-            disabledLeadingIconColor = Color(0xFF3D3D3D),
-            disabledTrailingIconColor = Color(0xFF3D3D3D)
-        ),
+    Box(
         modifier = modifier
             .fillMaxWidth()
             .clickable { onClick() }
-    )
+    ) {
+        OutlinedTextField(
+            value = value.ifBlank { "--" },
+            onValueChange = {},
+            readOnly = true,
+            enabled = false,
+            label = { Text(label) },
+            leadingIcon = leadingIcon?.let {
+                { Icon(it, contentDescription = null) }
+            },
+            trailingIcon = {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = null
+                )
+            },
+            singleLine = true,
+            colors = OutlinedTextFieldDefaults.colors(
+                disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                disabledBorderColor = MaterialTheme.colorScheme.outline,
+                disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                disabledLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
+            ),
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
 }
 
 @Composable
@@ -308,7 +414,9 @@ private fun AgePickerDialog(
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF2F2F2)),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    ),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Column(
@@ -321,12 +429,12 @@ private fun AgePickerDialog(
                             text = "${age.toInt()}",
                             fontSize = 32.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color.Black
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
                             text = "years old",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Gray
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -347,8 +455,8 @@ private fun AgePickerDialog(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("10", color = Color.Gray)
-                    Text("100", color = Color.Gray)
+                    Text("10", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("100", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         },
@@ -376,10 +484,21 @@ private fun PersonalInfoScreenPreview() {
             email = "sarahlee@gmail.com",
             gender = "Female",
             age = currentAge,
-            onAgeChange = {
-                    newAge ->
+            onAgeChange = { newAge ->
                 currentAge = newAge.toString()
             }
+        )
+    }
+}
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+private fun PhotoPickerDialogPreview() {
+    Medication_DemoTheme {
+        PhotoPickerDialog(
+            onDismiss = {},
+            onGalleryClick = {},
+            onCameraClick = {}
         )
     }
 }

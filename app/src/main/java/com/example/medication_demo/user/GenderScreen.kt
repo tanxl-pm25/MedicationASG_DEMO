@@ -42,7 +42,9 @@ fun GenderScreen(
 ) {
     var selectedGender by remember { mutableStateOf("Male") }
 
-    Scaffold(containerColor = Color.White) { innerPadding ->
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background
+    ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()

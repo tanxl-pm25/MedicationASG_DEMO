@@ -101,7 +101,7 @@ fun CreateAccountScreen(
     val termsHasError = submitAttempted && !agreedToTerms
 
     Scaffold(
-        containerColor = Color.White,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
                 title = {},
@@ -129,9 +129,9 @@ fun CreateAccountScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Image(
-                    painter = painterResource(id = R.drawable.heart_logo),
+                    painter = painterResource(id = R.drawable.logoo_icon),
                     contentDescription = null,
-                    modifier = Modifier.size(80.dp)
+                    modifier = Modifier.size(90.dp)
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -376,7 +376,12 @@ fun CreateAccountScreen(
                         confirmPassword == password &&
                         agreedToTerms
                     ) {
-                        onSignUpClick(userName, email, password, confirmPassword)
+                        onSignUpClick(
+                            userName,
+                            email,
+                            password,
+                            confirmPassword
+                        )
                     }
                 },
                 enabled = !isLoading,
@@ -386,16 +391,24 @@ fun CreateAccountScreen(
                 shape = RoundedCornerShape(10.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF159447))
             ) {
-                Text(
-                    text = "Sign Up",
-                    fontSize = 18.sp,
-                    style = MaterialTheme.typography.labelLarge
-                )
+                if (isLoading) {
+                    androidx.compose.material3.CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text(
+                        text = "Sign Up",
+                        fontSize = 18.sp,
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // "or continue with" divider
+            // divider
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
@@ -441,32 +454,6 @@ fun CreateAccountScreen(
 
                     Text(
                         text = "Continue with Google",
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            OutlinedButton(
-                onClick = onGoogleClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp),
-                shape = RoundedCornerShape(12.dp),
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ){
-                    Image(
-                        painter = painterResource(id = R.drawable.facebook),
-                        contentDescription = null,
-                        modifier = Modifier.height(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    Text(
-                        text = "Continue with Facebook",
                         fontWeight = FontWeight.Bold
                     )
                 }

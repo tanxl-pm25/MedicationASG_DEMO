@@ -46,6 +46,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import android.util.Patterns
+import androidx.compose.foundation.layout.size
 import com.example.medication_demo.R
 import com.example.medication_demo.ui.theme.Medication_DemoTheme
 
@@ -58,6 +59,7 @@ private fun isValidEmail(email: String): Boolean {
 @Composable
 fun LoginScreen(
     errorMessage: String? = null,
+    isLoading: Boolean = false,
     onLoginClick: (email: String, password: String) -> Unit = { _, _ -> },
     onForgotPasswordClick: () -> Unit = {},
     onGoogleLoginClick: () -> Unit = {},
@@ -72,7 +74,7 @@ fun LoginScreen(
     val passwordHasError = showValidation && password.isBlank()
 
     Scaffold(
-        containerColor = Color.White
+        containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -83,7 +85,7 @@ fun LoginScreen(
             verticalArrangement = Arrangement.Center
         ) {
             Image(
-                painter = painterResource(id = R.drawable.heart_logo),
+                painter = painterResource(id = R.drawable.logoo_icon),
                 contentDescription = "App logo",
                 modifier = Modifier.height(80.dp)
             )
@@ -200,16 +202,26 @@ fun LoginScreen(
                         onLoginClick(email, password)
                     }
                 },
+                enabled = !isLoading,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = LoginGreen)
             ) {
-                Text(
-                    text = "Login",
-                    fontSize = 18.sp,
-                    style = MaterialTheme.typography.labelLarge)
+                if (isLoading) {
+                    androidx.compose.material3.CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text(
+                        text = "Login",
+                        fontSize = 18.sp,
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -220,7 +232,7 @@ fun LoginScreen(
             ) {
                 HorizontalDivider(
                     modifier = Modifier.weight(1f),
-                    color = Color(0xFFE0E0E0)
+                    color = MaterialTheme.colorScheme.outlineVariant
                 )
                 Spacer(modifier = Modifier.width(18.dp))
 
@@ -264,31 +276,8 @@ fun LoginScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
 
-            OutlinedButton(
-                onClick = onGoogleLoginClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-                shape = RoundedCornerShape(12.dp),
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ){
-                    Image(
-                        painter = painterResource(id = R.drawable.facebook),
-                        contentDescription = null,
-                        modifier = Modifier.height(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
 
-                    Text(
-                        text = "Continue with Facebook",
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
 
             Spacer(modifier = Modifier.height(20.dp))
 

@@ -44,8 +44,9 @@ fun EditUsernameScreen(
     var submitAttempted by remember { mutableStateOf(false) }
     val nameHasError = submitAttempted && name.isBlank()
 
+
     Scaffold(
-        containerColor = Color.White,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
                 title = { Text("Edit Username") },
