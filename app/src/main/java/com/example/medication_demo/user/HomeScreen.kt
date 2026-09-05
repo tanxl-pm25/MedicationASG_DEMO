@@ -46,10 +46,6 @@ import androidx.compose.material3.OutlinedButton
 import com.example.medication_demo.model.DoseStatus
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -57,9 +53,7 @@ import androidx.compose.material.icons.outlined.Newspaper
 import com.example.medication_demo.components.MainScreenActionIcon
 import java.time.format.DateTimeFormatter
 import java.util.Locale
-import com.example.medication_demo.components.MedicationTimePickerDialog
 import com.example.medication_demo.utils.getMalaysiaDate
-import com.example.medication_demo.utils.getMalaysiaTime
 
 private val HomeGreen = Color(0xFF159447)
 private fun getCurrentDate(): String {
@@ -92,15 +86,8 @@ fun HomeScreen(
     onWaterIntakeClick: () -> Unit = {},
     onMonthlyStatisticsClick: () -> Unit = {},
     nextMedicineStatus: DoseStatus? = null,
-    onRescheduleConfirm: (String) -> Unit = {}
+    onRescheduleClick: () -> Unit = {}
 ) {
-    var showRescheduleTimePicker by remember { mutableStateOf(false) }
-    val timeFormatter = remember {
-        DateTimeFormatter.ofPattern(
-            "hh:mm a",
-            Locale.ENGLISH
-        )
-    }
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
@@ -241,9 +228,7 @@ fun HomeScreen(
                                     )
                                 }
                                 OutlinedButton(
-                                    onClick = {
-                                        showRescheduleTimePicker = true
-                                    },
+                                    onClick = onRescheduleClick,
                                     modifier = Modifier.weight(1f),
                                     shape = RoundedCornerShape(10.dp),
                                     contentPadding = PaddingValues(
@@ -396,28 +381,6 @@ fun HomeScreen(
                 )
             }
         }
-    }
-    if (showRescheduleTimePicker) {
-        MedicationTimePickerDialog(
-            initialTime = getMalaysiaTime(),
-            onDismiss = {
-                showRescheduleTimePicker = false
-            },
-            validateTime = { selectedTime ->
-                val now = getMalaysiaTime()
-                if (!selectedTime.isAfter(now)) {
-                    "Please select a future time."
-                } else {
-                    null
-                }
-            },
-            onConfirm = { selectedTime ->
-                showRescheduleTimePicker = false
-                onRescheduleConfirm(
-                    selectedTime.format(timeFormatter)
-                )
-            }
-        )
     }
 }
 @Composable

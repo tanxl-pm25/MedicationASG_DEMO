@@ -83,7 +83,6 @@ import com.example.medication_demo.reminder.MedicationRescheduleScreen
 import com.example.medication_demo.viewmodel.RescheduleMedicationViewModel
 import com.example.medication_demo.model.AppointmentStatus
 import com.example.medication_demo.repository.AppointmentRepository
-import com.example.medication_demo.statistics.MedicationPerformanceScreen
 import com.example.medication_demo.statistics.MissedMedicationScreen
 import com.example.medication_demo.statistics.MonthlyStatisticsScreen
 import com.example.medication_demo.user.GenderScreen
@@ -91,7 +90,6 @@ import com.example.medication_demo.utils.getMalaysiaDate
 import com.example.medication_demo.viewmodel.MonthlyStatisticsViewModel
 import com.example.medication_demo.medication.NewsScreen
 import com.example.medication_demo.reminder.createMedicineNotificationChannel
-import com.example.medication_demo.viewmodel.MedicationPerformanceViewModel
 import com.example.medication_demo.viewmodel.MissedMedicationViewModel
 import com.example.medication_demo.waterIntake.WaterIntakeScreen
 import com.example.medication_demo.viewmodel.WaterIntakeViewModel
@@ -964,14 +962,15 @@ fun MedicationApp(
                             }
                         }
                     },
-                    onRescheduleConfirm = { newTime ->
+                    onRescheduleClick = {
                         if (nextDose != null) {
-                            medicineVm.rescheduleDose(
-                                medicineId = nextDose.medicineId,
-                                doseIndex = nextDose.doseIndex,
-                                originalTime = nextDose.originalTime,
-                                newTime = newTime
-                            )
+                            navController.navigate(
+                                "rescheduleMedication/" +
+                                        "${nextDose.medicineId}/" +
+                                        "${nextDose.doseIndex}"
+                            ) {
+                                launchSingleTop = true
+                            }
                         }
                     },
                     onBottomNavSelected = { index ->
