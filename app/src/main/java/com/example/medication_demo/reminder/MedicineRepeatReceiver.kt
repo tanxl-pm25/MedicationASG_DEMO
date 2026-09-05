@@ -109,17 +109,24 @@ class MedicineRepeatReceiver : BroadcastReceiver() {
                         doseIndex
             }
 
-        // User already took this dose.
-        // Stop the repeat reminder chain.
+        // User already took this dose. Stop the repeat reminder chain.
         if (alreadyTaken) {
             return
         }
 
-        showMedicineNotification(
+        val medicine =
+            localStorage.loadMedicines().firstOrNull {
+                it.id == medicineId
+            } ?: return
+
+        MedicationNotification.show(
             context = context,
             medicineId = medicineId,
+            doseIndex = doseIndex,
+            originalTime = scheduledTime,
             medicineName = medicineName,
-            scheduledTime = scheduledTime,
+            dosage =
+                "${medicine.dosageAmount} ${medicine.dosageType}",
             repeatNumber = repeatNumber
         )
 

@@ -1631,8 +1631,7 @@ class MedicineViewModel(
                 localStorage.saveMedicines(_medicines.value
                 )
 
-                // If cloud medicine is first time on this phone,
-                // initialize its local remaining quantity.
+                // If cloud medicine is first time on this phone, initialize its local remaining quantity.
                 val validMedicineIds =
                     uniqueCloudMedicines
                         .map { it.id }

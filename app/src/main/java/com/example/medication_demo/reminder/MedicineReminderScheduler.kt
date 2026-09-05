@@ -200,6 +200,12 @@ fun cancelMedicineReminders(
         medicineId = medicineId
     )
 
+    cancelMedicineMissedAlarms(
+        context = context,
+        userId = userId,
+        medicineId = medicineId
+    )
+
     // Cancel original medicine alarm
     cancelMedicineAlarm(
         context = context,
@@ -248,6 +254,116 @@ fun cancelMedicineRepeatAlarms(
                     pendingIntent
                 )
 
+                pendingIntent.cancel()
+            }
+        }
+    }
+}
+
+private fun getMedicineMissedRequestCode(
+    userId: String,
+    medicineId: Int,
+    doseIndex: Int,
+    doseDate: LocalDate
+): Int {
+    return "medicine_missed_${userId}_${medicineId}_${doseIndex}_${doseDate}"
+        .hashCode()
+}
+
+fun scheduleMedicineMissedCheck(
+    context: Context,
+    userId: String,
+    medicineId: Int,
+    medicineName: String,
+    doseIndex: Int,
+    doseDate: LocalDate,
+    scheduledTime: String,
+    delayMinutes: Long
+) {
+    val intent = Intent(
+        context,
+        MedicineMissedReceiver::class.java
+    ).apply {
+        putExtra("userId", userId)
+        putExtra("medicineId", medicineId)
+        putExtra("medicineName", medicineName)
+        putExtra("doseIndex", doseIndex)
+        putExtra("doseDate", doseDate.toString())
+        putExtra("scheduledTime", scheduledTime)
+    }
+
+    val pendingIntent = PendingIntent.getBroadcast(
+        context,
+        getMedicineMissedRequestCode(
+            userId,
+            medicineId,
+            doseIndex,
+            doseDate
+        ),
+        intent,
+        PendingIntent.FLAG_UPDATE_CURRENT or
+                PendingIntent.FLAG_IMMUTABLE
+    )
+
+    val alarmManager = context.getSystemService(
+        Context.ALARM_SERVICE
+    ) as AlarmManager
+
+    val triggerMillis =
+        System.currentTimeMillis() +
+                TimeUnit.MINUTES.toMillis(delayMinutes)
+
+    if (
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+        !alarmManager.canScheduleExactAlarms()
+    ) {
+        alarmManager.setAndAllowWhileIdle(
+            AlarmManager.RTC_WAKEUP,
+            triggerMillis,
+            pendingIntent
+        )
+    } else {
+        alarmManager.setExactAndAllowWhileIdle(
+            AlarmManager.RTC_WAKEUP,
+            triggerMillis,
+            pendingIntent
+        )
+    }
+}
+
+private fun cancelMedicineMissedAlarms(
+    context: Context,
+    userId: String,
+    medicineId: Int
+) {
+    val alarmManager = context.getSystemService(
+        Context.ALARM_SERVICE
+    ) as AlarmManager
+
+    val today = LocalDate.now()
+
+    for (dateOffset in -1L..2L) {
+        val doseDate = today.plusDays(dateOffset)
+
+        for (doseIndex in 0..23) {
+            val pendingIntent = PendingIntent.getBroadcast(
+                context,
+                getMedicineMissedRequestCode(
+                    userId,
+                    medicineId,
+                    doseIndex,
+                    doseDate
+                ),
+                Intent(
+                    context,
+                    MedicineMissedReceiver::class.java
+                ),
+                PendingIntent.FLAG_NO_CREATE or
+                        PendingIntent.FLAG_IMMUTABLE
+            )
+
+            if (pendingIntent != null) {
+                alarmManager.cancel(pendingIntent)
                 pendingIntent.cancel()
             }
         }

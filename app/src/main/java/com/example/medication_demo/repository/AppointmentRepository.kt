@@ -231,6 +231,9 @@ object AppointmentRepository {
     private fun syncAppointmentsFromCloud(
         context: Context
     ) {
+        if (currentUserId == null || currentUserId == "guest") {
+            return
+        }
         cloudScope.launch {
             _appointments.value.forEach { appointment ->
                 cloudRepository.upsertAppointment(
@@ -245,6 +248,7 @@ object AppointmentRepository {
                 return@launch
             }
 
+            _appointments.value = cloudAppointments
             saveAppointments(cloudAppointments)
 
             cloudAppointments

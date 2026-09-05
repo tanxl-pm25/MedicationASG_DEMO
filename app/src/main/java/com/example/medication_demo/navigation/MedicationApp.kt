@@ -177,7 +177,6 @@ fun MedicationApp(
         }
 
         if (medicine == null) {
-            onMedicationNotificationHandled()
             return@LaunchedEffect
         }
 
@@ -399,6 +398,16 @@ fun MedicationApp(
 
                 if (userId != null) {
                     medicineVm.switchUser(userId)
+
+                    AppointmentRepository.switchUser(
+                        context = context.applicationContext,
+                        userId = userId
+                    )
+
+                    waterVm.switchUser(
+                        context = context.applicationContext,
+                        userId = userId
+                    )
                 }
 
                 if (latestDeepLinkType.value == "recovery") {
@@ -704,8 +713,20 @@ fun MedicationApp(
                         navController.navigate("helpSupport")
                     },
                     onLogoutClick = {
-                        userVm.logout()
                         medicineVm.switchUser("guest")
+
+                        AppointmentRepository.switchUser(
+                            context = context.applicationContext,
+                            userId = "guest"
+                        )
+
+                        waterVm.switchUser(
+                            context = context.applicationContext,
+                            userId = "guest"
+                        )
+
+                        userVm.logout()
+
                         navController.navigate("login") {
                             popUpTo(0) { inclusive = true }
                         }
@@ -718,6 +739,14 @@ fun MedicationApp(
                                 navController.navigate("login") {
                                     popUpTo(0) { inclusive = true }
                                 }
+                                AppointmentRepository.switchUser(
+                                    context = context.applicationContext,
+                                    userId = "guest"
+                                )
+                                waterVm.switchUser(
+                                    context = context.applicationContext,
+                                    userId = "guest"
+                                )
                             },
                             onError = {
                                 scope.launch {

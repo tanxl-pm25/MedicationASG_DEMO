@@ -36,7 +36,8 @@ object MedicationNotification {
         doseIndex: Int,
         originalTime: String,
         medicineName: String,
-        dosage: String
+        dosage: String,
+        repeatNumber: Int = 0
     ) {
         createChannel(context)
 
@@ -72,7 +73,13 @@ object MedicationNotification {
                 .setSmallIcon(
                     R.drawable.ic_launcher_foreground
                 )
-                .setContentTitle("Medication Reminder")
+                .setContentTitle(
+                    if (repeatNumber == 0) {
+                        "Medication Reminder"
+                    } else {
+                        "Medication Reminder #$repeatNumber"
+                    }
+                )
                 .setContentText(
                     "$medicineName • $dosage"
                 )

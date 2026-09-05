@@ -88,13 +88,6 @@ class MedicineAlarmReceiver : BroadcastReceiver() {
                 return
             }
 
-        // Original notification
-        showMedicineNotification(
-            context = context,
-            medicineId = medicineId,
-            medicineName = medicineName,
-            scheduledTime = scheduledTime
-        )
         val localStorage =
             MedicineLocalStorage(
                 context = context,
@@ -109,6 +102,41 @@ class MedicineAlarmReceiver : BroadcastReceiver() {
                 }
 
         if (medicine != null) {
+
+            val dosage =
+                "${medicine.dosageAmount} ${medicine.dosageType}"
+
+            MedicationNotification.show(
+                context = context,
+                medicineId = medicineId,
+                doseIndex = doseIndex,
+                originalTime = scheduledTime,
+                medicineName = medicineName,
+                dosage = dosage
+            )
+
+            val missedDelayMinutes =
+                if (
+                    repeatReminderEnabled &&
+                    repeatIntervalMinutes > 0 &&
+                    repeatCount > 0
+                ) {
+                    repeatIntervalMinutes.toLong() *
+                            repeatCount.toLong() + 1L
+                } else {
+                    1L
+                }
+
+            scheduleMedicineMissedCheck(
+                context = context,
+                userId = userId,
+                medicineId = medicineId,
+                medicineName = medicineName,
+                doseIndex = doseIndex,
+                doseDate = doseDate,
+                scheduledTime = scheduledTime,
+                delayMinutes = missedDelayMinutes
+            )
 
             val currentDoseDateTime =
                 doseDate.atTime(
