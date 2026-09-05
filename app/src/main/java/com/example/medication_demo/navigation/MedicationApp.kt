@@ -927,6 +927,12 @@ fun MedicationApp(
                             )
 
                             homeRefreshTrigger++
+
+                            navController.navigate(
+                                "takenDose/${nextDose.medicineId}/${nextDose.doseIndex}"
+                            ) {
+                                launchSingleTop = true
+                            }
                         }
                     },
                     onRescheduleConfirm = { newTime ->

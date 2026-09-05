@@ -20,7 +20,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -29,10 +28,6 @@ import androidx.compose.ui.unit.sp
 import com.example.medication_demo.R
 import com.example.medication_demo.ui.AppTopBar
 
-private val ReminderGreen = Color(0xFF08A86A)
-private val ReminderDarkText = Color(0xFF17233F)
-private val ReminderTextGrey = Color(0xFF69738A)
-private val ReminderBorder = Color(0xFF9DD8B2)
 
 @Composable
 fun MedicationReminderScreen(
@@ -46,7 +41,7 @@ fun MedicationReminderScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         AppTopBar(
             title = "Medication Reminder",
@@ -66,7 +61,7 @@ fun MedicationReminderScreen(
                 text = medicineName,
                 fontSize = 21.sp,
                 fontWeight = FontWeight.Bold,
-                color = ReminderDarkText
+                color = MaterialTheme.colorScheme.onBackground
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -74,7 +69,7 @@ fun MedicationReminderScreen(
             Text(
                 text = "$dosage • $scheduledTime",
                 fontSize = 15.sp,
-                color = ReminderTextGrey
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             Spacer(modifier = Modifier.height(42.dp))
@@ -93,7 +88,7 @@ fun MedicationReminderScreen(
                 text = "Time to take your medication",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = ReminderDarkText
+                color = MaterialTheme.colorScheme.onBackground
             )
 
             Spacer(modifier = Modifier.height(10.dp))
@@ -101,7 +96,7 @@ fun MedicationReminderScreen(
             Text(
                 text = "Mark it as taken once you have taken this dose.",
                 fontSize = 15.sp,
-                color = ReminderTextGrey
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 
@@ -122,8 +117,8 @@ fun MedicationReminderScreen(
                     .height(52.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = ReminderGreen,
-                    contentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 )
             ) {
                 Text(
@@ -141,10 +136,10 @@ fun MedicationReminderScreen(
                 shape = RoundedCornerShape(12.dp),
                 border = BorderStroke(
                     width = 1.dp,
-                    color = ReminderBorder
+                    color = MaterialTheme.colorScheme.primary
                 ),
                 colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = ReminderGreen
+                    contentColor = MaterialTheme.colorScheme.primary
                 )
             ) {
                 Text(

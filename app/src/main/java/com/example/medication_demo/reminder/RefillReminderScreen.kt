@@ -29,7 +29,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -44,10 +43,6 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.ui.draw.clip
 import com.example.medication_demo.medication.MedicineImage
 
-
-private val ReminderGreen = Color(0xFF159447)
-private val ReminderBackground = Color.White
-private val ReminderTextGrey = Color(0xFF555555)
 
 @Composable
 fun RefillReminderScreen(
@@ -70,7 +65,7 @@ fun RefillReminderScreen(
     }
 
     Scaffold(
-        containerColor = ReminderBackground
+        containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
 
         Box(
@@ -95,7 +90,7 @@ fun RefillReminderScreen(
                             RoundedCornerShape(16.dp)
                         )
                         .background(
-                            Color(0xFFF2F4F3)
+                            MaterialTheme.colorScheme.surfaceVariant
                         ),
                     contentAlignment = Alignment.Center
                 ) {
@@ -125,7 +120,7 @@ fun RefillReminderScreen(
                     text =
                         "You have $tabletsLeft tablets left of\n$medicineName.",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = ReminderTextGrey,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
                 )
 
@@ -137,7 +132,7 @@ fun RefillReminderScreen(
                     text =
                         "It’s time to refill your medicine.",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = ReminderTextGrey,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
                 )
 
@@ -149,7 +144,7 @@ fun RefillReminderScreen(
                     Text(
                         text = message!!,
                         style = MaterialTheme.typography.bodySmall,
-                        color = ReminderGreen,
+                        color = MaterialTheme.colorScheme.primary,
                         textAlign = TextAlign.Center
                     )
                 }
@@ -167,7 +162,7 @@ fun RefillReminderScreen(
                         .height(54.dp),
                     shape = RoundedCornerShape(10.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = ReminderGreen
+                        containerColor = MaterialTheme.colorScheme.primary
                     )
                 ) {
                     Text(
@@ -188,7 +183,7 @@ fun RefillReminderScreen(
                     Text(
                         text = "Remind Again",
                         style = MaterialTheme.typography.labelLarge,
-                        color = ReminderGreen
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
             }
@@ -314,7 +309,7 @@ private fun RefillQuantityDialog(
             ) {
                 Text(
                     text = "Confirm",
-                    color = ReminderGreen
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         },
@@ -324,7 +319,7 @@ private fun RefillQuantityDialog(
             ) {
                 Text(
                     text = "Cancel",
-                    color = ReminderTextGrey
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -463,7 +458,7 @@ private fun RemindAgainDialog(
                     Text(
                         text = "Remind after",
                         style = MaterialTheme.typography.bodySmall,
-                        color = ReminderTextGrey
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
                     Spacer(
@@ -508,9 +503,9 @@ private fun RemindAgainDialog(
                             colors =
                                 OutlinedTextFieldDefaults.colors(
                                     focusedBorderColor =
-                                        ReminderGreen,
+                                        MaterialTheme.colorScheme.primary,
                                     cursorColor =
-                                        ReminderGreen
+                                        MaterialTheme.colorScheme.primary
                                 )
                         )
 
@@ -522,7 +517,7 @@ private fun RemindAgainDialog(
                             text = "minutes",
                             style =
                                 MaterialTheme.typography.bodyMedium,
-                            color = ReminderTextGrey
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
 
@@ -536,7 +531,7 @@ private fun RemindAgainDialog(
                             text = errorMessage!!,
                             style =
                                 MaterialTheme.typography.bodySmall,
-                            color = Color.Red
+                            color = MaterialTheme.colorScheme.error
                         )
                     }
                 }
@@ -572,7 +567,7 @@ private fun RemindAgainDialog(
             ) {
                 Text(
                     text = "Confirm",
-                    color = ReminderGreen
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         },
@@ -583,7 +578,7 @@ private fun RemindAgainDialog(
             ) {
                 Text(
                     text = "Cancel",
-                    color = ReminderTextGrey
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }

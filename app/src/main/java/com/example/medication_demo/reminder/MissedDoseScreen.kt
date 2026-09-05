@@ -5,10 +5,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.foundation.Image
 import androidx.compose.ui.res.painterResource
 import com.example.medication_demo.R
-import androidx.compose.runtime.getValue
 import com.example.medication_demo.ui.theme.*
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,12 +18,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -54,7 +48,7 @@ fun MissedDoseScreen(
         modifier = Modifier
             .fillMaxSize()
             .statusBarsPadding()
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         // MAIN CONTENT
         Column(
@@ -70,7 +64,7 @@ fun MissedDoseScreen(
                 text = medicineName,
                 fontSize = 23.sp,
                 fontWeight = FontWeight.Bold,
-                color = DarkText
+                color = MaterialTheme.colorScheme.onBackground
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -78,7 +72,7 @@ fun MissedDoseScreen(
             Text(
                 text = "$dosage • $scheduledTime",
                 fontSize = 17.sp,
-                color = TextGrey
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -106,14 +100,14 @@ fun MissedDoseScreen(
                 text = "Missed at $scheduledTime",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = DarkText
+                color = MaterialTheme.colorScheme.onBackground
             )
 
             Spacer(modifier = Modifier.height(10.dp))
             Text(
                 text = message,
                 fontSize = 17.sp,
-                color = TextGrey
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
         }
@@ -163,7 +157,7 @@ fun MissedDoseScreen(
                     text = "Skip",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = DarkText
+                    color = MaterialTheme.colorScheme.onBackground
                 )
             }
         }

@@ -7,7 +7,6 @@ import androidx.compose.ui.res.painterResource
 import coil.compose.AsyncImage
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.medication_demo.viewmodel.MedicationPerformanceViewModel
 import java.time.format.DateTimeFormatter
@@ -19,7 +18,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBack
-import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.ChevronLeft
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.Medication
@@ -62,7 +60,7 @@ fun MedicationPerformanceScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.background)
             .statusBarsPadding()
             .navigationBarsPadding()
             .padding(horizontal = 28.dp)
@@ -325,7 +323,7 @@ fun MedicationPerformanceCard(
                         text = "$taken/$total",
                         fontSize = 17.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF159447)
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
 
@@ -355,7 +353,7 @@ fun MedicationPerformanceCard(
                     Text(
                         text = "Taken",
                         fontSize = 13.sp,
-                        color = Color(0xFF159447)
+                        color = MaterialTheme.colorScheme.primary
                     )
 
                     Spacer(modifier = Modifier.weight(1f))
@@ -389,7 +387,7 @@ fun EmptyMedicationPerformanceState() {
             Icon(
                 imageVector = Icons.Outlined.Medication,
                 contentDescription = null,
-                tint = Color(0xFF159447),
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(32.dp)
             )
         }
@@ -443,7 +441,7 @@ fun KeepItUpCard() {
             Icon(
                 imageVector = Icons.Outlined.TrendingUp,
                 contentDescription = null,
-                tint = Color(0xFF159447),
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(24.dp)
             )
         }

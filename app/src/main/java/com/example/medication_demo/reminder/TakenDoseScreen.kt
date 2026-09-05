@@ -4,9 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import com.example.medication_demo.R
-import androidx.compose.runtime.getValue
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,30 +14,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-
-private val AppGreen = Color(0xFF08A86A)
-private val DarkText = Color(0xFF17233F)
-private val TextGrey = Color(0xFF69738A)
-private val LightGreen = Color(0xFFE6F7F0)
-private val SoftGreen = Color(0xFFC8F0E2)
 
 @Composable
 fun TakenDoseScreen(
@@ -55,7 +41,7 @@ fun TakenDoseScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.background)
             .statusBarsPadding()
     ) {
         // MAIN CONTENT
@@ -75,7 +61,7 @@ fun TakenDoseScreen(
                 text = medicineName,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = DarkText
+                color = MaterialTheme.colorScheme.onBackground
             )
 
             Spacer(
@@ -84,7 +70,7 @@ fun TakenDoseScreen(
 
             Text(
                 text = "$dosage • $scheduledTime",                fontSize = 14.sp,
-                color = TextGrey
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             Spacer(modifier = Modifier.height(55.dp))
@@ -106,7 +92,7 @@ fun TakenDoseScreen(
                 text = "Taken at $takenTime 🎉",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = DarkText
+                color = MaterialTheme.colorScheme.onBackground
             )
 
             Spacer(
@@ -116,7 +102,7 @@ fun TakenDoseScreen(
             Text(
                 encouragementMessage,
                 fontSize = 19.sp,
-                color = TextGrey
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 
@@ -134,15 +120,15 @@ fun TakenDoseScreen(
                 .height(52.dp),
             shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = AppGreen
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
             )
         ) {
 
             Text(
                 text = "Done",
                 fontSize = 17.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Color.White
+                fontWeight = FontWeight.SemiBold
             )
         }
     }
